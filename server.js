@@ -22,8 +22,6 @@ app.post('/api/products', (req, res) => {
 });
  */
 
-//test push
-
 
 app.post('/api/users/create', (req, res) => {
     console.log("User creation request received");    
@@ -76,6 +74,46 @@ app.get('/api/Restaurant/info/menu/:id', (req, res) => {
 
     res.status(200).json(info);
 });
+
+//create lobby
+app.post('/api/lobby/create' => {
+    const {name, restaurant, numPlayers } = req.body;
+
+
+    if (!name || !restaurant || typeof numPlayers !== 'number') {
+       return res.status(400).json({
+          error: "name, restaurant, and number of players required"
+       });
+    }
+
+    const newLobby = {
+    LobbyId: LobbyId,
+    name,
+    restaurant,
+    numPlayers
+  };
+  
+   
+res.status(201).json(newLobby);
+
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 // Start the server
 const PORT = 3000;
