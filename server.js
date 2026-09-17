@@ -23,7 +23,7 @@ app.post('/api/products', (req, res) => {
  */
 
 //test lobbies
-let newLobby = [
+let lobbies = [
     {
         LobbyId: 1,
         name: "Lobby1",
@@ -94,17 +94,18 @@ app.get('/api/Restaurant/info/menu/:id', (req, res) => {
     res.status(200).json(info);
 });
 
-//create lobby
+//Post endpoint to create lobby
 app.post('/api/lobby/create' => {
-    const {name, restaurant, numPlayers } = req.body;
+    const {name, restaurant, numPlayers } = req.body;//get lobby information from request body 
 
 
-    if (!name || !restaurant || typeof numPlayers !== 'number') {
+    if (!name || !restaurant || typeof numPlayers !== 'number') { //check if all required fields were provided 
        return res.status(400).json({
           error: "name, restaurant, and number of players required"
        });
     }
-
+    
+    //create new lobby object
     const newLobby = {
     LobbyId: LobbyId,
     name,
@@ -112,25 +113,32 @@ app.post('/api/lobby/create' => {
     numPlayers
   };
   
-   
+//return status 201 if everything works 
 res.status(201).json(newLobby);
     
 });
 
-
+//Get endpoint to get lobby information
 app.get('/api/lobby/info/:id' => {
-    const LobbyId = req.params.id;
-    
-    const lobby = newLobby.find(lobby => lobby.id === LobbyId);
-
+    const LobbyId = req.params.id; //get lobby id
+   
+    //search lobby list for one with the matching ID
+    const lobby = lobbies.find(lobby => lobby.id === LobbyId);
+  
+    //If no lobby with the specified ID exists, return 404
     if (!lobby) {
     return res.status(404).json({
     error: "Lobby not found"
   });
     }
-     
+    
+    //return lobby information if found
     res.status(200).json(lobby);
 });
+
+
+
+
 
 // Start the server
 const PORT = 3000;
