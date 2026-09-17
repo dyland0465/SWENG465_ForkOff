@@ -5,7 +5,7 @@ const app = express();
 app.use(express.json());
 
 // A simple array to act as our "database"
-let products = [];
+//let products = [];
 
 /**
 // GET endpoint to retrieve all products
