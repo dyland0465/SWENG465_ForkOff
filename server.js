@@ -23,22 +23,56 @@ app.post('/api/products', (req, res) => {
  */
 
 app.post('/api/users/create', (req, res) => {
-    console.Log("User creation request received");    
+    console.log("User creation request received");    
     let user = req.body.username;
 
     if(user) {
         console.log(user);
-        res.status(201).json();
+        res.status(201).json({ message: "User created", username: user });
     } else {
-        res.status(400).json();
+        res.status(400).json({ message: "Invalid request" });
     }
 });
 
 app.get('/api/users/info/:id', (req, res) => {
     let info = "Info";
-    res.json(info);
+    res.status(200).json(info);
 });
 
+app.get('/api/Restaurant/info/menu/:id', (req, res) => {
+    const restaurantId = req.params.id;
+
+    const info = {
+        restaurantId: restaurantId,
+        restaurantName: "The Bistro Grill",
+        currency: "USD",
+        categories: [
+            {
+                name: "Appetizers",
+                items: [
+                    { id: 101, name: "Crispy Calamari", description: "Served with garlic lemon aioli", price: 12.50 },
+                    { id: 102, name: "Truffle Fries", description: "Parmesan, parsley, and truffle oil", price: 8.00 }
+                ]
+            },
+            {
+                name: "Main Courses",
+                items: [
+                    { id: 201, name: "Grilled Ribeye Steak", description: "12oz ribeye with rosemary butter and mashed potatoes", price: 34.00 },
+                    { id: 202, name: "Wild Mushroom Risotto", description: "Arborio rice, porcini, white wine, and pecorino", price: 22.00 }
+                ]
+            },
+            {
+                name: "Desserts & Drinks",
+                items: [
+                    { id: 301, name: "Classic Tiramisu", description: "Espresso-soaked ladyfingers with mascarpone cream", price: 9.00 },
+                    { id: 302, name: "House Lemonade", description: "Freshly squeezed with mint", price: 4.50 }
+                ]
+            }
+        ]
+    };
+
+    res.status(200).json(info);
+});
 
 // Start the server
 const PORT = 3000;
