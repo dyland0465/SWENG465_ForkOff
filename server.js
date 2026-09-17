@@ -22,6 +22,9 @@ app.post('/api/products', (req, res) => {
 });
  */
 
+//test push
+
+
 app.post('/api/users/create', (req, res) => {
     console.log("User creation request received");    
     let user = req.body.username;
