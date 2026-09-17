@@ -99,7 +99,9 @@ res.status(201).json(newLobby);
 });
 
 
-
+app.get('/api/lobby/create' => {
+  const info = 'info';
+});
 
 
 
