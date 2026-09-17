@@ -7,6 +7,7 @@ app.use(express.json());
 // A simple array to act as our "database"
 let products = [];
 
+/**
 // GET endpoint to retrieve all products
 app.get('/api/products', (req, res) => {
     // Return the array of products
@@ -19,6 +20,25 @@ app.post('/api/products', (req, res) => {
     // 3. If valid, create a new product object and push to the array
     // 4. Respond with a 201 Created status code and the new product object
 });
+ */
+
+app.post('/api/users/create', (req, res) => {
+    console.Log("User creation request received");    
+    let user = req.body.username;
+
+    if(user) {
+        console.log(user);
+        res.status(201).json();
+    } else {
+        res.status(400).json();
+    }
+});
+
+app.get('/api/users/info/:id', (req, res) => {
+    let info = "Info";
+    res.json(info);
+});
+
 
 // Start the server
 const PORT = 3000;
