@@ -23,7 +23,7 @@ app.post('/api/products', (req, res) => {
  */
 
 //test lobbies
-let lobbies = [
+let newLobby = [
     {
         LobbyId: 1,
         name: "Lobby1",
