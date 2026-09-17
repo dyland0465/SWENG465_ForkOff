@@ -22,6 +22,25 @@ app.post('/api/products', (req, res) => {
 });
  */
 
+//test lobbies
+let lobbies = [
+    {
+        LobbyId: 1,
+        name: "Lobby1",
+        restaurant: "Chipotle",
+        numPlayers: 4
+    },
+    {
+        LobbyId: 2,
+        name: "Lobby2",
+        restaurant: "Pizza Place",
+        numPlayers: 6
+    }
+];
+
+
+
+
 
 app.post('/api/users/create', (req, res) => {
     console.log("User creation request received");    
@@ -95,27 +114,23 @@ app.post('/api/lobby/create' => {
   
    
 res.status(201).json(newLobby);
-
+    
 });
 
 
-app.get('/api/lobby/create' => {
-  const info = 'info';
+app.get('/api/lobby/info/:id' => {
+    const LobbyId = req.params.id;
+    
+    const lobby = lobbies.find(lobby => lobby.id === LobbyId);
+
+    if (!lobby) {
+    return res.status(404).json({
+    error: "Lobby not found"
+  });
+    }
+     
+    res.status(200).json(lobby);
 });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 // Start the server
 const PORT = 3000;
