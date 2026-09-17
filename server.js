@@ -121,7 +121,7 @@ res.status(201).json(newLobby);
 app.get('/api/lobby/info/:id' => {
     const LobbyId = req.params.id;
     
-    const lobby = lobbies.find(lobby => lobby.id === LobbyId);
+    const lobby = newLobby.find(lobby => lobby.id === LobbyId);
 
     if (!lobby) {
     return res.status(404).json({
