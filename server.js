@@ -59,30 +59,30 @@ app.get('/api/users/info/:id', (req, res) => {
     res.status(200).json(info);
 });
 
-app.get('/api/Restaurant/info/menu/:id', (req, res) => {
-    const restaurantId = req.params.id;
+app.get('/api/Restaurant/info/menu/:id', (req, res) => {  //pulla the resturaunt based on the ID and return the menu for that restaurant.
+    const restaurantId = req.params.id; //get restaurant id from request parameters
 
     const info = {
-        restaurantId: restaurantId,
-        restaurantName: "The Bistro Grill",
+        restaurantId: 1, //temp sets id to id so that it displays for testing. 
+        restaurantName: "The Bistro Grill", //basic info about the restaurant. 
         currency: "USD",
         categories: [
             {
-                name: "Appetizers",
+                name: "Appetizers", //appetizers
                 items: [
                     { id: 101, name: "Crispy Calamari", description: "Served with garlic lemon aioli", price: 12.50 },
                     { id: 102, name: "Truffle Fries", description: "Parmesan, parsley, and truffle oil", price: 8.00 }
                 ]
             },
             {
-                name: "Main Courses",
+                name: "Main Courses", //main courses
                 items: [
                     { id: 201, name: "Grilled Ribeye Steak", description: "12oz ribeye with rosemary butter and mashed potatoes", price: 34.00 },
                     { id: 202, name: "Wild Mushroom Risotto", description: "Arborio rice, porcini, white wine, and pecorino", price: 22.00 }
                 ]
             },
             {
-                name: "Desserts & Drinks",
+                name: "Desserts & Drinks", //deserts
                 items: [
                     { id: 301, name: "Classic Tiramisu", description: "Espresso-soaked ladyfingers with mascarpone cream", price: 9.00 },
                     { id: 302, name: "House Lemonade", description: "Freshly squeezed with mint", price: 4.50 }
