@@ -94,7 +94,7 @@ app.get('/api/Restaurant/info/menu/:id', (req, res) => {  //pulla the resturaunt
 });
 
 //Post endpoint to create lobby
-app.post('/api/lobby/create' => {
+app.post('/api/lobby/create', (req, res) => {
     const {name, restaurant, numPlayers } = req.body;//get lobby information from request body 
 
 
@@ -118,7 +118,7 @@ res.status(201).json(newLobby);
 });
 
 //Get endpoint to get lobby information
-app.get('/api/lobby/info/:id' => {
+app.get('/api/lobby/info/:id', (req, res) => {
     const LobbyId = req.params.id; //get lobby id
    
     //search lobby list for one with the matching ID
