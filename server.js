@@ -38,11 +38,9 @@ let lobbies = [
     }
 ];
 
-
-
-
-
-app.post('/api/users/create', (req, res) => {
+// POST endpoint to create a user.
+// Return 201 on successful user creation, 400 on error.
+app.post('/api/users', (req, res) => {
     console.log("User creation request received");    
     let user = req.body.username;
 
@@ -54,7 +52,8 @@ app.post('/api/users/create', (req, res) => {
     }
 });
 
-app.get('/api/users/info/:id', (req, res) => {
+// GET endpoint to grab all of users information
+app.get('/api/users/:id', (req, res) => {
     let info = "Info";
     res.status(200).json(info);
 });
