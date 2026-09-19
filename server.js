@@ -135,9 +135,29 @@ app.get('/api/lobby/info/:id', (req, res) => {
     res.status(200).json(lobby);
 });
 
+//Group chat
+let groupChats = [];
 
+//get endpoints for all groupchats
+app.get('/api/groupchats', (req, res) => {res.status(200).json(groupChats);});
 
+//post endpoints for creating new groupchat
+app.post('/api/groupchats', (req, res) => {const {name} =req.body;
+    if (!name) {
+        return res.status(400).json({
+            error: "Group chat name is required"
+        });
+    }
+    const newGroupChat = {
+        id: groupChats.length + 1,
+        name: name,
+        members: [],
+        messages: []
+    };
 
+    groupChats.push(newGroupChat);
+    res.status(201).json(newGroupChat);
+});
 
 // Start the server
 const PORT = 3000;
