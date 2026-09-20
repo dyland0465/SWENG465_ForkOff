@@ -22,22 +22,6 @@ app.post('/api/products', (req, res) => {
 });
  */
 
-//2 lobbies
-let lobbies = [
-  {
-    LobbyId: 1,
-    name: "Lobby1",
-    restaurant: "Chipotle",
-    numPlayers: 4
-  },
-  {
-    LobbyId: 2,
-    name: "Lobby2",
-    restaurant: "Pizza Place",
-    numPlayers: 6
-  }
-];
-
 // POST endpoint to create a user.
 // Return 201 on successful user creation, 400 on error.
 app.post('/api/users', (req, res) => {
@@ -92,6 +76,10 @@ app.get('/api/Restaurant/info/menu/:id', (req, res) => {  //pulla the resturaunt
 
   res.status(200).json(info);
 });
+
+//2 lobbies
+let lobbies = [];
+
 
 //Post endpoint to create lobby
 app.post('/api/lobby/create', (req, res) => {
