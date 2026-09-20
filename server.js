@@ -112,7 +112,7 @@ app.post('/api/lobby/create', (req, res) => {
     numPlayers
   };
 
-  //add lobby id to array
+  //add lobby to array
   lobbies.push(newLobby);
 
   //return status 201 if everything works 
