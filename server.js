@@ -22,141 +22,145 @@ app.post('/api/products', (req, res) => {
 });
  */
 
-//test lobbies
+//2 lobbies
 let lobbies = [
-    {
-        LobbyId: 1,
-        name: "Lobby1",
-        restaurant: "Chipotle",
-        numPlayers: 4
-    },
-    {
-        LobbyId: 2,
-        name: "Lobby2",
-        restaurant: "Pizza Place",
-        numPlayers: 6
-    }
+  {
+    LobbyId: 1,
+    name: "Lobby1",
+    restaurant: "Chipotle",
+    numPlayers: 4
+  },
+  {
+    LobbyId: 2,
+    name: "Lobby2",
+    restaurant: "Pizza Place",
+    numPlayers: 6
+  }
 ];
 
 // POST endpoint to create a user.
 // Return 201 on successful user creation, 400 on error.
 app.post('/api/users', (req, res) => {
-    console.log("User creation request received");    
-    let user = req.body.username;
+  console.log("User creation request received");
+  let user = req.body.username;
 
-    if(user) {
-        console.log(user);
-        res.status(201).json({ message: "User created", username: user });
-    } else {
-        res.status(400).json({ message: "Invalid request" });
-    }
+  if (user) {
+    console.log(user);
+    res.status(201).json({ message: "User created", username: user });
+  } else {
+    res.status(400).json({ message: "Invalid request" });
+  }
 });
 
 // GET endpoint to grab all of users information
 app.get('/api/users/:id', (req, res) => {
-    let info = "Info";
-    res.status(200).json(info);
+  let info = "Info";
+  res.status(200).json(info);
 });
 
 app.get('/api/Restaurant/info/menu/:id', (req, res) => {  //pulla the resturaunt based on the ID and return the menu for that restaurant.
-    const restaurantId = req.params.id; //get restaurant id from request parameters
+  const restaurantId = req.params.id; //get restaurant id from request parameters
 
-    const info = {
-        restaurantId: 1, //temp sets id to id so that it displays for testing. 
-        restaurantName: "The Bistro Grill", //basic info about the restaurant. 
-        currency: "USD",
-        categories: [
-            {
-                name: "Appetizers", //appetizers
-                items: [
-                    { id: 101, name: "Crispy Calamari", description: "Served with garlic lemon aioli", price: 12.50 },
-                    { id: 102, name: "Truffle Fries", description: "Parmesan, parsley, and truffle oil", price: 8.00 }
-                ]
-            },
-            {
-                name: "Main Courses", //main courses
-                items: [
-                    { id: 201, name: "Grilled Ribeye Steak", description: "12oz ribeye with rosemary butter and mashed potatoes", price: 34.00 },
-                    { id: 202, name: "Wild Mushroom Risotto", description: "Arborio rice, porcini, white wine, and pecorino", price: 22.00 }
-                ]
-            },
-            {
-                name: "Desserts & Drinks", //deserts
-                items: [
-                    { id: 301, name: "Classic Tiramisu", description: "Espresso-soaked ladyfingers with mascarpone cream", price: 9.00 },
-                    { id: 302, name: "House Lemonade", description: "Freshly squeezed with mint", price: 4.50 }
-                ]
-            }
+  const info = {
+    restaurantId: 1, //temp sets id to id so that it displays for testing. 
+    restaurantName: "The Bistro Grill", //basic info about the restaurant. 
+    currency: "USD",
+    categories: [
+      {
+        name: "Appetizers", //appetizers
+        items: [
+          { id: 101, name: "Crispy Calamari", description: "Served with garlic lemon aioli", price: 12.50 },
+          { id: 102, name: "Truffle Fries", description: "Parmesan, parsley, and truffle oil", price: 8.00 }
         ]
-    };
+      },
+      {
+        name: "Main Courses", //main courses
+        items: [
+          { id: 201, name: "Grilled Ribeye Steak", description: "12oz ribeye with rosemary butter and mashed potatoes", price: 34.00 },
+          { id: 202, name: "Wild Mushroom Risotto", description: "Arborio rice, porcini, white wine, and pecorino", price: 22.00 }
+        ]
+      },
+      {
+        name: "Desserts & Drinks", //deserts
+        items: [
+          { id: 301, name: "Classic Tiramisu", description: "Espresso-soaked ladyfingers with mascarpone cream", price: 9.00 },
+          { id: 302, name: "House Lemonade", description: "Freshly squeezed with mint", price: 4.50 }
+        ]
+      }
+    ]
+  };
 
-    res.status(200).json(info);
+  res.status(200).json(info);
 });
 
 //Post endpoint to create lobby
 app.post('/api/lobby/create', (req, res) => {
-    const {name, restaurant, numPlayers } = req.body;//get lobby information from request body 
+  const { name, restaurant, numPlayers } = req.body;//get lobby information from request body 
 
 
-    if (!name || !restaurant || typeof numPlayers !== 'number') { //check if all required fields were provided 
-       return res.status(400).json({
-          error: "name, restaurant, and number of players required"
-       });
-    }
-    
-    //create new lobby object
-    const newLobby = {
-    LobbyId: LobbyId,
+  if (!name || !restaurant || typeof numPlayers !== 'number') { //check if all required fields were provided 
+    return res.status(400).json({
+      error: "name, restaurant, and number of players required"
+    });
+  }
+
+  //create new lobby object
+  const newLobby = {
+    LobbyId: lobbies.length + 1,
     name,
     restaurant,
     numPlayers
   };
-  
-//return status 201 if everything works 
-res.status(201).json(newLobby);
-    
+
+  //add lobby id to array
+  lobbies.push(newLobby);
+
+  //return status 201 if everything works 
+  res.status(201).json(newLobby);
+
 });
 
 //Get endpoint to get lobby information
 app.get('/api/lobby/info/:id', (req, res) => {
-    const LobbyId = req.params.id; //get lobby id
-   
-    //search lobby list for one with the matching ID
-    const lobby = lobbies.find(lobby => lobby.id === LobbyId);
-  
-    //If no lobby with the specified ID exists, return 404
-    if (!lobby) {
+  const LobbyId = req.params.id; //get lobby id
+
+  //search lobby list for one with the matching ID
+  const lobby = lobbies.find(lobby => lobby.LobbyId === LobbyId);
+
+  //If no lobby with the specified ID exists, return 404
+  if (!lobby) {
     return res.status(404).json({
-    error: "Lobby not found"
-  });
-    }
-    
-    //return lobby information if found
-    res.status(200).json(lobby);
+      error: "Lobby not found"
+    });
+  }
+
+  //return lobby information if found
+  res.status(200).json(lobby);
 });
 
 //Group chat
 let groupChats = [];
 
 //get endpoints for all groupchats
-app.get('/api/groupchats', (req, res) => {res.status(200).json(groupChats);});
+app.get('/api/groupchats', (req, res) => { res.status(200).json(groupChats); });
 
 //post endpoints for creating new groupchat
-app.post('/api/groupchats', (req, res) => {const {name} =req.body;
-    if (!name) {
-        return res.status(400).json({
-            error: "Group chat name is required"
-        });
-    }
-    const newGroupChat = {
-        id: groupChats.length + 1,
-        name: name,
-        members: [],
-        messages: []
-    };
+app.post('/api/groupchats', (req, res) => {
+  const { name } = req.body;
+  if (!name) {
+    return res.status(400).json({
+      error: "Group chat name is required"
+    });
+  }
+  const newGroupChat = {
+    id: groupChats.length + 1,
+    name: name,
+    members: [],
+    messages: []
+  };
 
-    groupChats.push(newGroupChat);
-    res.status(201).json(newGroupChat);
+  groupChats.push(newGroupChat);
+  res.status(201).json(newGroupChat);
 });
 
 // Start the server
