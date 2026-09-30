@@ -1,48 +1,103 @@
-// server.ts
-
-const express = require('express');
+import express from "express";
 const app = express();
-app.use(express.json());
+app.use(express.json()); 
 
-// A simple array to act as our "database"
-//let products = [];
+// TODO: Connect auth to db
+// Authorize user login. Current understanding is that we get plain text password,
+// encode with salt+token, compare to the db password. If same,
+// authorize logon, else, decline the login.
+// SWAGGER: Authorize user login with inputs of username and password.
+app.post('/api/auth/login', (req, res) => {
+  let user = {
+    username: req.body.username,
+    password: req.body.password,
+    email: req.body.email
+  };
 
-/**
-// GET endpoint to retrieve all products
-app.get('/api/products', (req, res) => {
-    // Return the array of products
+  let secret : String = "Password"; // Predefined password for testing, compare to db in future
+
+  if(user.password === secret){
+    res.status(201).json({ message: "User authorized to login."});
+  } else {
+    res.status(400).json({ message: "User not authorized to login." });
+  }
 });
-
-// POST endpoint to create a new product
-app.post('/api/products', (req, res) => {
-    // 1. Get data from the request body
-    // 2. Add validation: Check if required fields exist
-    // 3. If valid, create a new product object and push to the array
-    // 4. Respond with a 201 Created status code and the new product object
-});
- */
 
 // POST endpoint to create a user.
 // Return 201 on successful user creation, 400 on error.
+// SWAGGER: Create a user with inputs of username, password, email. Must meet valid criteria for creation.
 app.post('/api/users', (req, res) => {
   console.log("User creation request received");
-  let user = req.body.username;
+  let user = {
+    username: req.body.username,
+    password: req.body.password,
+    email: req.body.email
+  };
+
+  // TODO:
+  // At this point, we should verify that:
+  // Username is valid
+  // Password meets minimum requirements
+  // Valid email.
 
   if (user) {
     console.log(user);
-    res.status(201).json({ message: "User created", username: user });
+    res.status(201).json({ message: "User created"});
   } else {
+    // TODO:
+    // In the future, give more detailed information to the user depending on what failed on creation.
     res.status(400).json({ message: "Invalid request" });
   }
 });
 
-// GET endpoint to grab all of users information
+// TODO: Connect this to the db to grab available information about a user,
+// such as username and email
+// GET endpoint to grab all of users information by id
+// SWAGGER: Grab a users information by id, returning username, email, etc.
 app.get('/api/users/:id', (req, res) => {
-  let info = "Info";
-  res.status(200).json(info);
+  let user = {
+    username: "User",
+    email: "Example@example.com"
+  };
+
+  if(user){
+    res.status(200).json(user);
+  } else {
+    res.status(400).json({ message: "Failed to fetch user. Invalid id?"});
+  }
+
+
 });
 
-app.get('/api/Restaurant/info/menu/:id', (req, res) => {  //pulla the resturaunt based on the ID and return the menu for that restaurant.
+// SWAGGER: Edit username, password, or email of user by id.
+// TODO: implement connection to db to edit user info
+app.patch('/api/users/:id', (req, res) => {
+  let success : boolean = false;
+  let userId : number = req.body.id;
+
+  if (success){
+    res.status(200).json({ message: "Success"});
+  } else {
+    res.status(400).json({ message: "Failed"});
+  }
+});
+
+// SWAGGER: Delete a user by id.
+// TODO: implement connection to db to delete user
+app.delete('/api/users:id', (req, res) => {
+  let success : boolean = false;
+  let userId : number = req.body.id;
+
+  if (success){
+    res.status(200).json({ message: "Success"});
+  } else {
+    res.status(400).json({ message: "Failed"});
+  }
+});
+
+// SWAGGER: Get a restaurants info by id.
+// TODO: Connect to db to actually grab restaurant info.
+app.get('/api/restaurants/:id', (req, res) => {  //pulla the resturaunt based on the ID and return the menu for that restaurant.
   const restaurantId = req.params.id; //get restaurant id from request parameters
 
   const info = {
@@ -75,6 +130,12 @@ app.get('/api/Restaurant/info/menu/:id', (req, res) => {  //pulla the resturaunt
   };
 
   res.status(200).json(info);
+});
+
+// SWAGGER: Edit a restaurants info by id 
+// TODO: Connect to db to actually edit restaurant info.
+app.patch('/api/restaurants/:id', (req, res) =>{
+
 });
 
 //2 lobbies
