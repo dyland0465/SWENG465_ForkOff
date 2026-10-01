@@ -1,5 +1,10 @@
 {
   "dependencies": {
+<<<<<<< HEAD
+=======
+    "express": "^5.2.1",
+    "mongodb": "^7.7.0",
+>>>>>>> origin/main
     "swagger": "^0.7.5"
   }
 }
