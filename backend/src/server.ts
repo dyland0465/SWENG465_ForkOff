@@ -64,6 +64,7 @@ app.post("/api/auth/login", (req, res) => {
     });
   }
 });
+
 app.post('/api/auth/login', (req, res) => {
   let user = {
     username: req.body.username,
@@ -88,7 +89,6 @@ app.post('/api/auth/login', (req, res) => {
     message: "User not authorized to login."
   });
 });
-
 
 // POST endpoint to create a user.
 // Return 201 on successful user creation, 400 on error.
@@ -126,7 +126,6 @@ app.post('/api/users', (req, res) => {
   });
 });
 
-
 // GET endpoint to grab user information by id.
 // SWAGGER: Grab a user's information by id.
 app.get('/api/users/:id', (req, res) => {
@@ -147,7 +146,6 @@ app.get('/api/users/:id', (req, res) => {
     message: "Failed to fetch user. Invalid id?"
   });
 });
-
 
 // SWAGGER: Edit username, password, or email of user by id.
 // TODO: Implement connection to db to edit user info
