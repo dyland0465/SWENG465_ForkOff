@@ -1,0 +1,7 @@
+$kind: http-request
+method: GET
+url: '{{base_url}}/api/places/:id/photos'
+order: 2000
+pathVariables:
+  - key: id
+    value: 'ChIJN1t_tDeuEmsRUsoyG83frY4'

@@ -1,0 +1,7 @@
+$kind: http-request
+method: GET
+url: '{{base_url}}/api/lobbies/:id/members'
+order: 7000
+pathVariables:
+  - key: id
+    value: 'ABC123'

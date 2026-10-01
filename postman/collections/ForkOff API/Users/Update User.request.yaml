@@ -1,0 +1,17 @@
+$kind: http-request
+method: PATCH
+url: '{{base_url}}/api/users/:id'
+order: 3000
+pathVariables:
+  - key: id
+    value: '1'
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "username": "newusername",
+      "email": "newemail@example.com"
+    }

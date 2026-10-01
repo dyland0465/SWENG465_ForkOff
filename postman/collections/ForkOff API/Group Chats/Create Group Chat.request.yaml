@@ -1,0 +1,14 @@
+$kind: http-request
+method: POST
+url: '{{base_url}}/api/groupchats'
+order: 1000
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "name": "Dinner Plans",
+      "creatorId": "1"
+    }
