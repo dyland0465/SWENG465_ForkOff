@@ -240,7 +240,16 @@ router.patch("/api/users/:id", (req, res) => {
   });
 });
 
-// SWAGGER: Delete a user by id.
+/** @swagger
+ * /api/users/{id}:
+ *   delete:
+ *     summary: Delete a user by ID.
+ *     tags: [user]
+ *     parameters: [{ in: path, name: id, required: true, schema: { type: string } }]
+ *     responses:
+ *       200: { description: User deleted successfully. }
+ *       404: { description: User not found. }
+ */
 // TODO: Implement connection to db to delete user
 router.delete("/api/users/:id", (req, res) => {
   const userId = req.params.id;
@@ -253,7 +262,16 @@ router.delete("/api/users/:id", (req, res) => {
   });
 });
 
-// SWAGGER: Get a restaurant's info by id.
+/** @swagger
+ * /api/restaurants/{id}:
+ *   get:
+ *     summary: Get restaurant information by ID.
+ *     tags: [restaurant]
+ *     parameters: [{ in: path, name: id, required: true, schema: { type: string } }]
+ *     responses:
+ *       200: { description: Restaurant information returned successfully. }
+ *       404: { description: Restaurant not found. }
+ */
 // TODO: Connect to db to actually grab restaurant info.
 router.get("/api/restaurants/:id", (req, res) => {
   const restaurantId = req.params.id;
@@ -271,7 +289,19 @@ router.get("/api/restaurants/:id", (req, res) => {
   return res.status(200).json(info);
 });
 
-// SWAGGER: Edit a restaurant's info by id.
+/** @swagger
+ * /api/restaurants/{id}:
+ *   patch:
+ *     summary: Update restaurant information.
+ *     tags: [restaurant]
+ *     parameters: [{ in: path, name: id, required: true, schema: { type: string } }]
+ *     requestBody:
+ *       required: true
+ *       content: { application/json: { schema: { type: object, properties: { restaurantName: { type: string }, address: { type: string }, phone: { type: string }, website: { type: string, format: uri }, categories: { type: array, items: { type: string } } } } } }
+ *     responses:
+ *       200: { description: Restaurant updated successfully. }
+ *       400: { description: Invalid restaurant data. }
+ */
 // TODO: Connect to db to actually edit restaurant info.
 router.patch("/api/restaurants/:id", (req, res) => {
   const restaurantId = req.params.id;
@@ -293,7 +323,16 @@ router.patch("/api/restaurants/:id", (req, res) => {
   });
 });
 
-// SWAGGER: Delete restaurant custom information by id.
+/** @swagger
+ * /api/restaurants/{id}:
+ *   delete:
+ *     summary: Delete custom restaurant information.
+ *     tags: [restaurant]
+ *     parameters: [{ in: path, name: id, required: true, schema: { type: string } }]
+ *     responses:
+ *       200: { description: Restaurant deleted successfully. }
+ *       404: { description: Restaurant not found. }
+ */
 // TODO: Connect to db.
 router.delete("/api/restaurants/:id", (req, res) => {
   const restaurantId = req.params.id;
@@ -306,7 +345,15 @@ router.delete("/api/restaurants/:id", (req, res) => {
   });
 });
 
-// SWAGGER: Get partner-entered restaurant menu.
+/** @swagger
+ * /api/restaurants/{id}/menu:
+ *   get:
+ *     summary: Get a restaurant menu.
+ *     tags: [restaurant]
+ *     parameters: [{ in: path, name: id, required: true, schema: { type: string } }]
+ *     responses:
+ *       200: { description: Restaurant menu returned successfully. }
+ */
 // TODO: Fetch menu from database.
 router.get("/api/restaurants/:id/menu", (req, res) => {
   const restaurantId = req.params.id;
@@ -348,7 +395,19 @@ router.get("/api/restaurants/:id/menu", (req, res) => {
   return res.status(200).json(menu);
 });
 
-// SWAGGER: Edit partner-entered restaurant menu.
+/** @swagger
+ * /api/restaurants/{id}/menu:
+ *   patch:
+ *     summary: Update a restaurant menu.
+ *     tags: [restaurant]
+ *     parameters: [{ in: path, name: id, required: true, schema: { type: string } }]
+ *     requestBody:
+ *       required: true
+ *       content: { application/json: { schema: { type: object, required: [menu], properties: { menu: { type: object } } } } }
+ *     responses:
+ *       200: { description: Restaurant menu updated successfully. }
+ *       400: { description: Menu data is required. }
+ */
 // TODO: Save updates to database.
 router.patch("/api/restaurants/:id/menu", (req, res) => {
   const restaurantId = req.params.id;
@@ -367,7 +426,15 @@ router.patch("/api/restaurants/:id/menu", (req, res) => {
   });
 });
 
-// SWAGGER: Get individual restaurant analytics.
+/** @swagger
+ * /api/restaurants/{id}/analytics:
+ *   get:
+ *     summary: Get restaurant analytics.
+ *     tags: [restaurant]
+ *     parameters: [{ in: path, name: id, required: true, schema: { type: string } }]
+ *     responses:
+ *       200: { description: Analytics returned successfully. }
+ */
 // TODO: Generate analytics from database votes/views/swipes.
 router.get("/api/restaurants/:id/analytics", (req, res) => {
   const restaurantId = req.params.id;
@@ -384,7 +451,16 @@ router.get("/api/restaurants/:id/analytics", (req, res) => {
   return res.status(200).json(analytics);
 });
 
-// SWAGGER: Get restaurant information from Google Places.
+/** @swagger
+ * /api/places/{id}:
+ *   get:
+ *     summary: Get restaurant information from Google Places.
+ *     tags: [places]
+ *     parameters: [{ in: path, name: id, required: true, schema: { type: string } }]
+ *     responses:
+ *       200: { description: Place information returned successfully. }
+ *       404: { description: Place not found. }
+ */
 // TODO: Connect to Google Places API.
 router.get("/api/places/:id", (req, res) => {
   const placeId = req.params.id;
@@ -401,7 +477,15 @@ router.get("/api/places/:id", (req, res) => {
   return res.status(200).json(place);
 });
 
-// SWAGGER: Get restaurant photos from Google Places.
+/** @swagger
+ * /api/places/{id}/photos:
+ *   get:
+ *     summary: Get restaurant photos from Google Places.
+ *     tags: [places]
+ *     parameters: [{ in: path, name: id, required: true, schema: { type: string } }]
+ *     responses:
+ *       200: { description: Place photos returned successfully. }
+ */
 // TODO: Fetch photos from Google Places API.
 router.get("/api/places/:id/photos", (req, res) => {
   const placeId = req.params.id;
@@ -423,7 +507,15 @@ router.get("/api/places/:id/photos", (req, res) => {
   });
 });
 
-// SWAGGER: Get restaurant reviews from Google Places.
+/** @swagger
+ * /api/places/{id}/reviews:
+ *   get:
+ *     summary: Get restaurant reviews from Google Places.
+ *     tags: [places]
+ *     parameters: [{ in: path, name: id, required: true, schema: { type: string } }]
+ *     responses:
+ *       200: { description: Place reviews returned successfully. }
+ */
 // TODO: Fetch reviews from Google Places API.
 router.get("/api/places/:id/reviews", (req, res) => {
   const placeId = req.params.id;
@@ -447,7 +539,18 @@ router.get("/api/places/:id/reviews", (req, res) => {
   });
 });
 
-// SWAGGER: Create a lobby.
+/** @swagger
+ * /api/lobbies:
+ *   post:
+ *     summary: Create a lobby.
+ *     tags: [lobby]
+ *     requestBody:
+ *       required: true
+ *       content: { application/json: { schema: { type: object, required: [hostId], properties: { name: { type: string }, hostId: { type: string }, maxDistance: { type: number } } } } }
+ *     responses:
+ *       201: { description: Lobby created successfully. }
+ *       400: { description: Host ID is required. }
+ */
 // TODO: Save lobby to database.
 router.post("/api/lobbies", (req, res) => {
   const lobby = {
@@ -470,7 +573,16 @@ router.post("/api/lobbies", (req, res) => {
   });
 });
 
-// SWAGGER: Get lobby information.
+/** @swagger
+ * /api/lobbies/{id}:
+ *   get:
+ *     summary: Get lobby information.
+ *     tags: [lobby]
+ *     parameters: [{ in: path, name: id, required: true, schema: { type: string } }]
+ *     responses:
+ *       200: { description: Lobby returned successfully. }
+ *       404: { description: Lobby not found. }
+ */
 router.get("/api/lobbies/:id", (req, res) => {
   const lobbyId = req.params.id;
 
@@ -485,7 +597,17 @@ router.get("/api/lobbies/:id", (req, res) => {
   return res.status(200).json(lobby);
 });
 
-// SWAGGER: Edit lobby settings.
+/** @swagger
+ * /api/lobbies/{id}:
+ *   patch:
+ *     summary: Update lobby settings.
+ *     tags: [lobby]
+ *     parameters: [{ in: path, name: id, required: true, schema: { type: string } }]
+ *     requestBody:
+ *       content: { application/json: { schema: { type: object, properties: { name: { type: string }, status: { type: string } } } } }
+ *     responses:
+ *       200: { description: Lobby updated successfully. }
+ */
 router.patch("/api/lobbies/:id", (req, res) => {
   const lobbyId = req.params.id;
 
@@ -501,7 +623,16 @@ router.patch("/api/lobbies/:id", (req, res) => {
   });
 });
 
-// SWAGGER: Delete lobby.
+/** @swagger
+ * /api/lobbies/{id}:
+ *   delete:
+ *     summary: Delete a lobby.
+ *     tags: [lobby]
+ *     parameters: [{ in: path, name: id, required: true, schema: { type: string } }]
+ *     responses:
+ *       200: { description: Lobby deleted successfully. }
+ *       404: { description: Lobby not found. }
+ */
 router.delete("/api/lobbies/:id", (req, res) => {
   const lobbyId = req.params.id;
 
@@ -511,7 +642,19 @@ router.delete("/api/lobbies/:id", (req, res) => {
   });
 });
 
-// SWAGGER: Join lobby.
+/** @swagger
+ * /api/lobbies/{id}/join:
+ *   post:
+ *     summary: Join a lobby.
+ *     tags: [lobby]
+ *     parameters: [{ in: path, name: id, required: true, schema: { type: string } }]
+ *     requestBody:
+ *       required: true
+ *       content: { application/json: { schema: { type: object, required: [userId], properties: { userId: { type: string } } } } }
+ *     responses:
+ *       200: { description: User joined lobby successfully. }
+ *       400: { description: User ID is required. }
+ */
 router.post("/api/lobbies/:id/join", (req, res) => {
   const lobbyId = req.params.id;
   const userId = req.body.userId;
@@ -529,7 +672,19 @@ router.post("/api/lobbies/:id/join", (req, res) => {
   });
 });
 
-// SWAGGER: Leave lobby.
+/** @swagger
+ * /api/lobbies/{id}/leave:
+ *   post:
+ *     summary: Leave a lobby.
+ *     tags: [lobby]
+ *     parameters: [{ in: path, name: id, required: true, schema: { type: string } }]
+ *     requestBody:
+ *       required: true
+ *       content: { application/json: { schema: { type: object, required: [userId], properties: { userId: { type: string } } } } }
+ *     responses:
+ *       200: { description: User left lobby successfully. }
+ *       400: { description: User ID is required. }
+ */
 router.post("/api/lobbies/:id/leave", (req, res) => {
   const lobbyId = req.params.id;
   const userId = req.body.userId;
@@ -547,7 +702,15 @@ router.post("/api/lobbies/:id/leave", (req, res) => {
   });
 });
 
-// SWAGGER: Get lobby members.
+/** @swagger
+ * /api/lobbies/{id}/members:
+ *   get:
+ *     summary: Get lobby members.
+ *     tags: [lobby]
+ *     parameters: [{ in: path, name: id, required: true, schema: { type: string } }]
+ *     responses:
+ *       200: { description: Lobby members returned successfully. }
+ */
 router.get("/api/lobbies/:id/members", (req, res) => {
   const lobbyId = req.params.id;
 
@@ -568,7 +731,15 @@ router.get("/api/lobbies/:id/members", (req, res) => {
   });
 });
 
-// SWAGGER: Get lobby restaurants.
+/** @swagger
+ * /api/lobbies/{id}/restaurants:
+ *   get:
+ *     summary: Get restaurants in a lobby.
+ *     tags: [lobby]
+ *     parameters: [{ in: path, name: id, required: true, schema: { type: string } }]
+ *     responses:
+ *       200: { description: Lobby restaurants returned successfully. }
+ */
 router.get("/api/lobbies/:id/restaurants", (req, res) => {
   const lobbyId = req.params.id;
 
@@ -591,7 +762,15 @@ router.get("/api/lobbies/:id/restaurants", (req, res) => {
   });
 });
 
-// SWAGGER: Get lobby filters.
+/** @swagger
+ * /api/lobbies/{id}/filters:
+ *   get:
+ *     summary: Get lobby filters.
+ *     tags: [lobby]
+ *     parameters: [{ in: path, name: id, required: true, schema: { type: string } }]
+ *     responses:
+ *       200: { description: Lobby filters returned successfully. }
+ */
 router.get("/api/lobbies/:id/filters", (req, res) => {
   const lobbyId = req.params.id;
 
@@ -610,7 +789,17 @@ router.get("/api/lobbies/:id/filters", (req, res) => {
   });
 });
 
-// SWAGGER: Edit lobby filters.
+/** @swagger
+ * /api/lobbies/{id}/filters:
+ *   patch:
+ *     summary: Update lobby filters.
+ *     tags: [lobby]
+ *     parameters: [{ in: path, name: id, required: true, schema: { type: string } }]
+ *     requestBody:
+ *       content: { application/json: { schema: { type: object, properties: { maxDistance: { type: number }, minimumRating: { type: number }, maxPriceLevel: { type: integer }, categories: { type: array, items: { type: string } }, openNow: { type: boolean }, alcoholAvailable: { type: boolean } } } } }
+ *     responses:
+ *       200: { description: Lobby filters updated successfully. }
+ */
 router.patch("/api/lobbies/:id/filters", (req, res) => {
   const lobbyId = req.params.id;
 
@@ -630,7 +819,19 @@ router.patch("/api/lobbies/:id/filters", (req, res) => {
   });
 });
 
-// SWAGGER: Submit restaurant vote/swipe.
+/** @swagger
+ * /api/lobbies/{id}/votes:
+ *   post:
+ *     summary: Submit a restaurant vote or swipe.
+ *     tags: [lobby]
+ *     parameters: [{ in: path, name: id, required: true, schema: { type: string } }]
+ *     requestBody:
+ *       required: true
+ *       content: { application/json: { schema: { type: object, required: [userId, restaurantId, vote], properties: { userId: { type: string }, restaurantId: { type: string }, vote: { type: string, enum: [like, dislike, veto] } } } } }
+ *     responses:
+ *       201: { description: Vote submitted successfully. }
+ *       400: { description: Invalid vote request. }
+ */
 router.post("/api/lobbies/:id/votes", (req, res) => {
   const lobbyId = req.params.id;
 
@@ -657,7 +858,15 @@ router.post("/api/lobbies/:id/votes", (req, res) => {
   });
 });
 
-// SWAGGER: Get game results.
+/** @swagger
+ * /api/lobbies/{id}/results:
+ *   get:
+ *     summary: Get game results.
+ *     tags: [lobby]
+ *     parameters: [{ in: path, name: id, required: true, schema: { type: string } }]
+ *     responses:
+ *       200: { description: Game results returned successfully. }
+ */
 router.get("/api/lobbies/:id/results", (req, res) => {
   const lobbyId = req.params.id;
 
@@ -682,7 +891,18 @@ router.get("/api/lobbies/:id/results", (req, res) => {
   });
 });
 
-// SWAGGER: Create a group chat.
+/** @swagger
+ * /api/groupchats:
+ *   post:
+ *     summary: Create a group chat.
+ *     tags: [group-chat]
+ *     requestBody:
+ *       required: true
+ *       content: { application/json: { schema: { type: object, required: [creatorId], properties: { name: { type: string }, creatorId: { type: string } } } } }
+ *     responses:
+ *       201: { description: Group chat created successfully. }
+ *       400: { description: Creator ID is required. }
+ */
 router.post("/api/groupchats", (req, res) => {
   const groupchat = {
     id: "CHAT123",
@@ -702,7 +922,15 @@ router.post("/api/groupchats", (req, res) => {
   });
 });
 
-// SWAGGER: Get members of a group chat.
+/** @swagger
+ * /api/groupchats/{id}/members:
+ *   get:
+ *     summary: Get group chat members.
+ *     tags: [group-chat]
+ *     parameters: [{ in: path, name: id, required: true, schema: { type: string } }]
+ *     responses:
+ *       200: { description: Group chat members returned successfully. }
+ */
 router.get("/api/groupchats/:id/members", (req, res) => {
   const groupchatId = req.params.id;
 
@@ -723,7 +951,15 @@ router.get("/api/groupchats/:id/members", (req, res) => {
   });
 });
 
-// SWAGGER: Get messages of a group chat.
+/** @swagger
+ * /api/groupchats/{id}/messages:
+ *   get:
+ *     summary: Get group chat messages.
+ *     tags: [group-chat]
+ *     parameters: [{ in: path, name: id, required: true, schema: { type: string } }]
+ *     responses:
+ *       200: { description: Group chat messages returned successfully. }
+ */
 router.get("/api/groupchats/:id/messages", (req, res) => {
   const groupchatId = req.params.id;
 
@@ -748,7 +984,17 @@ router.get("/api/groupchats/:id/messages", (req, res) => {
   });
 });
 
-// SWAGGER: Edit a group chat.
+/** @swagger
+ * /api/groupchats/{id}:
+ *   patch:
+ *     summary: Update a group chat.
+ *     tags: [group-chat]
+ *     parameters: [{ in: path, name: id, required: true, schema: { type: string } }]
+ *     requestBody:
+ *       content: { application/json: { schema: { type: object, properties: { name: { type: string } } } } }
+ *     responses:
+ *       200: { description: Group chat updated successfully. }
+ */
 router.patch("/api/groupchats/:id", (req, res) => {
   const groupchatId = req.params.id;
 
@@ -763,7 +1009,16 @@ router.patch("/api/groupchats/:id", (req, res) => {
   });
 });
 
-// SWAGGER: Delete a group chat.
+/** @swagger
+ * /api/groupchats/{id}:
+ *   delete:
+ *     summary: Delete a group chat.
+ *     tags: [group-chat]
+ *     parameters: [{ in: path, name: id, required: true, schema: { type: string } }]
+ *     responses:
+ *       200: { description: Group chat deleted successfully. }
+ *       404: { description: Group chat not found. }
+ */
 router.delete("/api/groupchats/:id", (req, res) => {
   const groupchatId = req.params.id;
 
