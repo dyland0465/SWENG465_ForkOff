@@ -1,7 +1,7 @@
 import express from "express";
 import swaggerUi from "swagger-ui-express";
-import swaggerSpec from "./swagger";
-import apiClients from "./apiClients";
+import swaggerSpec from "./config/swagger";
+import apiClients from "./services/api";
 
 const app = express();
 app.use(express.json());
