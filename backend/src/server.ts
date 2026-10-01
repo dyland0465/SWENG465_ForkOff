@@ -1,4 +1,6 @@
 import express from "express";
+import swaggerUi from "swagger-ui-express";
+import swaggerSpec from "./swagger";
 const app = express();
 app.use(express.json()); 
 
@@ -9,6 +11,59 @@ app.use(express.json());
 // 2. Compare entered password against stored password hash.
 // 3. If valid, return authentication token/session.
 // SWAGGER: Authorize user login with inputs of username and password.
+
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
+app.get("/", (req, res) => {
+  res.send("ForkOff API is running");
+});
+
+/**
+* @swagger
+* /api/auth/login:
+*   post:
+*     summary: Log a user into the application
+*     description: Checks the supplied username and password.
+*     tags:
+*       - Authentication
+*     requestBody:
+*       required: true
+*       content:
+*         application/json:
+*           schema:
+*             type: object
+*             required:
+*               - username
+*               - password
+*             properties:
+*               username:
+*                 type: string
+*                 example: daniel
+*               password:
+*                 type: string
+*                 example: Password
+*     responses:
+*       200:
+*         description: Login successful
+*       401:
+*         description: Invalid username or password
+*/
+app.post("/api/auth/login", (req, res) => {
+  const user = {
+    username: req.body.username,
+    password: req.body.password,
+  };
+
+  if (user.password === "Password") {
+    res.status(200).json({
+      message: "User authorized."
+    });
+  } else {
+    res.status(401).json({
+      message: "Invalid login."
+    });
+  }
+});
 app.post('/api/auth/login', (req, res) => {
   let user = {
     username: req.body.username,
