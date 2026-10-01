@@ -1,6 +1,10 @@
-import app from "./app";
+import express from "express";
 import dotenv from "dotenv";
 import { connectDB } from "./Config/db";
+
+dotenv.config();
+
+const app = express();
 
 
 // Start the server
