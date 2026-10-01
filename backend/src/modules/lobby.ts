@@ -1,8 +1,13 @@
-import { ObjectId } from "mongodb";
+import mongoose, { Schema } from "mongoose";
 
 
 
-export default class Lobby {
-  constructor(private name: string, private numPlayers: number, private restaurant: string, private LobbyId?: ObjectId) { }
+const lobbySchema = new Schema({
+    name: { type: String, required: true, trim: true },
+    numPlayers: { type: Number, required: true },
+    restaurant: { type: String, required: true, trim: true },
+    LobbyId: { type: Schema.Types.ObjectId, required: false }
+});
 
-}
+
+
