@@ -1,0 +1,21 @@
+$kind: http-request
+method: PATCH
+url: '{{base_url}}/api/lobbies/:id/filters'
+order: 10000
+pathVariables:
+  - key: id
+    value: 'ABC123'
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "maxDistance": 10,
+      "minimumRating": 4,
+      "maxPriceLevel": 3,
+      "categories": ["American", "Mexican"],
+      "openNow": true,
+      "alcoholAvailable": false
+    }

@@ -1,0 +1,20 @@
+$kind: http-request
+method: PATCH
+url: '{{base_url}}/api/restaurants/:id'
+order: 2000
+pathVariables:
+  - key: id
+    value: '1'
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "restaurantName": "The Bistro Grill",
+      "address": "123 Main Street",
+      "phone": "555-555-5555",
+      "website": "https://example.com",
+      "categories": ["American", "Grill"]
+    }

@@ -1,0 +1,7 @@
+$kind: http-request
+method: GET
+url: '{{base_url}}/api/lobbies/:id/filters'
+order: 9000
+pathVariables:
+  - key: id
+    value: 'ABC123'

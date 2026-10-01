@@ -1,0 +1,16 @@
+$kind: http-request
+method: POST
+url: '{{base_url}}/api/lobbies/:id/leave'
+order: 6000
+pathVariables:
+  - key: id
+    value: 'ABC123'
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "userId": "1"
+    }

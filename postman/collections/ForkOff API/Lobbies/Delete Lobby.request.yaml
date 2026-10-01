@@ -1,0 +1,7 @@
+$kind: http-request
+method: DELETE
+url: '{{base_url}}/api/lobbies/:id'
+order: 4000
+pathVariables:
+  - key: id
+    value: 'ABC123'

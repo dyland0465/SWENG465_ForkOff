@@ -1,0 +1,7 @@
+$kind: http-request
+method: GET
+url: '{{base_url}}/api/restaurants/:id'
+order: 1000
+pathVariables:
+  - key: id
+    value: '1'

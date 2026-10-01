@@ -1,0 +1,16 @@
+$kind: http-request
+method: PATCH
+url: '{{base_url}}/api/groupchats/:id'
+order: 4000
+pathVariables:
+  - key: id
+    value: 'CHAT123'
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "name": "Updated Chat Name"
+    }

@@ -1,0 +1,7 @@
+$kind: http-request
+method: GET
+url: '{{base_url}}/api/groupchats/:id/messages'
+order: 3000
+pathVariables:
+  - key: id
+    value: 'CHAT123'

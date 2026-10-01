@@ -1,0 +1,9 @@
+$kind: collection
+name: ForkOff API
+description: |-
+  API collection for the ForkOff application — a restaurant decision-making game.
+  Covers Auth, Users, Restaurants, Google Places, Lobbies, and Group Chats.
+variables:
+  - key: base_url
+    value: 'http://localhost:3000'
+    description: Base URL for the ForkOff backend server
