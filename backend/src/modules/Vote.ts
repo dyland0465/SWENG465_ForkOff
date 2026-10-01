@@ -27,3 +27,17 @@ const voteSchema = new Schema ({
 {
     timestamps: true
 });
+
+voteSchema.index(
+    {
+        lobbyID: 1,
+        userID: 1,
+        restaurantID: 1
+    },
+    {
+        unique: true
+    }
+    
+);
+
+export const Vote = mongoose.model("Vote", voteSchema);
