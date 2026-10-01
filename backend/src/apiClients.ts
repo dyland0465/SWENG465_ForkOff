@@ -1,3 +1,7 @@
+import { Router } from "express";
+
+const router = Router();
+
 /*
 Resource Types:
 Auth - user authentication
@@ -9,7 +13,6 @@ Group Chat - Endpoints to run group chat
 Google Places - Google Places API, 10,000 requests/month
  */
 
-
 // TODO: Connect auth to db
 // Authorize user login.
 // Eventually:
@@ -17,7 +20,7 @@ Google Places - Google Places API, 10,000 requests/month
 // 2. Compare entered password against stored password hash.
 // 3. If valid, return authentication token/session.
 // SWAGGER: Authorize user login with inputs of username and password.
-app.post('/api/auth/login', (req, res) => {
+router.post('/api/auth/login', (req, res) => {
   let user = {
     username: req.body.username,
     password: req.body.password
@@ -46,7 +49,7 @@ app.post('/api/auth/login', (req, res) => {
 // POST endpoint to create a user.
 // Return 201 on successful user creation, 400 on error.
 // SWAGGER: Create a user with inputs of username, password, email.
-app.post('/api/users', (req, res) => {
+router.post('/api/users', (req, res) => {
   console.log("User creation request received");
 
   let user = {
@@ -82,7 +85,7 @@ app.post('/api/users', (req, res) => {
 
 // GET endpoint to grab user information by id.
 // SWAGGER: Grab a user's information by id.
-app.get('/api/users/:id', (req, res) => {
+router.get('/api/users/:id', (req, res) => {
   const userId = req.params.id;
 
   // TODO: Query user from database using userId
@@ -104,7 +107,7 @@ app.get('/api/users/:id', (req, res) => {
 
 // SWAGGER: Edit username, password, or email of user by id.
 // TODO: Implement connection to db to edit user info
-app.patch('/api/users/:id', (req, res) => {
+router.patch('/api/users/:id', (req, res) => {
   const userId = req.params.id;
 
   let updates = {
@@ -129,7 +132,7 @@ app.patch('/api/users/:id', (req, res) => {
 
 // SWAGGER: Delete a user by id.
 // TODO: Implement connection to db to delete user
-app.delete('/api/users/:id', (req, res) => {
+router.delete('/api/users/:id', (req, res) => {
   const userId = req.params.id;
 
   // TODO: Delete user from database
@@ -143,7 +146,7 @@ app.delete('/api/users/:id', (req, res) => {
 
 // SWAGGER: Get a restaurant's info by id.
 // TODO: Connect to db to actually grab restaurant info.
-app.get('/api/restaurants/:id', (req, res) => {
+router.get('/api/restaurants/:id', (req, res) => {
   const restaurantId = req.params.id;
 
   const info = {
@@ -165,7 +168,7 @@ app.get('/api/restaurants/:id', (req, res) => {
 
 // SWAGGER: Edit a restaurant's info by id.
 // TODO: Connect to db to actually edit restaurant info.
-app.patch('/api/restaurants/:id', (req, res) => {
+router.patch('/api/restaurants/:id', (req, res) => {
   const restaurantId = req.params.id;
 
   let updates = {
@@ -188,7 +191,7 @@ app.patch('/api/restaurants/:id', (req, res) => {
 
 // SWAGGER: Delete restaurant custom information by id.
 // TODO: Connect to db.
-app.delete('/api/restaurants/:id', (req, res) => {
+router.delete('/api/restaurants/:id', (req, res) => {
   const restaurantId = req.params.id;
 
   // TODO: Delete custom restaurant info from database
@@ -202,7 +205,7 @@ app.delete('/api/restaurants/:id', (req, res) => {
 
 // SWAGGER: Get partner-entered restaurant menu.
 // TODO: Fetch menu from database.
-app.get('/api/restaurants/:id/menu', (req, res) => {
+router.get('/api/restaurants/:id/menu', (req, res) => {
   const restaurantId = req.params.id;
 
   const menu = {
@@ -245,7 +248,7 @@ app.get('/api/restaurants/:id/menu', (req, res) => {
 
 // SWAGGER: Edit partner-entered restaurant menu.
 // TODO: Save updates to database.
-app.patch('/api/restaurants/:id/menu', (req, res) => {
+router.patch('/api/restaurants/:id/menu', (req, res) => {
   const restaurantId = req.params.id;
   const menu = req.body.menu;
 
@@ -265,7 +268,7 @@ app.patch('/api/restaurants/:id/menu', (req, res) => {
 
 // SWAGGER: Get individual restaurant analytics.
 // TODO: Generate analytics from database votes/views/swipes.
-app.get('/api/restaurants/:id/analytics', (req, res) => {
+router.get('/api/restaurants/:id/analytics', (req, res) => {
   const restaurantId = req.params.id;
 
   const analytics = {
@@ -283,7 +286,7 @@ app.get('/api/restaurants/:id/analytics', (req, res) => {
 
 // SWAGGER: Get restaurant information from Google Places.
 // TODO: Connect to Google Places API.
-app.get('/api/places/:id', (req, res) => {
+router.get('/api/places/:id', (req, res) => {
   const placeId = req.params.id;
 
   const place = {
@@ -301,7 +304,7 @@ app.get('/api/places/:id', (req, res) => {
 
 // SWAGGER: Get restaurant photos from Google Places.
 // TODO: Fetch photos from Google Places API.
-app.get('/api/places/:id/photos', (req, res) => {
+router.get('/api/places/:id/photos', (req, res) => {
   const placeId = req.params.id;
 
   const photos = [
@@ -324,7 +327,7 @@ app.get('/api/places/:id/photos', (req, res) => {
 
 // SWAGGER: Get restaurant reviews from Google Places.
 // TODO: Fetch reviews from Google Places API.
-app.get('/api/places/:id/reviews', (req, res) => {
+router.get('/api/places/:id/reviews', (req, res) => {
   const placeId = req.params.id;
 
   const reviews = [
@@ -349,7 +352,7 @@ app.get('/api/places/:id/reviews', (req, res) => {
 
 // SWAGGER: Create a lobby.
 // TODO: Save lobby to database.
-app.post('/api/lobbies', (req, res) => {
+router.post('/api/lobbies', (req, res) => {
   const lobby = {
     id: "ABC123",
     name: req.body.name,
@@ -372,7 +375,7 @@ app.post('/api/lobbies', (req, res) => {
 
 
 // SWAGGER: Get lobby information.
-app.get('/api/lobbies/:id', (req, res) => {
+router.get('/api/lobbies/:id', (req, res) => {
   const lobbyId = req.params.id;
 
   const lobby = {
@@ -388,7 +391,7 @@ app.get('/api/lobbies/:id', (req, res) => {
 
 
 // SWAGGER: Edit lobby settings.
-app.patch('/api/lobbies/:id', (req, res) => {
+router.patch('/api/lobbies/:id', (req, res) => {
   const lobbyId = req.params.id;
 
   const updates = {
@@ -405,7 +408,7 @@ app.patch('/api/lobbies/:id', (req, res) => {
 
 
 // SWAGGER: Delete lobby.
-app.delete('/api/lobbies/:id', (req, res) => {
+router.delete('/api/lobbies/:id', (req, res) => {
   const lobbyId = req.params.id;
 
   return res.status(200).json({
@@ -416,7 +419,7 @@ app.delete('/api/lobbies/:id', (req, res) => {
 
 
 // SWAGGER: Join lobby.
-app.post('/api/lobbies/:id/join', (req, res) => {
+router.post('/api/lobbies/:id/join', (req, res) => {
   const lobbyId = req.params.id;
   const userId = req.body.userId;
 
@@ -435,7 +438,7 @@ app.post('/api/lobbies/:id/join', (req, res) => {
 
 
 // SWAGGER: Leave lobby.
-app.post('/api/lobbies/:id/leave', (req, res) => {
+router.post('/api/lobbies/:id/leave', (req, res) => {
   const lobbyId = req.params.id;
   const userId = req.body.userId;
 
@@ -454,7 +457,7 @@ app.post('/api/lobbies/:id/leave', (req, res) => {
 
 
 // SWAGGER: Get lobby members.
-app.get('/api/lobbies/:id/members', (req, res) => {
+router.get('/api/lobbies/:id/members', (req, res) => {
   const lobbyId = req.params.id;
 
   const members = [
@@ -476,7 +479,7 @@ app.get('/api/lobbies/:id/members', (req, res) => {
 
 
 // SWAGGER: Get lobby restaurants.
-app.get('/api/lobbies/:id/restaurants', (req, res) => {
+router.get('/api/lobbies/:id/restaurants', (req, res) => {
   const lobbyId = req.params.id;
 
   const restaurants = [
@@ -500,7 +503,7 @@ app.get('/api/lobbies/:id/restaurants', (req, res) => {
 
 
 // SWAGGER: Get lobby filters.
-app.get('/api/lobbies/:id/filters', (req, res) => {
+router.get('/api/lobbies/:id/filters', (req, res) => {
   const lobbyId = req.params.id;
 
   const filters = {
@@ -523,7 +526,7 @@ app.get('/api/lobbies/:id/filters', (req, res) => {
 
 
 // SWAGGER: Edit lobby filters.
-app.patch('/api/lobbies/:id/filters', (req, res) => {
+router.patch('/api/lobbies/:id/filters', (req, res) => {
   const lobbyId = req.params.id;
 
   const filters = {
@@ -544,7 +547,7 @@ app.patch('/api/lobbies/:id/filters', (req, res) => {
 
 
 // SWAGGER: Submit restaurant vote/swipe.
-app.post('/api/lobbies/:id/votes', (req, res) => {
+router.post('/api/lobbies/:id/votes', (req, res) => {
   const lobbyId = req.params.id;
 
   const vote = {
@@ -572,7 +575,7 @@ app.post('/api/lobbies/:id/votes', (req, res) => {
 
 
 // SWAGGER: Get game results.
-app.get('/api/lobbies/:id/results', (req, res) => {
+router.get('/api/lobbies/:id/results', (req, res) => {
   const lobbyId = req.params.id;
 
   const results = [
@@ -598,7 +601,7 @@ app.get('/api/lobbies/:id/results', (req, res) => {
 
 
 // SWAGGER: Create a group chat.
-app.post('/api/groupchats', (req, res) => {
+router.post('/api/groupchats', (req, res) => {
   const groupchat = {
     id: "CHAT123",
     name: req.body.name,
@@ -619,7 +622,7 @@ app.post('/api/groupchats', (req, res) => {
 
 
 // SWAGGER: Get members of a group chat.
-app.get('/api/groupchats/:id/members', (req, res) => {
+router.get('/api/groupchats/:id/members', (req, res) => {
   const groupchatId = req.params.id;
 
   const members = [
@@ -641,7 +644,7 @@ app.get('/api/groupchats/:id/members', (req, res) => {
 
 
 // SWAGGER: Get messages of a group chat.
-app.get('/api/groupchats/:id/messages', (req, res) => {
+router.get('/api/groupchats/:id/messages', (req, res) => {
   const groupchatId = req.params.id;
 
   const messages = [
@@ -667,7 +670,7 @@ app.get('/api/groupchats/:id/messages', (req, res) => {
 
 
 // SWAGGER: Edit a group chat.
-app.patch('/api/groupchats/:id', (req, res) => {
+router.patch('/api/groupchats/:id', (req, res) => {
   const groupchatId = req.params.id;
 
   const updates = {
@@ -683,7 +686,7 @@ app.patch('/api/groupchats/:id', (req, res) => {
 
 
 // SWAGGER: Delete a group chat.
-app.delete('/api/groupchats/:id', (req, res) => {
+router.delete('/api/groupchats/:id', (req, res) => {
   const groupchatId = req.params.id;
 
   return res.status(200).json({
@@ -691,3 +694,6 @@ app.delete('/api/groupchats/:id', (req, res) => {
     groupchatId: groupchatId
   });
 });
+
+
+export default router;
