@@ -19,7 +19,35 @@ Google Places - Google Places API, 10,000 requests/month
 // 1. Find user by username/email in database.
 // 2. Compare entered password against stored password hash.
 // 3. If valid, return authentication token/session.
-// SWAGGER: Authorize user login with inputs of username and password.
+/**
+ * @swagger
+ * /api/auth/login:
+ *   post:
+ *     summary: Authorize a user login.
+ *     tags:
+ *       - auth
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - Username
+ *               - Password
+ *             properties:
+ *               Username:
+ *                 type: string
+ *                 example: "Billy"
+ *               Password:
+ *                 type: string
+ *                 example: "Password"
+ *     responses:
+ *       201:
+ *         description: User logged in successfully.
+ *       400:
+ *         description: Invalid input.
+ */
 router.post('/api/auth/login', (req, res) => {
   let user = {
     username: req.body.username,
@@ -46,9 +74,39 @@ router.post('/api/auth/login', (req, res) => {
 });
 
 
-// POST endpoint to create a user.
-// Return 201 on successful user creation, 400 on error.
-// SWAGGER: Create a user with inputs of username, password, email.
+/**
+ * @swagger
+ * /api/users:
+ *   post:
+ *     summary: Create a user.
+ *     tags:
+ *       - user
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - Username
+ *               - Password
+ *               - Email
+ *             properties:
+ *               Username:
+ *                 type: string
+ *                 example: "Billy"
+ *               Password:
+ *                 type: string
+ *                 example: "Password"
+ *               Email:
+ *                 type: string
+ *                 example: "example@example.com"
+ *     responses:
+ *       201:
+ *         description: User created successfully.
+ *       400:
+ *         description: Invalid input.
+ */
 router.post('/api/users', (req, res) => {
   console.log("User creation request received");
 
@@ -82,9 +140,28 @@ router.post('/api/users', (req, res) => {
   });
 });
 
-
-// GET endpoint to grab user information by id.
-// SWAGGER: Grab a user's information by id.
+/**
+ * @swagger
+ * /api/users/{id}:
+ *   get:
+ *     summary: Get a user's information by ID.
+ *     tags:
+ *       - user
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         example: "55"
+ *     responses:
+ *       200:
+ *         description: User information returned successfully.
+ *       400:
+ *         description: Invalid user ID.
+ *       404:
+ *         description: User not found.
+ */
 router.get('/api/users/:id', (req, res) => {
   const userId = req.params.id;
 
@@ -105,8 +182,44 @@ router.get('/api/users/:id', (req, res) => {
 });
 
 
-// SWAGGER: Edit username, password, or email of user by id.
-// TODO: Implement connection to db to edit user info
+/**
+ * @swagger
+ * /api/users/{id}:
+ *   patch:
+ *     summary: Edit a user's information by ID.
+ *     tags:
+ *       - user
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         example: "55"
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               username:
+ *                 type: string
+ *                 example: "Billy"
+ *               password:
+ *                 type: string
+ *                 example: "Password"
+ *               email:
+ *                 type: string
+ *                 example: "example@example.com"
+ *     responses:
+ *       200:
+ *         description: User updated successfully.
+ *       400:
+ *         description: Invalid input or user ID.
+ *       404:
+ *         description: User not found.
+ */
 router.patch('/api/users/:id', (req, res) => {
   const userId = req.params.id;
 

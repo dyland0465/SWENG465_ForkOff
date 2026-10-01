@@ -11,9 +11,11 @@
   "keywords": [],
   "type": "commonjs",
   "dependencies": {
+    "argon2": "^0.45.1",
     "dotenv": "^18.0.5",
     "express": "^5.2.1",
     "mongodb": "^7.7.0",
+    "mongoose": "^9.10.3",
     "swagger-jsdoc": "^6.3.0",
     "swagger-ui-express": "^5.0.1"
   },
@@ -35,6 +37,7 @@
     "tsx": "^4.23.15"
   },
   "allowScripts": {
-    "@scarf/scarf@1.4.0": true
+    "@scarf/scarf@1.4.0": true,
+    "esbuild@0.28.2": true
   }
 }
