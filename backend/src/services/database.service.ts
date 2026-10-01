@@ -13,9 +13,9 @@ export async function connectToDatabase() {
 
   const LobbyCollection: mongoDB.Collection = db.collection(process.env.LOBBY_COLLECTION_NAME);
 
-  collections.lobbies = LobbyCollection;
+  collections.lobby = LobbyCollection;
 
-  console.log('Successfully connected to database: ${db.databaseName} and collection: ${LobbyCollection.collectionName}');
+  console.log('Successfully connected to database: ${db.databaseName} and collection: ${lobbyCollection.collectoinName}');
 
 
 
