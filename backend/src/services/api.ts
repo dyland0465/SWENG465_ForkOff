@@ -15,12 +15,7 @@ Group Chat - Endpoints to run group chat
 Google Places - Google Places API, 10,000 requests/month
  */
 
-// TODO: Connect auth to db
 // Authorize user login.
-// Eventually:
-// 1. Find user by username/email in database.
-// 2. Compare entered password against stored password hash.
-// 3. If valid, return authentication token/session.
 /**
  * @swagger
  * /api/auth/login:
@@ -35,24 +30,36 @@ Google Places - Google Places API, 10,000 requests/month
  *           schema:
  *             type: object
  *             required:
- *               - Username
- *               - Password
+ *               - username
+ *               - password
  *             properties:
- *               Username:
+ *               username:
  *                 type: string
  *                 example: "Billy"
- *               Password:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: "billy@example.com"
+ *               password:
  *                 type: string
  *                 example: "Password"
  *     responses:
- *       201:
+ *       200:
  *         description: User logged in successfully.
  *       400:
  *         description: Invalid input.
+ *       401:
+ *         description: Invalid username/email or password.
  */
 router.post("/api/auth/login", async (req, res) => {
-  const identifier = String(req.body.username ?? req.body.email ?? "").trim();
-  const password = String(req.body.password ?? "");
+  const identifier = String(
+    req.body.username ??
+      req.body.Username ??
+      req.body.email ??
+      req.body.Email ??
+      "",
+  ).trim();
+  const password = String(req.body.password ?? req.body.Password ?? "");
 
   if (!identifier || !password) {
     return res.status(400).json({
