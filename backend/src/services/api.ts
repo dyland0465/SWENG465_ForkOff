@@ -1,4 +1,6 @@
 import { Router } from "express";
+import { User } from "../modules/user";
+import { hashPassword, validatePassword } from "./auth";
 
 const router = Router();
 
@@ -48,28 +50,36 @@ Google Places - Google Places API, 10,000 requests/month
  *       400:
  *         description: Invalid input.
  */
-router.post("/api/auth/login", (req, res) => {
-  let user = {
-    username: req.body.username,
-    password: req.body.password,
-  };
+router.post("/api/auth/login", async (req, res) => {
+  const identifier = String(req.body.username ?? req.body.email ?? "").trim();
+  const password = String(req.body.password ?? "");
 
-  let secret: string = "Password"; // Temporary test password
-
-  if (!user.username || !user.password) {
+  if (!identifier || !password) {
     return res.status(400).json({
-      message: "Username and password are required.",
+      message: "Username or email and password are required.",
     });
   }
 
-  if (user.password === secret) {
-    return res.status(200).json({
-      message: "User authorized to login.",
+  const user = await User.findOne({
+    $or: [
+      { username: identifier },
+      { email: identifier.toLowerCase() },
+    ],
+  });
+
+  if (!user || !(await validatePassword(password, user.password))) {
+    return res.status(401).json({
+      message: "Invalid username/email or password.",
     });
   }
 
-  return res.status(401).json({
-    message: "User not authorized to login.",
+  return res.status(200).json({
+    message: "User authorized to login.",
+    user: {
+      id: user._id,
+      username: user.username,
+      email: user.email,
+    },
   });
 });
 
@@ -106,7 +116,7 @@ router.post("/api/auth/login", (req, res) => {
  *       400:
  *         description: Invalid input.
  */
-router.post("/api/users", (req, res) => {
+router.post("/api/users", async (req, res) => {
   console.log("User creation request received");
 
   let user = {
@@ -121,22 +131,31 @@ router.post("/api/users", (req, res) => {
     });
   }
 
-  // TODO:
-  // Validate username
-  // Validate password requirements
-  // Validate email
-  // Check for duplicate username/email
-  // Hash password before saving
-
-  console.log(user);
-
-  return res.status(201).json({
-    message: "User created",
-    user: {
+  try {
+    const createdUser = await User.create({
       username: user.username,
       email: user.email,
-    },
-  });
+      password: await hashPassword(user.password),
+    });
+
+    return res.status(201).json({
+      message: "User created",
+      user: {
+        id: createdUser._id,
+        username: createdUser.username,
+        email: createdUser.email,
+      },
+    });
+  } catch (error: unknown) {
+    if (error && typeof error === "object" && "code" in error && error.code === 11000) {
+      return res.status(409).json({
+        message: "A user with that email already exists.",
+      });
+    }
+
+    console.error("Failed to create user:", error);
+    return res.status(500).json({ message: "Failed to create user." });
+  }
 });
 
 /**

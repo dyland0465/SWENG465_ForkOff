@@ -9,4 +9,8 @@ app.use(express.json());
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.use(apiClients);
 
+app.get("/", (req, res) => {
+
+});
+
 export default app;
