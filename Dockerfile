@@ -1,3 +1,13 @@
+FROM node:22-alpine AS frontend-build
+
+WORKDIR /app/frontend
+
+COPY frontend/package*.json ./
+RUN npm ci
+
+COPY frontend/ ./
+RUN npm run build
+
 FROM node:22-alpine
 
 WORKDIR /app/backend
@@ -9,6 +19,7 @@ RUN npm ci
 # Copy the backend source after installing dependencies to keep Docker layer
 # caching effective when only application code changes.
 COPY backend/ ./
+COPY --from=frontend-build /app/frontend/dist /app/frontend/dist
 
 ENV NODE_ENV=production
 ENV PORT=3000
