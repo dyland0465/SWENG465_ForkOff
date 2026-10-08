@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { User } from "../modules/user";
+import { User } from "../models/user";
 import { hashPassword, validatePassword } from "./auth";
 
 const router = Router();
