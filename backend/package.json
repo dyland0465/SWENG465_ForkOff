@@ -41,5 +41,9 @@
     "@scarf/scarf@1.4.0": true,
     "esbuild@0.28.2": true,
     "argon2@0.45.1": true
+  },
+  "scripts": {
+    "dev":"tsx watch src/server.ts",
+    "seed": "tsx src/scripts/seed.ts"
   }
 }
