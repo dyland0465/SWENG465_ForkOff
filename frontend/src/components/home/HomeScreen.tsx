@@ -7,9 +7,11 @@ type HomeScreenProps = {
   onCreateLobby: () => void
   onJoinLobby: () => void
   onHowItWorks: () => void
+  onLogin: () => void
+  onSignUp: () => void
 }
 
-export function HomeScreen({ onCreateLobby, onJoinLobby, onHowItWorks }: HomeScreenProps) {
+export function HomeScreen({ onCreateLobby, onJoinLobby, onHowItWorks}: HomeScreenProps) {
   return (
     <div className="home-screen">
       <AppHeader onHowItWorks={onHowItWorks} onJoinLobby={onJoinLobby} />
