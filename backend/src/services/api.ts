@@ -1,4 +1,5 @@
 import { Router } from "express";
+import mongoose from "mongoose";
 import { User } from "../modules/user";
 import { hashPassword, validatePassword } from "./auth";
 
@@ -14,6 +15,25 @@ Lobby - Endpoints to run the lobby/game
 Group Chat - Endpoints to run group chat
 Google Places - Google Places API, 10,000 requests/month
  */
+
+/** @swagger
+ * /api/health/:
+ *   get:
+ *     summary: Check API and database health.
+ *     tags: [health]
+ *     responses:
+ *       200: { description: API and MongoDB are healthy. }
+ *       503: { description: MongoDB is unavailable. }
+ */
+router.get("/api/health/", (_req, res) => {
+  const databaseConnected = mongoose.connection.readyState === 1;
+
+  return res.status(databaseConnected ? 200 : 503).json({
+    status: databaseConnected ? "ok" : "unavailable",
+    database: databaseConnected ? "connected" : "disconnected",
+  });
+});
+
 
 // Authorize user login.
 /**
