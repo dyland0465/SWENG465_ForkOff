@@ -1,0 +1,51 @@
+.ui-text-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-inline-size: var(--target-size-min);
+  min-block-size: var(--target-size-min);
+  padding: var(--spacing-3) var(--spacing-2);
+  border: 0;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-caption-default);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-caption-default);
+  color: var(--color-text-primary);
+  background: transparent;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+  transition: background-color 150ms ease;
+}
+
+.ui-text-action--danger {
+  color: var(--color-status-error);
+}
+
+.ui-text-action--on-dark {
+  color: var(--color-text-action);
+}
+
+.ui-text-action--on-dark:focus-visible {
+  outline-color: var(--color-border-inverse);
+}
+
+.ui-text-action--nav {
+  color: var(--color-text-secondary);
+  text-decoration: none;
+}
+
+.ui-text-action--nav:hover:not(:disabled) {
+  color: var(--color-text-primary);
+  background: var(--neutral-gray-100);
+}
+
+.ui-text-action--nav.is-current {
+  color: var(--color-text-primary);
+  background: var(--color-action-primary);
+}
+
+.ui-text-action:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
