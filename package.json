@@ -2,10 +2,7 @@
   "dependencies": {
     "express": "^5.2.1",
     "mongodb": "^7.7.0",
+    "mongoose": "^9.10.3",
     "swagger": "^0.0.1"
-  },
-  "allowScripts": {
-    "core-js@2.6.12": true,
-    "nodemon@1.19.4": true
   }
 }
