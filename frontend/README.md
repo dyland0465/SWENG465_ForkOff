@@ -1,32 +1,63 @@
-# React + TypeScript + Vite
+# Fork Off! frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+React + TypeScript + Vite, with plain CSS and the Fork Off Figma design system.
 
-Currently, two official plugins are available:
+## Preview
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+From the repository root:
 
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```powershell
+cd frontend
+npm.cmd run dev
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+Open the local URL printed by Vite (normally http://localhost:5173).
+On macOS/Linux, use `npm` in place of `npm.cmd`. If dependencies have not yet
+been installed, run `npm.cmd ci` first.
+
+To preview the production build, run `npm.cmd run build`, then
+`npm.cmd run preview` and open the URL printed by Vite.
+
+## Checks
+
+```powershell
+npm.cmd run build
+npm.cmd run lint
+```
+
+The build includes TypeScript checking. No automated test suite is configured.
+
+## Current scope
+
+- `src/styles/tokens.css`: all foundation colors and semantic aliases, the six
+  typography styles, spacing, radii, shadows, and keyboard focus tokens.
+- `src/index.css`: self-hosted fonts and global base styles.
+- `src/components/ui`: typed Button and TextAction components with native
+  HTML behavior, plus a native modal Dialog.
+- `src/components/layout/AppHeader`: shared logo and navigation.
+- `src/components/home/HomeScreen`: the responsive Figma Home screen.
+- `src/App.tsx`: Home action handlers. “How it works” explains the intended flow;
+  create/join actions show availability notices. Lobby screens and API wiring
+  are reserved for the next implementation stage. `HomeScreen` accepts callback
+  props so those actions can be connected without changing its layout.
+
+The desktop layout follows the 1440 × 1024 Figma mockup. At smaller widths the
+header stacks, text scales down, buttons wrap or stack, and the food collage
+stays proportional with deliberate cropping. Controls have at least 44px
+interaction targets. Keyboard users get a skip link, visible focus, native
+modal focus trapping, Escape dismissal, and focus restoration.
+
+## Assets and font
+
+The wordmark and food collage are original downloads from the
+[Fork Off Figma file](https://www.figma.com/design/NGidWJoB9QBFCdTd7U4BlQ/FORKOFF-?node-id=33-2),
+stored in `src/assets/figma`. Their source nodes and dimensions are documented
+in that directory. No temporary Figma asset URL is used at runtime.
+
+Atkinson Hyperlegible Regular (400) and Bold (700) are self-hosted in
+`src/assets/fonts`, downloaded from the
+[Google Fonts repository](https://github.com/google/fonts/tree/main/ofl/atkinsonhyperlegible).
+Its SIL Open Font License is retained as `src/assets/fonts/OFL.txt`.
+
+Existing lobby component placeholders, backend files, package manifests,
+lockfiles, and Vite/TypeScript configuration are preserved.
