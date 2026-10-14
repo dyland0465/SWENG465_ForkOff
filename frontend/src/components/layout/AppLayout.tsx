@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Outlet, useNavigate } from 'react-router'
+import { Outlet, useMatch, useNavigate } from 'react-router'
 import { Dialog } from '../ui/Dialog'
 import { AppHeader } from './AppHeader'
 import { paths } from '../../routes/paths'
@@ -7,11 +7,14 @@ import { paths } from '../../routes/paths'
 export function AppLayout() {
   const [showHowItWorks, setShowHowItWorks] = useState(false)
   const navigate = useNavigate()
+  const isCreateLobby = useMatch(paths.createLobby) !== null
+  const isJoinLobby = useMatch(paths.joinLobby) !== null
+  const isLobby = useMatch({ path: paths.lobby, end: true }) !== null
 
   return (
     <>
       {/* Reuse the original Home canvas so its dimensions and cropping stay unchanged. */}
-      <div className="home-screen">
+      <div className={`home-screen${isCreateLobby || isJoinLobby ? ' lobby-screen' : ''}${isLobby ? ' lobby-detail-screen' : ''}`}>
         <AppHeader
           onHowItWorks={() => setShowHowItWorks(true)}
           onJoinLobby={() => navigate(paths.joinLobby)}

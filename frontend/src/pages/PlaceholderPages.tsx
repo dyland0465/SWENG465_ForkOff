@@ -34,18 +34,6 @@ function LobbyPlaceholder({ title }: { title: string }) {
   )
 }
 
-export function CreateLobbyPage() {
-  return <PlaceholderPage title="Create a lobby" />
-}
-
-export function JoinLobbyPage() {
-  return <PlaceholderPage title="Join with a code" />
-}
-
-export function LobbyPage() {
-  return <PlaceholderPage title="Lobby" />
-}
-
 export function DiscoveryPreviewPage() {
   return <LobbyPlaceholder title="Discovery preview" />
 }

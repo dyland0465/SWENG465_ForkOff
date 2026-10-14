@@ -12,3 +12,9 @@ request. They have not been edited or replaced. AppHeader preserves the
 wordmark's Figma image-fill crop. HomeScreen preserves the collage's 3:1 aspect
 ratio; on desktop it renders at 1482 × 494 px with the Figma canvas crop.
 Mobile crops the same collage proportionally, without stretching it.
+
+The Create Lobby (`33:15`) and Join Lobby (`33:28`) frames reuse the same
+wordmark (verified byte-for-byte against the asset returned for both frames).
+`fork-emblem.png` is their original Decorative/Fork emblem image (`84:313`
+and `84:298`). ForkEmblem renders it at 84 × 121 px, offset 10px right and
+8px down inside the 104px circular crop from Figma.

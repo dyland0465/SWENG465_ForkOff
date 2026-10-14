@@ -1,10 +1,10 @@
 import type { RouteObject } from 'react-router'
 import { AppLayout } from '../components/layout/AppLayout'
 import { HomePage } from '../pages/HomePage'
+import { CreateLobbyPage } from '../pages/CreateLobbyPage'
+import { JoinLobbyPage } from '../pages/JoinLobbyPage'
+import { LobbyPage } from '../pages/LobbyPage'
 import {
-  CreateLobbyPage,
-  JoinLobbyPage,
-  LobbyPage,
   DiscoveryPreviewPage,
   VotingPage,
   RestaurantDetailsPage,
