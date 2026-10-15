@@ -10,13 +10,14 @@ const lobbySchema = new Schema(
 
     name: {
       type: String,
-      required: true
+      required: true,
+      trim: true,
+      maxlength: 120,
     },
 
     hostID: {
       type: Schema.Types.ObjectId,
       ref: "User",
-      required: true
     },
 
     members: [
@@ -33,13 +34,26 @@ const lobbySchema = new Schema(
     },
 
     filters: {
+      location: {
+        type: String,
+        trim: true,
+        maxlength: 120,
+      },
+
+      dinnerAt: {
+        type: Date,
+      },
+
       maxDistance: {
         type: Number,
+        min: 1,
         default: 10
       },
 
       minimumRating: {
         type: Number,
+        min: 0,
+        max: 5,
         default: 0
       },
 
@@ -51,15 +65,26 @@ const lobbySchema = new Schema(
       openNow: {
         type: Boolean,
         default: false
+      },
+
+      priceLevels: {
+        type: [String],
+        default: [],
+      },
+
+      diningNeeds: {
+        type: [String],
+        default: [],
       }
     }
   },
   {
-    timestamps: true
+    timestamps: true,
+    collection: "lobbies",
   }
 );
 
-export const Lobby = mongoose.model("Lobby", lobbySchema);
+export const Lobby = mongoose.model("Lobby", lobbySchema, "lobbies");
 
 
 

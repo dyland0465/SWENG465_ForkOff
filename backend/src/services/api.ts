@@ -1,11 +1,27 @@
 import { Router, type Response } from "express";
 import mongoose from "mongoose";
+import { randomInt } from "node:crypto";
 import { User } from "../models/user";
+import { Lobby } from "../models/lobby";
 import { Restaurant } from "../models/restaurant";
 import { hashPassword, validatePassword } from "./auth";
 import { getGooglePlace, GooglePlacesError, searchRestaurants } from "./googlePlaces";
 
 const router = Router();
+const lobbyCodeAlphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+
+function generateLobbyCode() {
+  return Array.from({ length: 6 }, () => lobbyCodeAlphabet[randomInt(lobbyCodeAlphabet.length)]).join("");
+}
+
+function isDuplicateKeyError(error: unknown) {
+  return Boolean(
+    error &&
+      typeof error === "object" &&
+      "code" in error &&
+      error.code === 11000,
+  );
+}
 
 function handlePlacesError(res: Response, error: unknown, context: string) {
   if (error instanceof GooglePlacesError) {
@@ -703,35 +719,136 @@ router.get("/api/places/:id/reviews", (req, res) => {
 /** @swagger
  * /api/lobbies:
  *   post:
- *     summary: Create a lobby.
+ *     summary: Create and persist a lobby.
  *     tags: [lobby]
  *     requestBody:
  *       required: true
- *       content: { application/json: { schema: { type: object, required: [hostId], properties: { name: { type: string }, hostId: { type: string }, maxDistance: { type: number } } } } }
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [location, dinnerAt]
+ *             properties:
+ *               name: { type: string, maxLength: 120, example: "Dinner in Erie, PA" }
+ *               hostId: { type: string, description: Optional MongoDB user ID for an authenticated host. }
+ *               location: { type: string, maxLength: 120, example: "Erie, PA" }
+ *               dinnerAt: { type: string, format: date-time, example: "2026-10-20T23:30:00.000Z" }
+ *               maxDistance: { type: number, minimum: 1, maximum: 100, example: 5 }
+ *               minimumRating: { type: number, minimum: 0, maximum: 5, example: 4 }
+ *               categories: { type: array, items: { type: string }, example: ["Italian", "Ramen"] }
+ *               priceLevels: { type: array, items: { type: string, enum: ["$", "$$", "$$$"] }, example: ["$$"] }
+ *               diningNeeds: { type: array, items: { type: string }, example: ["Open at dining time", "Mocktails"] }
  *     responses:
- *       201: { description: Lobby created successfully. }
- *       400: { description: Host ID is required. }
+ *       201: { description: Lobby persisted to the main.lobbies collection. }
+ *       400: { description: Invalid lobby metadata. }
+ *       404: { description: Specified host user not found. }
  */
-// TODO: Save lobby to database.
-router.post("/api/lobbies", (req, res) => {
-  const lobby = {
-    id: "ABC123",
-    name: req.body.name,
-    hostId: req.body.hostId,
-    maxDistance: req.body.maxDistance,
-    createdAt: new Date(),
-  };
+router.post("/api/lobbies", async (req, res) => {
+  const body = req.body ?? {};
+  const location = typeof body.location === "string" ? body.location.trim() : "";
+  const dinnerAt = typeof body.dinnerAt === "string" ? new Date(body.dinnerAt) : null;
+  const maxDistance = Number(body.maxDistance ?? 5);
+  const minimumRating = Number(body.minimumRating ?? 0);
+  const name = typeof body.name === "string" ? body.name.trim() : "";
+  const categories = body.categories ?? [];
+  const priceLevels = body.priceLevels ?? [];
+  const diningNeeds = body.diningNeeds ?? [];
 
-  if (!lobby.hostId) {
-    return res.status(400).json({
-      message: "Host ID is required.",
-    });
+  if (!location || location.length > 120) {
+    return res.status(400).json({ message: "Location is required and must be 120 characters or fewer." });
+  }
+  if (!dinnerAt || !Number.isFinite(dinnerAt.getTime()) || dinnerAt.getTime() <= Date.now()) {
+    return res.status(400).json({ message: "Choose a valid dinner date and time in the future." });
+  }
+  if (!Number.isFinite(maxDistance) || maxDistance < 1 || maxDistance > 100) {
+    return res.status(400).json({ message: "maxDistance must be between 1 and 100 miles." });
+  }
+  if (!Number.isFinite(minimumRating) || minimumRating < 0 || minimumRating > 5) {
+    return res.status(400).json({ message: "minimumRating must be between 0 and 5." });
+  }
+  if (name.length > 120) {
+    return res.status(400).json({ message: "name must be 120 characters or fewer." });
+  }
+  if (
+    !Array.isArray(categories) ||
+    categories.length > 20 ||
+    categories.some((value: unknown) => typeof value !== "string" || value.length > 40)
+  ) {
+    return res.status(400).json({ message: "categories must be an array of up to 20 short strings." });
+  }
+  if (
+    !Array.isArray(priceLevels) ||
+    priceLevels.some((value: unknown) => !["$", "$$", "$$$"].includes(String(value)))
+  ) {
+    return res.status(400).json({ message: "priceLevels may only contain $, $$, or $$$." });
+  }
+  if (
+    !Array.isArray(diningNeeds) ||
+    diningNeeds.length > 10 ||
+    diningNeeds.some((value: unknown) => typeof value !== "string" || value.length > 60)
+  ) {
+    return res.status(400).json({ message: "diningNeeds must be an array of up to 10 short strings." });
   }
 
-  return res.status(201).json({
-    message: "Lobby created",
-    lobby: lobby,
-  });
+  const rawHostId = body.hostId ?? body.hostID;
+
+  try {
+    let hostId: mongoose.Types.ObjectId | undefined;
+    if (rawHostId !== undefined && rawHostId !== null && rawHostId !== "") {
+      if (typeof rawHostId !== "string" || !mongoose.isValidObjectId(rawHostId)) {
+        return res.status(400).json({ message: "hostId must be a valid MongoDB user ID." });
+      }
+
+      const host = await User.findById(rawHostId).select("_id");
+      if (!host) {
+        return res.status(404).json({ message: "Host user not found." });
+      }
+      hostId = host._id;
+    }
+
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      try {
+        const createdLobby = await Lobby.create({
+          lobbyCode: generateLobbyCode(),
+          name: name || `Dinner in ${location}`,
+          ...(hostId ? { hostID: hostId, members: [hostId] } : { members: [] }),
+          status: "waiting",
+          filters: {
+            location,
+            dinnerAt,
+            maxDistance,
+            minimumRating,
+            categories,
+            openNow: diningNeeds.includes("Open at dining time"),
+            priceLevels,
+            diningNeeds,
+          },
+        });
+
+        return res.status(201).json({
+          message: "Lobby created and saved.",
+          lobby: {
+            id: createdLobby._id,
+            lobbyCode: createdLobby.lobbyCode,
+            name: createdLobby.name,
+            hostId: createdLobby.hostID ?? null,
+            status: createdLobby.status,
+            filters: createdLobby.filters,
+            createdAt: createdLobby.createdAt,
+            updatedAt: createdLobby.updatedAt,
+          },
+        });
+      } catch (error) {
+        if (isDuplicateKeyError(error) && attempt < 4) continue;
+        throw error;
+      }
+    }
+
+    return res.status(503).json({ message: "Could not generate a unique lobby code. Please try again." });
+  } catch (error) {
+    console.error("Failed to create lobby:", error);
+    return res.status(500).json({ message: "Failed to create lobby." });
+  }
 });
 
 /** @swagger
