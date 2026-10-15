@@ -26,4 +26,23 @@ app.get("/", (_req, res) => {
   return res.sendFile(frontendIndexPath);
 });
 
+// Let the client-side router handle direct navigation to frontend routes such
+// as /lobbies/join, while keeping unknown API paths as JSON 404 responses.
+app.use((req, res, next) => {
+  if (req.path === "/api" || req.path.startsWith("/api/")) {
+    return res.status(404).json({ message: "API endpoint not found." });
+  }
+  return next();
+});
+
+app.get(/.*/, (_req, res) => {
+  if (!existsSync(frontendIndexPath)) {
+    return res.status(404).json({
+      message: "Frontend build not found. Run the frontend build first.",
+    });
+  }
+
+  return res.sendFile(frontendIndexPath);
+});
+
 export default app;
