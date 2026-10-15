@@ -1,18 +1,38 @@
-import { Router } from "express";
+import { Router, type Response } from "express";
+import mongoose from "mongoose";
 import { User } from "../models/user";
+import { Restaurant } from "../models/restaurant";
 import { hashPassword, validatePassword } from "./auth";
+import { getGooglePlace, GooglePlacesError, searchRestaurants } from "./googlePlaces";
 
 const router = Router();
+
+function handlePlacesError(res: Response, error: unknown, context: string) {
+  if (error instanceof GooglePlacesError) {
+    console.error(`${context} Google Places responded ${error.statusCode}: ${error.message}`);
+    const status = error.statusCode === 503 ? 503 : error.statusCode === 404 ? 404 : 502;
+    const message =
+      status === 503
+        ? "Google Places is not configured."
+        : status === 404
+          ? "Google Place not found."
+          : "Google Places request failed.";
+    return res.status(status).json({ message, providerStatus: error.statusCode });
+  }
+
+  console.error(context, error);
+  return res.status(500).json({ message: "Failed to process restaurant request." });
+}
 
 /*
 Resource Types:
 Auth - user authentication
 User - account related actions
 Restaurants - Partner restaurant configuration
-Places - Our own data stored pulled from Google Places
+Places - Place IDs stored locally; details are fetched live from Google Places
 Lobby - Endpoints to run the lobby/game
 Group Chat - Endpoints to run group chat
-Google Places - Google Places API, 10,000 requests/month
+Google Places - Google Places API (New)
  */
 
 /** @swagger
@@ -310,28 +330,130 @@ router.delete("/api/users/:id", (req, res) => {
 /** @swagger
  * /api/restaurants/{id}:
  *   get:
- *     summary: Get restaurant information by ID.
+ *     summary: Get saved restaurant details by MongoDB ID or Google Place ID.
  *     tags: [restaurant]
  *     parameters: [{ in: path, name: id, required: true, schema: { type: string } }]
  *     responses:
  *       200: { description: Restaurant information returned successfully. }
  *       404: { description: Restaurant not found. }
+ *       502: { description: Google Places request failed. }
  */
-// TODO: Connect to db to actually grab restaurant info.
-router.get("/api/restaurants/:id", (req, res) => {
-  const restaurantId = req.params.id;
+router.get("/api/restaurants/:id", async (req, res) => {
+  const id = req.params.id;
+  const filter = mongoose.isValidObjectId(id)
+    ? { $or: [{ placeId: id }, { _id: new mongoose.Types.ObjectId(id) }] }
+    : { placeId: id };
 
-  const info = {
-    restaurantId: restaurantId,
-    restaurantName: "The Bistro Grill",
-    address: "123 Main Street",
-    phone: "555-555-5555",
-    website: "https://example.com",
-    currency: "USD",
-    categories: ["American", "Grill"],
-  };
+  try {
+    const savedRestaurant = await Restaurant.findOne(filter).select({ placeId: 1 }).lean();
+    if (!savedRestaurant) {
+      return res.status(404).json({ message: "Restaurant not found in the saved collection." });
+    }
 
-  return res.status(200).json(info);
+    const place = await getGooglePlace(savedRestaurant.placeId);
+    return res.status(200).json({ attribution: "Google Maps", place });
+  } catch (error) {
+    return handlePlacesError(res, error, "Failed to load restaurant:");
+  }
+});
+
+/** @swagger
+ * /api/restaurants:
+ *   get:
+ *     summary: List saved restaurant Place IDs with live Google Places details.
+ *     tags: [restaurant]
+ *     parameters:
+ *       - in: query
+ *         name: limit
+ *         schema: { type: integer, minimum: 1, maximum: 10, default: 2 }
+ *     responses:
+ *       200: { description: Live restaurant details. Display Google Maps attribution to users. }
+ *       502: { description: Google Places request failed. }
+ */
+router.get("/api/restaurants", async (req, res) => {
+  const limit = Number(req.query.limit ?? 2);
+  if (!Number.isInteger(limit) || limit < 1 || limit > 10) {
+    return res.status(400).json({ message: "limit must be an integer from 1 to 10." });
+  }
+
+  try {
+    const savedRestaurants = await Restaurant.find()
+      .sort({ createdAt: 1 })
+      .limit(limit)
+      .select({ placeId: 1 })
+      .lean();
+    const places = await Promise.all(
+      savedRestaurants.map(({ placeId }) => getGooglePlace(placeId)),
+    );
+
+    return res.status(200).json({
+      count: places.length,
+      attribution: "Google Maps",
+      places,
+    });
+  } catch (error) {
+    return handlePlacesError(res, error, "Failed to load saved restaurants:");
+  }
+});
+
+/** @swagger
+ * /api/restaurants/import:
+ *   post:
+ *     summary: Search Google Places for restaurants and save their Place IDs.
+ *     description: Only Place IDs are stored in MongoDB. Full restaurant details are returned from live Places requests.
+ *     tags: [restaurant]
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               query: { type: string, example: "restaurants in Erie, PA" }
+ *               limit: { type: integer, minimum: 1, maximum: 10, default: 2 }
+ *     responses:
+ *       200: { description: Search results and persisted Place IDs. }
+ *       400: { description: Invalid query or limit. }
+ *       502: { description: Google Places request failed. }
+ */
+router.post("/api/restaurants/import", async (req, res) => {
+  const query = typeof req.body?.query === "string"
+    ? req.body.query.trim()
+    : "restaurants in Erie, PA";
+  const limit = Number(req.body?.limit ?? 2);
+
+  if (!query || query.length > 200) {
+    return res.status(400).json({ message: "query must be between 1 and 200 characters." });
+  }
+  if (!Number.isInteger(limit) || limit < 1 || limit > 10) {
+    return res.status(400).json({ message: "limit must be an integer from 1 to 10." });
+  }
+
+  try {
+    const places = (await searchRestaurants(query, limit)).slice(0, limit);
+    if (places.length > 0) {
+      await Restaurant.bulkWrite(
+        places.map(({ id }) => ({
+          updateOne: {
+            filter: { placeId: id },
+            update: { $setOnInsert: { placeId: id } },
+            upsert: true,
+          },
+        })),
+        { ordered: false },
+      );
+    }
+
+    return res.status(200).json({
+      query,
+      imported: places.length,
+      attribution: "Google Maps",
+      persistence: "Only Google Place IDs are stored; details are fetched live.",
+      places,
+    });
+  } catch (error) {
+    return handlePlacesError(res, error, "Failed to save Google Place IDs:");
+  }
 });
 
 /** @swagger
@@ -505,21 +627,15 @@ router.get("/api/restaurants/:id/analytics", (req, res) => {
  *     responses:
  *       200: { description: Place information returned successfully. }
  *       404: { description: Place not found. }
+ *       502: { description: Google Places request failed. }
  */
-// TODO: Connect to Google Places API.
-router.get("/api/places/:id", (req, res) => {
-  const placeId = req.params.id;
-
-  const place = {
-    placeId: placeId,
-    displayName: "Example Restaurant",
-    address: "123 Main Street",
-    rating: 4.5,
-    priceLevel: 2,
-    openNow: true,
-  };
-
-  return res.status(200).json(place);
+router.get("/api/places/:id", async (req, res) => {
+  try {
+    const place = await getGooglePlace(req.params.id);
+    return res.status(200).json({ attribution: "Google Maps", place });
+  } catch (error) {
+    return handlePlacesError(res, error, "Failed to load Google Place:");
+  }
 });
 
 /** @swagger
