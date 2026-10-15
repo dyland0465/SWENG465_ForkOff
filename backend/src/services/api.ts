@@ -1,6 +1,6 @@
 import { Router, type Response } from "express";
 import mongoose from "mongoose";
-import { randomInt } from "node:crypto";
+import { randomInt, randomUUID } from "node:crypto";
 import { User } from "../models/user";
 import { Lobby } from "../models/lobby";
 import { Restaurant } from "../models/restaurant";
@@ -923,31 +923,90 @@ router.delete("/api/lobbies/:id", (req, res) => {
 /** @swagger
  * /api/lobbies/{id}/join:
  *   post:
- *     summary: Join a lobby.
+ *     summary: Join a lobby as a registered user or guest.
  *     tags: [lobby]
- *     parameters: [{ in: path, name: id, required: true, schema: { type: string } }]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         description: Lobby MongoDB ID or six-character invite code.
+ *         schema: { type: string }
  *     requestBody:
  *       required: true
- *       content: { application/json: { schema: { type: object, required: [userId], properties: { userId: { type: string } } } } }
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               userId: { type: string, description: Existing registered user's MongoDB ID. }
+ *               displayName: { type: string, minLength: 2, maxLength: 40, description: Guest display name; no account required. }
  *     responses:
- *       200: { description: User joined lobby successfully. }
- *       400: { description: User ID is required. }
+ *       200: { description: Registered user joined successfully. }
+ *       201: { description: Guest joined successfully. }
+ *       400: { description: Provide either userId or a valid guest displayName. }
+ *       404: { description: Lobby or user not found. }
+ *       409: { description: Lobby is not accepting new members. }
  */
-router.post("/api/lobbies/:id/join", (req, res) => {
-  const lobbyId = req.params.id;
-  const userId = req.body.userId;
+router.post("/api/lobbies/:id/join", async (req, res) => {
+  const lobbyKey = req.params.id.trim();
+  const body = req.body ?? {};
+  const hasUserId = typeof body.userId === "string" && body.userId.trim().length > 0;
+  const rawDisplayName = body.displayName ?? body.guestName;
+  const displayName = typeof rawDisplayName === "string" ? rawDisplayName.trim() : "";
 
-  if (!userId) {
-    return res.status(400).json({
-      message: "User ID is required.",
-    });
+  if (hasUserId === Boolean(displayName)) {
+    return res.status(400).json({ message: "Provide either userId or a guest displayName, but not both." });
+  }
+  if (displayName && (displayName.length < 2 || displayName.length > 40)) {
+    return res.status(400).json({ message: "Guest displayName must be between 2 and 40 characters." });
+  }
+  if (hasUserId && !mongoose.isValidObjectId(body.userId.trim())) {
+    return res.status(400).json({ message: "userId must be a valid MongoDB user ID." });
   }
 
-  return res.status(200).json({
-    message: "User joined lobby",
-    lobbyId: lobbyId,
-    userId: userId,
-  });
+  try {
+    const lobby = mongoose.isValidObjectId(lobbyKey)
+      ? await Lobby.findById(lobbyKey)
+      : await Lobby.findOne({ lobbyCode: lobbyKey.toUpperCase() });
+
+    if (!lobby) {
+      return res.status(404).json({ message: "Lobby not found. Check the invitation code." });
+    }
+    if (lobby.status !== "waiting") {
+      return res.status(409).json({ message: "This lobby is no longer accepting members." });
+    }
+
+    if (hasUserId) {
+      const user = await User.findById(body.userId.trim()).select("_id username");
+      if (!user) {
+        return res.status(404).json({ message: "User not found." });
+      }
+
+      if (!lobby.members.some((memberId) => memberId.equals(user._id))) {
+        lobby.members.push(user._id);
+        await lobby.save();
+      }
+
+      return res.status(200).json({
+        message: "User joined lobby.",
+        lobby: { id: lobby._id, name: lobby.name, lobbyCode: lobby.lobbyCode },
+        member: { id: user._id, displayName: user.username, type: "user" },
+      });
+    }
+
+    const guest = { guestId: randomUUID(), displayName };
+    lobby.guestMembers.push(guest);
+    await lobby.save();
+
+    return res.status(201).json({
+      message: "Guest joined lobby.",
+      lobby: { id: lobby._id, name: lobby.name, lobbyCode: lobby.lobbyCode },
+      member: { ...guest, type: "guest" },
+    });
+  } catch (error) {
+    console.error("Failed to join lobby:", error);
+    return res.status(500).json({ message: "Failed to join lobby." });
+  }
 });
 
 /** @swagger

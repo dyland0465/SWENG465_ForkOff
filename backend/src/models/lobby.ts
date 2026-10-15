@@ -27,6 +27,25 @@ const lobbySchema = new Schema(
       }
     ],
 
+    guestMembers: [
+      {
+        guestId: {
+          type: String,
+          required: true,
+        },
+        displayName: {
+          type: String,
+          required: true,
+          trim: true,
+          maxlength: 40,
+        },
+        joinedAt: {
+          type: Date,
+          default: Date.now,
+        },
+      },
+    ],
+
     status: {
       type: String,
       enum: ["waiting", "playing", "finished"],
