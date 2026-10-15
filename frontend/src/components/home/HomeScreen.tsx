@@ -5,18 +5,9 @@ import './HomeScreen.css'
 type HomeScreenProps = {
   onCreateLobby: () => void
   onJoinLobby: () => void
-<<<<<<< HEAD
-  onHowItWorks: () => void
-  onLogin: () => void
-  onSignUp: () => void
-}
-
-export function HomeScreen({ onCreateLobby, onJoinLobby, onHowItWorks}: HomeScreenProps) {
-=======
 }
 
 export function HomeScreen({ onCreateLobby, onJoinLobby }: HomeScreenProps) {
->>>>>>> origin/Dan_Branch
   return (
     <main id="main-content" className="home-hero" tabIndex={-1}>
       <div className="home-hero__copy">
