@@ -46,10 +46,6 @@ export function RestaurantDetailsPage() {
   return <LobbyPlaceholder title="Restaurant details" />
 }
 
-export function GroupChatPage() {
-  return <LobbyPlaceholder title="Group chat" />
-}
-
 export function ResultsPage() {
   return <LobbyPlaceholder title="Results and final choice" />
 }
