@@ -1,7 +1,8 @@
-import { Link, useMatch } from 'react-router'
+import { Link, useLocation, useMatch, useNavigate } from 'react-router'
 import wordmark from '../../assets/figma/wordmark.png'
 import { TextAction } from '../ui/TextAction'
 import { paths } from '../../routes/paths'
+import { useAuth } from '../../features/auth/useAuth'
 import './AppHeader.css'
 
 type AppHeaderProps = {
@@ -11,7 +12,10 @@ type AppHeaderProps = {
 
 export function AppHeader({ onHowItWorks, onJoinLobby }: AppHeaderProps) {
   const isHome = useMatch({ path: paths.home, end: true }) !== null
-
+  const isLogin = useMatch(paths.login) !== null
+  const { pathname } = useLocation()
+  const navigate = useNavigate()
+  const { user, signOut } = useAuth()
   return (
     <header className="app-header">
       <a className="skip-link" href="#main-content">Skip to main content</a>
@@ -23,6 +27,14 @@ export function AppHeader({ onHowItWorks, onJoinLobby }: AppHeaderProps) {
           <TextAction to={paths.home} tone="nav" current={isHome}>Home</TextAction>
           <TextAction tone="nav" onClick={onHowItWorks}>How it works</TextAction>
           <TextAction tone="nav" onClick={onJoinLobby}>Enter lobby code</TextAction>
+          {user ? (
+            <span className="app-header__account">
+              <span className="app-header__user">Hi, {user.username}</span>
+              <TextAction tone="nav" onClick={() => { signOut(); navigate(paths.home) }}>Log out</TextAction>
+            </span>
+          ) : (
+            <TextAction to={paths.login} state={isLogin ? undefined : { from: pathname }} tone="nav" current={isLogin}>Log in</TextAction>
+          )}
         </nav>
       </div>
       <div className="app-header__divider" />
