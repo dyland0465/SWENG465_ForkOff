@@ -6,9 +6,9 @@ import { JoinLobbyPage } from '../pages/JoinLobbyPage'
 import { LobbyPage } from '../pages/LobbyPage'
 import { GroupChatPage } from '../pages/GroupChatPage'
 import { DiscoveryPreviewPage } from '../pages/DiscoveryPreviewPage'
+import { VotingPage } from '../pages/VotingPage'
+import { RestaurantDetailsPage } from '../pages/RestaurantDetailsPage'
 import {
-  VotingPage,
-  RestaurantDetailsPage,
   ResultsPage,
   PartnerRestaurantPage,
   NotFoundPage,
@@ -27,6 +27,7 @@ export const appRoutes: RouteObject[] = [
       { path: paths.discoveryPreview, element: <DiscoveryPreviewPage /> },
       { path: paths.voting, element: <VotingPage /> },
       { path: paths.restaurantDetails, element: <RestaurantDetailsPage /> },
+      { path: `${paths.lobby}/restaurants`, element: <RestaurantDetailsPage /> },
       { path: paths.groupChat, element: <GroupChatPage /> },
       { path: paths.results, element: <ResultsPage /> },
       { path: paths.partnerRestaurant, element: <PartnerRestaurantPage /> },

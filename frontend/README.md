@@ -2,6 +2,41 @@
 
 React + TypeScript + Vite, with plain CSS and the Fork Off Figma design system.
 
+## Restaurant Details
+
+Open `/lobbies/demo-crew/voting`, choose **View restaurant details**, then
+**Return to voting**. Direct links also work, for example
+`/lobbies/demo-crew/restaurants/ramen`. Supported restaurant IDs are `ramen`,
+`harbor`, and `bowls`; unknown and missing IDs offer a return to the same lobby's
+Voting screen.
+
+The Details screen uses the shared `demoRestaurants.ts` fixtures and the original
+Figma imagery. North Pier Ramen's address and hours are explicitly sample data;
+the other restaurants show unavailable fields. The About disclosure contains
+sample details. Menu, Website, Call, and Directions display local notices because
+verified service data and integrations are unavailable. The map is static.
+
+Voting choices survive client-side navigation and browser Back/Forward in the
+existing provider. Refresh clears these memory-only demo choices. Live restaurant
+data, menus, verified contact links, routing, and server persistence remain
+backend dependencies. Results and Partner Restaurant remain placeholders.
+
+Validation:
+
+```powershell
+cd frontend
+npm.cmd run build
+npm.cmd run lint
+node --test tests/votingSession.test.mjs
+```
+
+For the dependency-free browser integration check, start Vite in one terminal
+with `npm.cmd run dev -- --host 127.0.0.1 --port 5175 --strictPort`, then run
+`node tests/restaurantDetails.browser.mjs` from `frontend` in another terminal.
+The check uses installed Chrome, Node 24, and DevTools port 9233. Set `CHROME_PATH`
+to override the Windows Chrome executable, or `FORKOFF_TEST_URL` to override the
+server URL. Screenshots are written to the system temporary directory.
+
 ## Preview
 
 From the repository root:

@@ -34,14 +34,6 @@ function LobbyPlaceholder({ title }: { title: string }) {
   )
 }
 
-export function VotingPage() {
-  return <LobbyPlaceholder title="Voting" />
-}
-
-export function RestaurantDetailsPage() {
-  return <LobbyPlaceholder title="Restaurant details" />
-}
-
 export function ResultsPage() {
   return <LobbyPlaceholder title="Results and final choice" />
 }

@@ -6,18 +6,9 @@ import { FilterChip } from '../components/ui/FilterChip'
 import { SelectField, TextInput } from '../components/ui/FormField'
 import { TextAction } from '../components/ui/TextAction'
 import { cuisineOptions, distanceOptions, priceOptions, ratingOptions, toggleOption } from '../components/lobby/lobbyForm'
-import harborPhoto from '../assets/figma/discovery/harbor-and-hearth.png'
-import ramenPhoto from '../assets/figma/discovery/north-pier-ramen.png'
-import bowlsPhoto from '../assets/figma/discovery/copper-bowl-kitchen.png'
+import { demoRestaurants } from '../data/demoRestaurants'
 import { paths } from '../routes/paths'
 import './DiscoveryPreviewPage.css'
-
-// Exact Figma fixtures. These are not search results for the route's lobby ID.
-const demoRestaurants = [
-  { id: 'harbor', name: 'Harbor & Hearth', meta: 'New American · $$ · 4.7', distance: '0.8 mi · Open now', photo: harborPhoto },
-  { id: 'ramen', name: 'North Pier Ramen', meta: 'Japanese · $$ · 4.8', distance: '1.4 mi · Open now', photo: ramenPhoto },
-  { id: 'bowls', name: 'Copper Bowl Kitchen', meta: 'Bowls · $$ · 4.6', distance: '2.1 mi · Open now', photo: bowlsPhoto },
-] as const
 
 type PreviewFilters = {
   distance: string
@@ -141,8 +132,8 @@ function DiscoveryPreviewScreen({ lobbyId }: { lobbyId: string }) {
               <img src={restaurant.photo} alt="" width="360" height="176" />
               <span className="discovery-restaurant__content">
                 <span className="discovery-restaurant__name">{restaurant.name}</span>
-                <span className="discovery-restaurant__meta">{restaurant.meta}</span>
-                <span className="discovery-restaurant__distance">{restaurant.distance}</span>
+                <span className="discovery-restaurant__meta">{restaurant.cuisine} · {restaurant.price} · {restaurant.rating}</span>
+                <span className="discovery-restaurant__distance">{restaurant.distanceMiles} mi · Open now</span>
               </span>
             </button>
             <div id={`sample-${restaurant.id}`} className="discovery-restaurant__sample" hidden={expanded !== restaurant.id}>
@@ -168,7 +159,7 @@ function DiscoveryPreviewScreen({ lobbyId }: { lobbyId: string }) {
       </section>
 
       <aside className="discovery-demo-note" aria-label="Demonstration details">
-        <p id="discovery-demo-note"><strong>Frontend demonstration.</strong> The 18-place count, restaurants, ratings, distances, and open statuses are Figma samples, not live results or verified matches. Filters edit temporary settings; cards stay unchanged. Lobby <span>{lobbyId}</span> is not loaded. Continue opens the Voting placeholder without starting a round.</p>
+        <p id="discovery-demo-note"><strong>Frontend demonstration.</strong> The 18-place count, restaurants, ratings, distances, and open statuses are Figma samples, not live results or verified matches. Filters edit temporary settings; cards stay unchanged. Lobby <span>{lobbyId}</span> is not loaded. Continue opens a local voting demo without starting a group round.</p>
         <p className="discovery-page__status" role="status">{status}</p>
         <TextAction to={generatePath(paths.lobby, routeParams)}>Back to lobby</TextAction>
       </aside>
