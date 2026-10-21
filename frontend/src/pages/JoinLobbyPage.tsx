@@ -1,3 +1,4 @@
+import { generatePath, useNavigate } from 'react-router'
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Button } from '../components/ui/Button'
@@ -10,6 +11,7 @@ import { paths } from '../routes/paths'
 import './LobbyForms.css'
 
 export function JoinLobbyPage() {
+  const navigate = useNavigate()
   const { values, errors, setValue, onBlur, validate } = useLobbyForm(
     { code: '', displayName: '' },
     { code: validateCode, displayName: validateDisplayName },
@@ -35,14 +37,16 @@ export function JoinLobbyPage() {
       })
       const result = await response.json().catch(() => ({})) as {
         message?: string
-        lobby?: { name?: string; lobbyCode?: string }
+        lobby?: { id?: string; name?: string; lobbyCode?: string }
       }
 
       if (!response.ok) {
         throw new Error(result.message || 'Could not join the lobby.')
       }
 
+      if (!result.lobby?.id) throw new Error('The server did not return a lobby ID.')
       setHasJoined(true)
+      navigate(generatePath(paths.lobby, { lobbyId: result.lobby.id }))
       setStatus(`Joined ${result.lobby?.name ?? 'the lobby'} as a guest.`)
     } catch (error) {
       setStatus(error instanceof Error ? error.message : 'Could not join the lobby. Please try again.')

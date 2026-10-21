@@ -1,4 +1,4 @@
-import { useReducer } from 'react'
+import { useEffect, useReducer } from 'react'
 import type { ReactNode } from 'react'
 import { votingRestaurants } from '../../data/demoRestaurants'
 import { emptyVotingSession, reduceVotingSession } from './votingSession'
@@ -13,9 +13,32 @@ function sessionsReducer(sessions: ReadonlyMap<string, VotingSession>, { lobbyId
   return next === previous ? sessions : new Map(sessions).set(lobbyId, next)
 }
 
-/** Memory only: survives client-side navigation; refresh clears every demo session. */
+const storageKey = 'forkoff:voting:v1'
+
+function restoreSessions(): Map<string, VotingSession> {
+  try {
+    const saved: unknown = JSON.parse(sessionStorage.getItem(storageKey) ?? '[]')
+    if (!Array.isArray(saved)) return new Map()
+    const restored = new Map<string, VotingSession>()
+    for (const pair of saved) {
+      if (!Array.isArray(pair) || typeof pair[0] !== 'string' || !Array.isArray(pair[1]?.history)) continue
+      let session = emptyVotingSession
+      for (const entry of pair[1].history) {
+        if (!entry || !['yes', 'no', 'veto', 'skip'].includes(entry.decision)) break
+        session = reduceVotingSession(session, { type: 'process', restaurantId: entry.restaurantId, decision: entry.decision }, restaurantIds)
+      }
+      restored.set(pair[0], { ...session, feedback: null })
+    }
+    return restored
+  } catch { return new Map() }
+}
+
+/** Tab-local demo choices survive refresh and remain isolated by lobby ID. */
 export function VotingSessionProvider({ children }: { children: ReactNode }) {
-  const [sessions, dispatch] = useReducer(sessionsReducer, new Map<string, VotingSession>())
+  const [sessions, dispatch] = useReducer(sessionsReducer, undefined, restoreSessions)
+  useEffect(() => {
+    try { sessionStorage.setItem(storageKey, JSON.stringify([...sessions])) } catch { /* Keep voting available when storage is disabled. */ }
+  }, [sessions])
   return <VotingContext value={{ sessions, dispatch }}>{children}</VotingContext>
 }
 

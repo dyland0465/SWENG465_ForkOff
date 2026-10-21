@@ -1,3 +1,4 @@
+import { generatePath, useNavigate } from 'react-router'
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Button } from '../components/ui/Button'
@@ -14,6 +15,7 @@ import { paths } from '../routes/paths'
 import './LobbyForms.css'
 
 export function CreateLobbyPage() {
+  const navigate = useNavigate()
   const { values, errors, setValue, onBlur, validate } = useLobbyForm(
     { location: 'Erie, PA', dateTime: initialDinnerTime(), distance: '5', rating: '4.0' },
     {
@@ -67,14 +69,15 @@ export function CreateLobbyPage() {
       })
       const result = await response.json() as {
         message?: string
-        lobby?: { lobbyCode?: string; name?: string }
+        lobby?: { id?: string; lobbyCode?: string; name?: string }
       }
 
       if (!response.ok) {
         throw new Error(result.message || 'Could not create the lobby.')
       }
 
-      setStatus(`Lobby saved. Share code: ${result.lobby?.lobbyCode ?? 'created'}`)
+      if (!result.lobby?.id) throw new Error('The server did not return a lobby ID.')
+      navigate(generatePath(paths.lobby, { lobbyId: result.lobby.id }))
     } catch (error) {
       setStatus(error instanceof Error ? error.message : 'Could not create the lobby. Please try again.')
     } finally {

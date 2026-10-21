@@ -861,18 +861,26 @@ router.post("/api/lobbies", async (req, res) => {
  *       200: { description: Lobby returned successfully. }
  *       404: { description: Lobby not found. }
  */
-router.get("/api/lobbies/:id", (req, res) => {
-  const lobbyId = req.params.id;
-
-  const lobby = {
-    id: lobbyId,
-    name: "Dinner Group",
-    hostId: "1",
-    memberCount: 3,
-    status: "waiting",
-  };
-
-  return res.status(200).json(lobby);
+router.get("/api/lobbies/:id", async (req, res) => {
+  const key = req.params.id.trim();
+  try {
+    const lobby = await Lobby.findOne(
+      mongoose.isValidObjectId(key) ? { _id: key } : { lobbyCode: key.toUpperCase() },
+    ).populate("members", "username");
+    if (!lobby) return res.status(404).json({ message: "Lobby not found." });
+    return res.status(200).json({
+      id: lobby._id,
+      name: lobby.name,
+      lobbyCode: lobby.lobbyCode,
+      status: lobby.status,
+      filters: lobby.filters,
+      members: lobby.members,
+      guestMembers: lobby.guestMembers,
+    });
+  } catch (error) {
+    console.error("Failed to fetch lobby:", error);
+    return res.status(500).json({ message: "Failed to fetch lobby." });
+  }
 });
 
 /** @swagger

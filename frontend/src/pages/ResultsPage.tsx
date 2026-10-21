@@ -77,7 +77,7 @@ function ResultsScreen({ lobbyId }: { lobbyId: string }) {
             {(['yes', 'no', 'veto', 'skip'] as const).map(choice => <div key={choice}><dt>{choice === 'skip' ? 'Skipped' : choice.toUpperCase()}</dt><dd>{results.counts[choice]}</dd></div>)}
           </dl>
           <p className="results-ranking__note">Only Yes choices are ranked and eligible to choose. All Yes choices tie at #1; display order follows the voting list. No and Veto exclude a choice; skips and unreviewed places receive no vote.</p>
-          {!results.complete && <div className="results-incomplete"><p>{results.processed ? `${results.remaining} restaurants still to review. This is a partial view of your choices.` : 'No votes in this lobby yet. Start voting, or resume after navigating back. Refreshing clears the local session.'}</p><TextAction className="results-resume" to={votingPath}>{results.processed ? 'Continue voting →' : 'Start voting →'}</TextAction></div>}
+          {!results.complete && <div className="results-incomplete"><p>{results.processed ? `${results.remaining} restaurants still to review. This is a partial view of your choices.` : 'No votes in this lobby yet. Start voting, or resume after navigating back. Choices survive refresh in this browser tab.'}</p><TextAction className="results-resume" to={votingPath}>{results.processed ? 'Continue voting →' : 'Start voting →'}</TextAction></div>}
         </section>
 
         <aside className="results-choice" aria-labelledby="results-choice-heading">
@@ -107,7 +107,7 @@ function ResultsScreen({ lobbyId }: { lobbyId: string }) {
       </div>
       <p className="results-status" role="status" aria-atomic="true">{status || (selected ? `${selected.name} selected for this demonstration only. No group winner has been declared.` : '')}</p>
       <footer className="results-footer">
-        <p><strong>Individual demonstration results.</strong> {results.votes} local {results.votes === 1 ? 'vote' : 'votes'} · {results.counts.skip} skipped. No other members’ votes, group approval percentages, or consensus are available. Photos and restaurant details are sample data. Choices remain in memory for lobby <span>{lobbyId}</span> during navigation and clear on refresh.</p>
+        <p><strong>Individual demonstration results.</strong> {results.votes} local {results.votes === 1 ? 'vote' : 'votes'} · {results.counts.skip} skipped. No other members’ votes, group approval percentages, or consensus are available. Photos and restaurant details are sample data. Choices remain in this browser tab for lobby <span>{lobbyId}</span> during navigation and refresh.</p>
         <div><TextAction className="results-lobby" to={generatePath(paths.lobby, { lobbyId })}>Return to Lobby</TextAction><TextAction to={generatePath(paths.discoveryPreview, { lobbyId })}>Review filters</TextAction></div>
       </footer>
     </main>
