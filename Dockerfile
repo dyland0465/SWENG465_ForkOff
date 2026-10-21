@@ -10,6 +10,9 @@ RUN npm run build
 
 FROM node:22-alpine
 
+# The deployment platform uses curl for its HTTP healthcheck.
+RUN apk add --no-cache curl
+
 WORKDIR /app/backend
 
 # Install dependencies from the backend lockfile for reproducible deployments.
