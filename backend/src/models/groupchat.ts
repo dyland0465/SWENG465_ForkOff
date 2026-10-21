@@ -2,6 +2,11 @@ import mongoose, { Schema } from "mongoose";
 
 const messageSchema = new Schema ({
 
+    LobbyId: {
+        type: Schema.Types.ObjectId,
+        ref: "Lobby",
+        required: true
+    },
 
     userId: {
         type: Schema.Types.ObjectId,
@@ -10,9 +15,13 @@ const messageSchema = new Schema ({
 
     },
 
+
+
     message: {
         type: String,
-        required: true
+        required: true,
+        trim: true,
+        maxlength: 2000
     }
 },
 {

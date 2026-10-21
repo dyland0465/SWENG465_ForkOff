@@ -6,6 +6,9 @@ import { Lobby } from "../models/lobby";
 import { Restaurant } from "../models/restaurant";
 import { hashPassword, validatePassword } from "./auth";
 import { getGooglePlace, GooglePlacesError, searchRestaurants } from "./googlePlaces";
+import { GroupchatMessage } from "../models/groupchat";
+import { text } from "stream/iter";
+
 
 const router = Router();
 const lobbyCodeAlphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -1372,5 +1375,25 @@ router.delete("/api/groupchats/:id", (req, res) => {
     groupchatId: groupchatId,
   });
 });
+
+//groupchats
+router.post("/api/lobbies/:id/messages", async (req, res) => {
+  const text: unknown = req.body.text;
+
+  if (typeof text !== "string" || text.trim().length === 0) {
+    return res.status(400).json({ message: "Message text is required." });
+  }
+
+  const savedMsg = await GroupchatMessage.create({
+    LobbyId: req.params.id,
+    userId: req.body.userId,
+    message: text.trim(),
+  });
+})
+  return res.status(201).json(savedMsg);
+
+
+
+
 
 export default router;
