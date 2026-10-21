@@ -1,0 +1,87 @@
+.app-header {
+  position: relative;
+  z-index: 1;
+  padding-block-start: 71px;
+}
+
+.app-header__inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  inline-size: min(var(--layout-content-max), calc(100% - 40px));
+  min-block-size: 70px;
+  margin-inline-start: 20px;
+}
+
+.app-header__brand {
+  position: relative;
+  display: block;
+  flex: 0 0 auto;
+  inline-size: 260px;
+  block-size: 70px;
+  overflow: hidden;
+  border-radius: var(--radius-sm);
+}
+
+/* Preserve the image-fill crop supplied by the Figma Home header. */
+.app-header__brand img {
+  position: absolute;
+  inset-inline-start: 7.42%;
+  inset-block-start: -23%;
+  inline-size: 85.17%;
+  block-size: 146%;
+}
+
+.app-header__nav {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-6);
+}
+
+.app-header__nav .ui-text-action {
+  padding-inline: var(--spacing-3);
+  border-radius: var(--radius-md);
+  color: var(--color-text-primary);
+  white-space: nowrap;
+}
+
+.app-header__divider {
+  block-size: 1px;
+  margin-block-start: 11px;
+  margin-inline: auto;
+  inline-size: calc(100% - 160px);
+  background: var(--color-border-default);
+}
+
+@media (max-width: 768px) {
+  .app-header {
+    padding-block-start: var(--spacing-6);
+  }
+
+  .app-header__inner {
+    flex-direction: column;
+    gap: var(--spacing-4);
+    inline-size: calc(100% - var(--spacing-8));
+    margin-inline: auto;
+  }
+
+  .app-header__brand {
+    inline-size: 234px;
+    block-size: 63px;
+  }
+
+  .app-header__nav {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--spacing-1);
+  }
+
+  .app-header__nav .ui-text-action {
+    padding-inline: var(--spacing-2);
+  }
+
+  .app-header__divider {
+    inline-size: calc(100% - var(--spacing-8));
+    margin-block-start: var(--spacing-6);
+  }
+}

@@ -2,10 +2,10 @@ import { randomBytes } from "node:crypto";
 import dotenv from "dotenv";
 import mongoose from "mongoose";
 import { connectDB } from "./config/db";
-import { GroupchatMessage } from "./modules/Groupchat";
-import { Lobby } from "./modules/lobby";
-import { User } from "./modules/user";
-import { Vote } from "./modules/Vote";
+import { GroupchatMessage } from "./models/groupchat";
+import { Lobby } from "./models/lobby";
+import { User } from "./models/user";
+import { Vote } from "./models/vote";
 import { hashPassword } from "./services/auth";
 
 dotenv.config();
@@ -36,8 +36,9 @@ async function seedExamples(): Promise<void> {
       {
         $setOnInsert: {
           name: "Example Lobby",
-          numPlayers: 1,
-          restaurant: "Example Restaurant",
+          lobbyCode: "EXAMPL",
+          hostID: user._id,
+          members: [user._id],
         },
       },
       { upsert: true, returnDocument: "after", setDefaultsOnInsert: true },

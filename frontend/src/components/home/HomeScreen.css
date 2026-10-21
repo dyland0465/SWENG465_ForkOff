@@ -1,0 +1,128 @@
+.home-screen {
+  position: relative;
+  isolation: isolate;
+  max-inline-size: var(--layout-page-max);
+  min-block-size: max(1024px, 100svh);
+  margin-inline: auto;
+  overflow: clip;
+  background: var(--color-bg-canvas);
+}
+
+.home-hero {
+  padding-block-start: 3px;
+}
+
+.home-hero__copy {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-inline: var(--spacing-6);
+  text-align: center;
+}
+
+.home-hero__heading {
+  max-inline-size: 620px;
+  font-size: var(--font-size-home-hero);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-home-hero);
+  letter-spacing: 0;
+}
+
+.home-hero__heading span {
+  display: block;
+}
+
+.home-hero__tagline {
+  margin-block-start: 26px;
+  font-size: var(--font-size-home-hero);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-home-hero);
+  color: var(--color-text-action);
+}
+
+.home-hero__description {
+  max-inline-size: 600px;
+  margin-block-start: 27px;
+  font-size: var(--font-size-home-description);
+  line-height: var(--line-height-home-description);
+  color: var(--color-text-secondary);
+}
+
+.home-hero__actions {
+  display: flex;
+  justify-content: center;
+  gap: var(--spacing-2);
+  margin-block-start: 55px;
+}
+
+.home-hero__actions .ui-button--secondary {
+  min-inline-size: 176px;
+}
+
+/* Figma's 1482 × 494 collage extends beyond the 1440px desktop canvas. */
+.home-hero__illustration {
+  position: absolute;
+  z-index: 0;
+  inset-block-end: -18px;
+  inset-inline-start: -28px;
+  inline-size: calc(100% + 42px);
+  block-size: auto;
+  pointer-events: none;
+  user-select: none;
+}
+
+@media (max-width: 768px) {
+  .home-screen {
+    min-block-size: 100svh;
+  }
+
+  .home-hero {
+    padding-block-start: var(--spacing-8);
+  }
+
+  .home-hero__copy {
+    padding-inline: var(--spacing-6);
+  }
+
+  .home-hero__heading {
+    font-size: clamp(1.875rem, 5.5vw, var(--font-size-heading-h1));
+    line-height: 1.2;
+  }
+
+  .home-hero__tagline {
+    margin-block-start: var(--spacing-6);
+    font-size: clamp(1.875rem, 5.5vw, var(--font-size-heading-h1));
+    line-height: 1.2;
+  }
+
+  .home-hero__description {
+    margin-block-start: var(--spacing-6);
+    font-size: var(--font-size-body-large);
+    line-height: var(--line-height-body-large);
+  }
+
+  .home-hero__actions {
+    flex-wrap: wrap;
+    gap: var(--spacing-3);
+    margin-block-start: var(--spacing-8);
+  }
+
+  .home-hero__illustration {
+    position: relative;
+    display: block;
+    inset: auto;
+    inline-size: 150%;
+    max-inline-size: none;
+    margin-block-start: var(--spacing-6);
+    margin-inline-start: -25%;
+  }
+}
+
+@media (max-width: 400px) {
+  .home-hero__actions {
+    flex-direction: column;
+    align-self: stretch;
+  }
+}

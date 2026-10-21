@@ -1,8 +1,9 @@
 import mongoose from "mongoose";
-import { GroupchatMessage } from "../modules/Groupchat";
-import { Lobby } from "../modules/lobby";
-import { User } from "../modules/user";
-import { Vote } from "../modules/Vote";
+import { GroupchatMessage } from "../models/groupchat";
+import { Lobby } from "../models/lobby";
+import { Restaurant } from "../models/restaurant";
+import { User } from "../models/user";
+import { Vote } from "../models/vote";
 
 export async function connectDB(): Promise<void> {
   const uri = process.env.MONGODB_URI;
@@ -11,10 +12,9 @@ export async function connectDB(): Promise<void> {
     throw new Error("MONGODB_URI is not defined in the environment variables");
   }
   await mongoose.connect(uri, { dbName: "main" });
-  const models = [User, Vote, Lobby, GroupchatMessage];
+  const models = [User, Vote, Lobby, GroupchatMessage, Restaurant];
   await Promise.all(models.map((model) => model.init()));
   console.log(
     `Connected to MongoDB database "main"; collections ready: ${models.map((model) => model.collection.name).join(", ")}`,
   );
-  console.log("Connected to MongoDB successfully");
 }

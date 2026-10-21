@@ -1,19 +1,74 @@
-import { Router } from "express";
-import { User } from "../modules/user";
+import { Router, type Response } from "express";
+import mongoose from "mongoose";
+import { randomInt, randomUUID } from "node:crypto";
+import { User } from "../models/user";
+import { Lobby } from "../models/lobby";
+import { Restaurant } from "../models/restaurant";
 import { hashPassword, validatePassword } from "./auth";
+import { getGooglePlace, GooglePlacesError, searchRestaurants } from "./googlePlaces";
 
 const router = Router();
+const lobbyCodeAlphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+
+function generateLobbyCode() {
+  return Array.from({ length: 6 }, () => lobbyCodeAlphabet[randomInt(lobbyCodeAlphabet.length)]).join("");
+}
+
+function isDuplicateKeyError(error: unknown) {
+  return Boolean(
+    error &&
+      typeof error === "object" &&
+      "code" in error &&
+      error.code === 11000,
+  );
+}
+
+function handlePlacesError(res: Response, error: unknown, context: string) {
+  if (error instanceof GooglePlacesError) {
+    console.error(`${context} Google Places responded ${error.statusCode}: ${error.message}`);
+    const status = error.statusCode === 503 ? 503 : error.statusCode === 404 ? 404 : 502;
+    const message =
+      status === 503
+        ? "Google Places is not configured."
+        : status === 404
+          ? "Google Place not found."
+          : "Google Places request failed.";
+    return res.status(status).json({ message, providerStatus: error.statusCode });
+  }
+
+  console.error(context, error);
+  return res.status(500).json({ message: "Failed to process restaurant request." });
+}
 
 /*
 Resource Types:
 Auth - user authentication
 User - account related actions
 Restaurants - Partner restaurant configuration
-Places - Our own data stored pulled from Google Places
+Places - Place IDs stored locally; details are fetched live from Google Places
 Lobby - Endpoints to run the lobby/game
 Group Chat - Endpoints to run group chat
-Google Places - Google Places API, 10,000 requests/month
+Google Places - Google Places API (New)
  */
+
+/** @swagger
+ * /api/health/:
+ *   get:
+ *     summary: Check API and database health.
+ *     tags: [health]
+ *     responses:
+ *       200: { description: API and MongoDB are healthy. }
+ *       503: { description: MongoDB is unavailable. }
+ */
+router.get("/api/health/", (_req, res) => {
+  const databaseConnected = mongoose.connection.readyState === 1;
+
+  return res.status(databaseConnected ? 200 : 503).json({
+    status: databaseConnected ? "ok" : "unavailable",
+    database: databaseConnected ? "connected" : "disconnected",
+  });
+});
+
 
 // Authorize user login.
 /**
@@ -291,28 +346,130 @@ router.delete("/api/users/:id", (req, res) => {
 /** @swagger
  * /api/restaurants/{id}:
  *   get:
- *     summary: Get restaurant information by ID.
+ *     summary: Get saved restaurant details by MongoDB ID or Google Place ID.
  *     tags: [restaurant]
  *     parameters: [{ in: path, name: id, required: true, schema: { type: string } }]
  *     responses:
  *       200: { description: Restaurant information returned successfully. }
  *       404: { description: Restaurant not found. }
+ *       502: { description: Google Places request failed. }
  */
-// TODO: Connect to db to actually grab restaurant info.
-router.get("/api/restaurants/:id", (req, res) => {
-  const restaurantId = req.params.id;
+router.get("/api/restaurants/:id", async (req, res) => {
+  const id = req.params.id;
+  const filter = mongoose.isValidObjectId(id)
+    ? { $or: [{ placeId: id }, { _id: new mongoose.Types.ObjectId(id) }] }
+    : { placeId: id };
 
-  const info = {
-    restaurantId: restaurantId,
-    restaurantName: "The Bistro Grill",
-    address: "123 Main Street",
-    phone: "555-555-5555",
-    website: "https://example.com",
-    currency: "USD",
-    categories: ["American", "Grill"],
-  };
+  try {
+    const savedRestaurant = await Restaurant.findOne(filter).select({ placeId: 1 }).lean();
+    if (!savedRestaurant) {
+      return res.status(404).json({ message: "Restaurant not found in the saved collection." });
+    }
 
-  return res.status(200).json(info);
+    const place = await getGooglePlace(savedRestaurant.placeId);
+    return res.status(200).json({ attribution: "Google Maps", place });
+  } catch (error) {
+    return handlePlacesError(res, error, "Failed to load restaurant:");
+  }
+});
+
+/** @swagger
+ * /api/restaurants:
+ *   get:
+ *     summary: List saved restaurant Place IDs with live Google Places details.
+ *     tags: [restaurant]
+ *     parameters:
+ *       - in: query
+ *         name: limit
+ *         schema: { type: integer, minimum: 1, maximum: 10, default: 2 }
+ *     responses:
+ *       200: { description: Live restaurant details. Display Google Maps attribution to users. }
+ *       502: { description: Google Places request failed. }
+ */
+router.get("/api/restaurants", async (req, res) => {
+  const limit = Number(req.query.limit ?? 2);
+  if (!Number.isInteger(limit) || limit < 1 || limit > 10) {
+    return res.status(400).json({ message: "limit must be an integer from 1 to 10." });
+  }
+
+  try {
+    const savedRestaurants = await Restaurant.find()
+      .sort({ createdAt: 1 })
+      .limit(limit)
+      .select({ placeId: 1 })
+      .lean();
+    const places = await Promise.all(
+      savedRestaurants.map(({ placeId }) => getGooglePlace(placeId)),
+    );
+
+    return res.status(200).json({
+      count: places.length,
+      attribution: "Google Maps",
+      places,
+    });
+  } catch (error) {
+    return handlePlacesError(res, error, "Failed to load saved restaurants:");
+  }
+});
+
+/** @swagger
+ * /api/restaurants/import:
+ *   post:
+ *     summary: Search Google Places for restaurants and save their Place IDs.
+ *     description: Only Place IDs are stored in MongoDB. Full restaurant details are returned from live Places requests.
+ *     tags: [restaurant]
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               query: { type: string, example: "restaurants in Erie, PA" }
+ *               limit: { type: integer, minimum: 1, maximum: 10, default: 2 }
+ *     responses:
+ *       200: { description: Search results and persisted Place IDs. }
+ *       400: { description: Invalid query or limit. }
+ *       502: { description: Google Places request failed. }
+ */
+router.post("/api/restaurants/import", async (req, res) => {
+  const query = typeof req.body?.query === "string"
+    ? req.body.query.trim()
+    : "restaurants in Erie, PA";
+  const limit = Number(req.body?.limit ?? 2);
+
+  if (!query || query.length > 200) {
+    return res.status(400).json({ message: "query must be between 1 and 200 characters." });
+  }
+  if (!Number.isInteger(limit) || limit < 1 || limit > 10) {
+    return res.status(400).json({ message: "limit must be an integer from 1 to 10." });
+  }
+
+  try {
+    const places = (await searchRestaurants(query, limit)).slice(0, limit);
+    if (places.length > 0) {
+      await Restaurant.bulkWrite(
+        places.map(({ id }) => ({
+          updateOne: {
+            filter: { placeId: id },
+            update: { $setOnInsert: { placeId: id } },
+            upsert: true,
+          },
+        })),
+        { ordered: false },
+      );
+    }
+
+    return res.status(200).json({
+      query,
+      imported: places.length,
+      attribution: "Google Maps",
+      persistence: "Only Google Place IDs are stored; details are fetched live.",
+      places,
+    });
+  } catch (error) {
+    return handlePlacesError(res, error, "Failed to save Google Place IDs:");
+  }
 });
 
 /** @swagger
@@ -486,21 +643,15 @@ router.get("/api/restaurants/:id/analytics", (req, res) => {
  *     responses:
  *       200: { description: Place information returned successfully. }
  *       404: { description: Place not found. }
+ *       502: { description: Google Places request failed. }
  */
-// TODO: Connect to Google Places API.
-router.get("/api/places/:id", (req, res) => {
-  const placeId = req.params.id;
-
-  const place = {
-    placeId: placeId,
-    displayName: "Example Restaurant",
-    address: "123 Main Street",
-    rating: 4.5,
-    priceLevel: 2,
-    openNow: true,
-  };
-
-  return res.status(200).json(place);
+router.get("/api/places/:id", async (req, res) => {
+  try {
+    const place = await getGooglePlace(req.params.id);
+    return res.status(200).json({ attribution: "Google Maps", place });
+  } catch (error) {
+    return handlePlacesError(res, error, "Failed to load Google Place:");
+  }
 });
 
 /** @swagger
@@ -568,35 +719,136 @@ router.get("/api/places/:id/reviews", (req, res) => {
 /** @swagger
  * /api/lobbies:
  *   post:
- *     summary: Create a lobby.
+ *     summary: Create and persist a lobby.
  *     tags: [lobby]
  *     requestBody:
  *       required: true
- *       content: { application/json: { schema: { type: object, required: [hostId], properties: { name: { type: string }, hostId: { type: string }, maxDistance: { type: number } } } } }
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [location, dinnerAt]
+ *             properties:
+ *               name: { type: string, maxLength: 120, example: "Dinner in Erie, PA" }
+ *               hostId: { type: string, description: Optional MongoDB user ID for an authenticated host. }
+ *               location: { type: string, maxLength: 120, example: "Erie, PA" }
+ *               dinnerAt: { type: string, format: date-time, example: "2026-10-20T23:30:00.000Z" }
+ *               maxDistance: { type: number, minimum: 1, maximum: 100, example: 5 }
+ *               minimumRating: { type: number, minimum: 0, maximum: 5, example: 4 }
+ *               categories: { type: array, items: { type: string }, example: ["Italian", "Ramen"] }
+ *               priceLevels: { type: array, items: { type: string, enum: ["$", "$$", "$$$"] }, example: ["$$"] }
+ *               diningNeeds: { type: array, items: { type: string }, example: ["Open at dining time", "Mocktails"] }
  *     responses:
- *       201: { description: Lobby created successfully. }
- *       400: { description: Host ID is required. }
+ *       201: { description: Lobby persisted to the main.lobbies collection. }
+ *       400: { description: Invalid lobby metadata. }
+ *       404: { description: Specified host user not found. }
  */
-// TODO: Save lobby to database.
-router.post("/api/lobbies", (req, res) => {
-  const lobby = {
-    id: "ABC123",
-    name: req.body.name,
-    hostId: req.body.hostId,
-    maxDistance: req.body.maxDistance,
-    createdAt: new Date(),
-  };
+router.post("/api/lobbies", async (req, res) => {
+  const body = req.body ?? {};
+  const location = typeof body.location === "string" ? body.location.trim() : "";
+  const dinnerAt = typeof body.dinnerAt === "string" ? new Date(body.dinnerAt) : null;
+  const maxDistance = Number(body.maxDistance ?? 5);
+  const minimumRating = Number(body.minimumRating ?? 0);
+  const name = typeof body.name === "string" ? body.name.trim() : "";
+  const categories = body.categories ?? [];
+  const priceLevels = body.priceLevels ?? [];
+  const diningNeeds = body.diningNeeds ?? [];
 
-  if (!lobby.hostId) {
-    return res.status(400).json({
-      message: "Host ID is required.",
-    });
+  if (!location || location.length > 120) {
+    return res.status(400).json({ message: "Location is required and must be 120 characters or fewer." });
+  }
+  if (!dinnerAt || !Number.isFinite(dinnerAt.getTime()) || dinnerAt.getTime() <= Date.now()) {
+    return res.status(400).json({ message: "Choose a valid dinner date and time in the future." });
+  }
+  if (!Number.isFinite(maxDistance) || maxDistance < 1 || maxDistance > 100) {
+    return res.status(400).json({ message: "maxDistance must be between 1 and 100 miles." });
+  }
+  if (!Number.isFinite(minimumRating) || minimumRating < 0 || minimumRating > 5) {
+    return res.status(400).json({ message: "minimumRating must be between 0 and 5." });
+  }
+  if (name.length > 120) {
+    return res.status(400).json({ message: "name must be 120 characters or fewer." });
+  }
+  if (
+    !Array.isArray(categories) ||
+    categories.length > 20 ||
+    categories.some((value: unknown) => typeof value !== "string" || value.length > 40)
+  ) {
+    return res.status(400).json({ message: "categories must be an array of up to 20 short strings." });
+  }
+  if (
+    !Array.isArray(priceLevels) ||
+    priceLevels.some((value: unknown) => !["$", "$$", "$$$"].includes(String(value)))
+  ) {
+    return res.status(400).json({ message: "priceLevels may only contain $, $$, or $$$." });
+  }
+  if (
+    !Array.isArray(diningNeeds) ||
+    diningNeeds.length > 10 ||
+    diningNeeds.some((value: unknown) => typeof value !== "string" || value.length > 60)
+  ) {
+    return res.status(400).json({ message: "diningNeeds must be an array of up to 10 short strings." });
   }
 
-  return res.status(201).json({
-    message: "Lobby created",
-    lobby: lobby,
-  });
+  const rawHostId = body.hostId ?? body.hostID;
+
+  try {
+    let hostId: mongoose.Types.ObjectId | undefined;
+    if (rawHostId !== undefined && rawHostId !== null && rawHostId !== "") {
+      if (typeof rawHostId !== "string" || !mongoose.isValidObjectId(rawHostId)) {
+        return res.status(400).json({ message: "hostId must be a valid MongoDB user ID." });
+      }
+
+      const host = await User.findById(rawHostId).select("_id");
+      if (!host) {
+        return res.status(404).json({ message: "Host user not found." });
+      }
+      hostId = host._id;
+    }
+
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      try {
+        const createdLobby = await Lobby.create({
+          lobbyCode: generateLobbyCode(),
+          name: name || `Dinner in ${location}`,
+          ...(hostId ? { hostID: hostId, members: [hostId] } : { members: [] }),
+          status: "waiting",
+          filters: {
+            location,
+            dinnerAt,
+            maxDistance,
+            minimumRating,
+            categories,
+            openNow: diningNeeds.includes("Open at dining time"),
+            priceLevels,
+            diningNeeds,
+          },
+        });
+
+        return res.status(201).json({
+          message: "Lobby created and saved.",
+          lobby: {
+            id: createdLobby._id,
+            lobbyCode: createdLobby.lobbyCode,
+            name: createdLobby.name,
+            hostId: createdLobby.hostID ?? null,
+            status: createdLobby.status,
+            filters: createdLobby.filters,
+            createdAt: createdLobby.createdAt,
+            updatedAt: createdLobby.updatedAt,
+          },
+        });
+      } catch (error) {
+        if (isDuplicateKeyError(error) && attempt < 4) continue;
+        throw error;
+      }
+    }
+
+    return res.status(503).json({ message: "Could not generate a unique lobby code. Please try again." });
+  } catch (error) {
+    console.error("Failed to create lobby:", error);
+    return res.status(500).json({ message: "Failed to create lobby." });
+  }
 });
 
 /** @swagger
@@ -671,31 +923,90 @@ router.delete("/api/lobbies/:id", (req, res) => {
 /** @swagger
  * /api/lobbies/{id}/join:
  *   post:
- *     summary: Join a lobby.
+ *     summary: Join a lobby as a registered user or guest.
  *     tags: [lobby]
- *     parameters: [{ in: path, name: id, required: true, schema: { type: string } }]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         description: Lobby MongoDB ID or six-character invite code.
+ *         schema: { type: string }
  *     requestBody:
  *       required: true
- *       content: { application/json: { schema: { type: object, required: [userId], properties: { userId: { type: string } } } } }
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               userId: { type: string, description: Existing registered user's MongoDB ID. }
+ *               displayName: { type: string, minLength: 2, maxLength: 40, description: Guest display name; no account required. }
  *     responses:
- *       200: { description: User joined lobby successfully. }
- *       400: { description: User ID is required. }
+ *       200: { description: Registered user joined successfully. }
+ *       201: { description: Guest joined successfully. }
+ *       400: { description: Provide either userId or a valid guest displayName. }
+ *       404: { description: Lobby or user not found. }
+ *       409: { description: Lobby is not accepting new members. }
  */
-router.post("/api/lobbies/:id/join", (req, res) => {
-  const lobbyId = req.params.id;
-  const userId = req.body.userId;
+router.post("/api/lobbies/:id/join", async (req, res) => {
+  const lobbyKey = req.params.id.trim();
+  const body = req.body ?? {};
+  const hasUserId = typeof body.userId === "string" && body.userId.trim().length > 0;
+  const rawDisplayName = body.displayName ?? body.guestName;
+  const displayName = typeof rawDisplayName === "string" ? rawDisplayName.trim() : "";
 
-  if (!userId) {
-    return res.status(400).json({
-      message: "User ID is required.",
-    });
+  if (hasUserId === Boolean(displayName)) {
+    return res.status(400).json({ message: "Provide either userId or a guest displayName, but not both." });
+  }
+  if (displayName && (displayName.length < 2 || displayName.length > 40)) {
+    return res.status(400).json({ message: "Guest displayName must be between 2 and 40 characters." });
+  }
+  if (hasUserId && !mongoose.isValidObjectId(body.userId.trim())) {
+    return res.status(400).json({ message: "userId must be a valid MongoDB user ID." });
   }
 
-  return res.status(200).json({
-    message: "User joined lobby",
-    lobbyId: lobbyId,
-    userId: userId,
-  });
+  try {
+    const lobby = mongoose.isValidObjectId(lobbyKey)
+      ? await Lobby.findById(lobbyKey)
+      : await Lobby.findOne({ lobbyCode: lobbyKey.toUpperCase() });
+
+    if (!lobby) {
+      return res.status(404).json({ message: "Lobby not found. Check the invitation code." });
+    }
+    if (lobby.status !== "waiting") {
+      return res.status(409).json({ message: "This lobby is no longer accepting members." });
+    }
+
+    if (hasUserId) {
+      const user = await User.findById(body.userId.trim()).select("_id username");
+      if (!user) {
+        return res.status(404).json({ message: "User not found." });
+      }
+
+      if (!lobby.members.some((memberId) => memberId.equals(user._id))) {
+        lobby.members.push(user._id);
+        await lobby.save();
+      }
+
+      return res.status(200).json({
+        message: "User joined lobby.",
+        lobby: { id: lobby._id, name: lobby.name, lobbyCode: lobby.lobbyCode },
+        member: { id: user._id, displayName: user.username, type: "user" },
+      });
+    }
+
+    const guest = { guestId: randomUUID(), displayName };
+    lobby.guestMembers.push(guest);
+    await lobby.save();
+
+    return res.status(201).json({
+      message: "Guest joined lobby.",
+      lobby: { id: lobby._id, name: lobby.name, lobbyCode: lobby.lobbyCode },
+      member: { ...guest, type: "guest" },
+    });
+  } catch (error) {
+    console.error("Failed to join lobby:", error);
+    return res.status(500).json({ message: "Failed to join lobby." });
+  }
 });
 
 /** @swagger

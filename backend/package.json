@@ -8,7 +8,8 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node server.js",
     "db:init": "tsx src/init-collections.ts",
-    "db:seed:examples": "tsx src/seed-examples.ts"
+    "db:seed:examples": "tsx src/seed-examples.ts",
+    "seed": "tsx src/scripts/seed.ts"
   },
   "keywords": [],
   "type": "commonjs",

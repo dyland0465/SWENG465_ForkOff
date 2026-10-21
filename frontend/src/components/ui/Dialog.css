@@ -1,0 +1,26 @@
+.ui-dialog {
+  inline-size: min(560px, calc(100% - var(--spacing-8)));
+  max-block-size: calc(100svh - var(--spacing-8));
+  margin: auto;
+  padding: var(--spacing-8);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-lg);
+  color: var(--color-text-primary);
+  background: var(--color-bg-surface);
+  box-shadow: var(--shadow-popover);
+}
+
+.ui-dialog::backdrop {
+  background: color-mix(in srgb, var(--color-bg-inverse) 55%, transparent);
+}
+
+.ui-dialog__body {
+  margin-block: var(--spacing-6);
+  color: var(--color-text-secondary);
+}
+
+@media (max-width: 480px) {
+  .ui-dialog {
+    padding: var(--spacing-6);
+  }
+}

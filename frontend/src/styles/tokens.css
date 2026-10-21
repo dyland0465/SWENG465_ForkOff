@@ -1,0 +1,123 @@
+/* 01 Foundations: primitive values and semantic aliases from Figma. */
+:root {
+  --brand-orange: #f14710;
+  --brand-navy: #0d1526;
+  --neutral-warm-50: #fbf8f5;
+  --neutral-white: #ffffff;
+  --neutral-gray-100: #f3f4f6;
+  --neutral-gray-300: #d1d5db;
+  --neutral-gray-500: #6b7280;
+  --neutral-gray-600: #4b5563;
+  --feedback-success: #1b7a3a;
+  --feedback-warning: #9a5a00;
+  --feedback-error: #b42318;
+
+  --color-bg-canvas: var(--neutral-warm-50);
+  --color-bg-surface: var(--neutral-white);
+  --color-bg-inverse: var(--brand-navy);
+  --color-action-primary: var(--brand-orange);
+  --color-action-primary-text: var(--brand-navy);
+  --color-text-primary: var(--brand-navy);
+  --color-text-secondary: var(--neutral-gray-600);
+  --color-text-inverse: var(--neutral-white);
+  --color-text-action: var(--brand-orange);
+  --color-border-default: var(--neutral-gray-300);
+  --color-border-interactive: var(--neutral-gray-500);
+  --color-border-error: var(--feedback-error);
+  --color-border-focus: var(--brand-navy);
+  --color-border-inverse: var(--neutral-white);
+  --color-status-success: var(--feedback-success);
+  --color-status-warning: var(--feedback-warning);
+  --color-status-error: var(--feedback-error);
+  --fork-off-orange: var(--color-action-primary);
+
+  --font-family-primary: 'Atkinson Hyperlegible', Arial, sans-serif;
+  --font-weight-regular: 400;
+  --font-weight-bold: 700;
+
+  /* Sizes use rem so browser text preferences remain effective. */
+  --font-size-display-brand: 4rem;
+  --line-height-display-brand: 4.5rem;
+  --letter-spacing-display-brand: -0.0625rem;
+  --font-size-heading-h1: 2.5rem;
+  --line-height-heading-h1: 3rem;
+  --letter-spacing-heading-h1: -0.03125rem;
+  --font-size-heading-h2: 1.75rem;
+  --line-height-heading-h2: 2.25rem;
+  --font-size-body-large: 1.125rem;
+  --line-height-body-large: 1.75rem;
+  --font-size-label-default: 1rem;
+  --line-height-label-default: 1.25rem;
+  --letter-spacing-label-default: 0.00625rem;
+  --font-size-caption-default: 0.875rem;
+  --line-height-caption-default: 1.25rem;
+
+  --spacing-1: 0.25rem;
+  --spacing-2: 0.5rem;
+  --spacing-3: 0.75rem;
+  --spacing-4: 1rem;
+  --spacing-6: 1.5rem;
+  --spacing-8: 2rem;
+  --spacing-12: 3rem;
+  --spacing-16: 4rem;
+
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-full: 9999px;
+  --shadow-card: 0 4px 16px 0 rgb(13 20 38 / 10%);
+  --shadow-popover: 0 12px 32px -4px rgb(13 20 38 / 16%);
+  --focus-ring-width: 3px;
+  --focus-ring-offset: 3px;
+  --target-size-min: 44px;
+
+  /* Home has a custom type size in the desktop mockup. */
+  --font-size-home-hero: 3.25rem;
+  --line-height-home-hero: 3.9375rem;
+  --font-size-home-description: 1.25rem;
+  --line-height-home-description: 1.5rem;
+  --layout-page-max: 1440px;
+  --layout-content-max: 1280px;
+}
+
+.text-display-brand {
+  font-size: var(--font-size-display-brand);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-display-brand);
+  letter-spacing: var(--letter-spacing-display-brand);
+}
+
+.text-heading-h1 {
+  font-size: var(--font-size-heading-h1);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-heading-h1);
+  letter-spacing: var(--letter-spacing-heading-h1);
+}
+
+.text-heading-h2 {
+  font-size: var(--font-size-heading-h2);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-heading-h2);
+  letter-spacing: 0;
+}
+
+.text-body-large {
+  font-size: var(--font-size-body-large);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-body-large);
+  letter-spacing: 0;
+}
+
+.text-label-default {
+  font-size: var(--font-size-label-default);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-label-default);
+  letter-spacing: var(--letter-spacing-label-default);
+}
+
+.text-caption-default {
+  font-size: var(--font-size-caption-default);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-caption-default);
+  letter-spacing: 0;
+}
