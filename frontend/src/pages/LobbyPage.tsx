@@ -155,6 +155,7 @@ function LobbyScreen({ lobbyId }: { lobbyId: string }) {
   return (
     <main id="main-content" className="lobby-page" tabIndex={-1}>
       <div className="lobby-page__columns">
+        {/* Keep each column together when stacked so visual and keyboard order agree. */}
         <div className="lobby-page__people">
           <div className="lobby-page__title">
             <h1>Friday Food Crew</h1>
