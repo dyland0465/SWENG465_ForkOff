@@ -2,7 +2,7 @@ import express from "express";
 import { existsSync } from "node:fs";
 import path from "node:path";
 import swaggerUi from "swagger-ui-express";
-import swaggerSpec from "./config/swagger";
+import swaggerSpec from "./Config/swagger";
 import apiClients from "./services/api";
 
 //creates the application instance and sets up the middleware for JSON parsing, Swagger UI documentation, and API clients routing.

@@ -1,6 +1,6 @@
 import dotenv from "dotenv";
 import mongoose from "mongoose";
-import { connectDB } from "./config/db";
+import { connectDB } from "./Config/db";
 
 dotenv.config();
 
