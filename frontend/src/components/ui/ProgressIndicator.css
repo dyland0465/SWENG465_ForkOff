@@ -1,0 +1,5 @@
+.ui-progress { display: grid; gap: var(--spacing-2); font-size: var(--font-size-caption-default); font-weight: var(--font-weight-bold); line-height: 17px; }
+.ui-progress progress { appearance: none; display: block; inline-size: 100%; block-size: 12px; overflow: hidden; border: 0; border-radius: var(--radius-full); background: var(--color-border-default); }
+.ui-progress progress::-webkit-progress-bar { border-radius: var(--radius-full); background: var(--color-border-default); }
+.ui-progress progress::-webkit-progress-value { border-radius: var(--radius-full); background: var(--color-action-primary); }
+.ui-progress progress::-moz-progress-bar { border-radius: var(--radius-full); background: var(--color-action-primary); }

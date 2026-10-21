@@ -1,0 +1,126 @@
+/* 05_Discovery_Preview (33:54). Keep the shared header changes route scoped. */
+.discovery-screen .app-header { padding-block-start: 28px; }
+.discovery-screen .app-header__inner {
+  inline-size: calc(100% - 160px);
+  min-block-size: 72px;
+  margin-inline: auto;
+}
+.discovery-screen .app-header__divider { margin-block-start: var(--spacing-4); }
+.discovery-screen .app-header__brand img {
+  inset: 0;
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+}
+.discovery-screen .app-header__nav .ui-text-action[href='/'] { background: var(--color-action-primary); }
+
+.discovery-page {
+  inline-size: calc(100% - 160px);
+  max-inline-size: var(--layout-content-max);
+  margin-inline: auto;
+  padding-block: 33px var(--spacing-8);
+}
+.discovery-page__heading { display: flex; justify-content: space-between; gap: var(--spacing-6); }
+.discovery-page__title { display: flex; align-items: center; flex-wrap: wrap; gap: var(--spacing-3); }
+.discovery-page h1 { font-size: var(--font-size-heading-h1); line-height: 50px; font-weight: var(--font-weight-bold); }
+.discovery-page__demo-label {
+  padding: var(--spacing-1) var(--spacing-2);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-full);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-caption-default);
+  line-height: var(--line-height-caption-default);
+  white-space: nowrap;
+}
+.discovery-page__intro { margin-block-start: 6px; color: var(--color-text-secondary); font-size: var(--font-size-body-large); line-height: 23px; }
+.discovery-page__controls { display: flex; align-items: start; flex: 0 0 auto; gap: 43px; padding-inline-end: var(--spacing-16); padding-block-start: 1px; }
+.discovery-filter-chips { display: flex; flex-wrap: wrap; align-items: center; gap: var(--spacing-3); }
+.discovery-page__filters { margin-block-start: 23px; }
+.discovery-restaurants {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 360px));
+  align-items: start;
+  gap: 40px;
+  margin-block-start: 34px;
+}
+.discovery-restaurant {
+  min-inline-size: 0;
+  overflow: hidden;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-lg);
+  background: var(--color-bg-surface);
+}
+.discovery-restaurant__toggle { display: block; inline-size: 100%; margin: 0; padding: 0; border: 0; color: inherit; background: transparent; text-align: start; cursor: pointer; }
+.discovery-restaurant__toggle:focus-visible { outline-offset: calc(-1 * var(--focus-ring-width)); border-radius: var(--radius-lg); }
+.discovery-restaurant__toggle:hover .discovery-restaurant__name { text-decoration: underline; text-underline-offset: 3px; }
+.discovery-restaurant__toggle img { display: block; inline-size: calc(100% + 2px); block-size: 176px; object-fit: cover; }
+.discovery-restaurant__content { display: flex; flex-direction: column; align-items: start; gap: var(--spacing-2); padding: var(--spacing-4); line-height: 16.5px; }
+.discovery-restaurant__name { font-size: 1.25rem; font-weight: var(--font-weight-bold); line-height: 24px; }
+.discovery-restaurant__meta { color: var(--color-text-secondary); font-size: var(--font-size-caption-default); }
+.discovery-restaurant__distance { font-size: var(--font-size-caption-default); font-weight: var(--font-weight-bold); }
+.discovery-restaurant__sample { padding: 0 var(--spacing-4) var(--spacing-4); font-size: var(--font-size-caption-default); line-height: var(--line-height-caption-default); color: var(--color-text-secondary); }
+.discovery-restaurant__sample h2 { margin-block-end: var(--spacing-2); color: var(--color-text-primary); font-size: var(--font-size-label-default); }
+
+.discovery-options {
+  display: grid;
+  grid-template-columns: 156px minmax(0, 1fr) 258px;
+  gap: var(--spacing-6);
+  align-items: start;
+  min-block-size: 150px;
+  margin-block-start: 122px;
+  padding: 19px;
+  border: 1px solid var(--color-border-default);
+  border-radius: calc(var(--radius-lg) + var(--spacing-1));
+  background: var(--color-bg-surface);
+}
+.discovery-options__no-photo { display: grid; align-items: center; inline-size: 156px; block-size: 110px; padding-inline: 26px; border-radius: calc(var(--radius-md) + 2px); background: var(--color-border-default); color: var(--color-text-secondary); font-size: 0.8125rem; font-weight: var(--font-weight-bold); line-height: 16px; }
+.discovery-options__no-photo span { transform: translateY(-5px); }
+.discovery-options__copy { padding-block-start: 3px; }
+.discovery-options h2 { font-size: 1.25rem; line-height: 25px; }
+.discovery-options__copy p { max-inline-size: 760px; margin-block-start: 9px; color: var(--color-text-secondary); font-size: 0.9375rem; line-height: 19px; }
+.discovery-options__actions { display: flex; flex-direction: column; align-items: start; margin-block-start: -3px; }
+.discovery-demo-note { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; justify-items: start; gap: var(--spacing-3) var(--spacing-6); margin-block-start: var(--spacing-8); padding-block-start: var(--spacing-4); border-block-start: 1px solid var(--color-border-default); color: var(--color-text-secondary); font-size: var(--font-size-caption-default); line-height: var(--line-height-caption-default); }
+.discovery-demo-note > .ui-text-action { grid-column: 2; grid-row: 1; }
+.discovery-page__status { grid-column: 1 / -1; }
+.discovery-demo-note span { overflow-wrap: anywhere; }
+.discovery-page__status:empty { display: none; }
+
+.discovery-filter-editor { display: grid; justify-items: start; gap: var(--spacing-6); margin-block-start: var(--spacing-6); padding: var(--spacing-6); border: 1px solid var(--color-border-default); border-radius: var(--radius-lg); background: var(--color-bg-surface); }
+.discovery-filter-editor > p { color: var(--color-text-secondary); font-size: var(--font-size-caption-default); line-height: var(--line-height-caption-default); }
+.discovery-filter-editor__fields { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--spacing-6); inline-size: 100%; }
+.discovery-filter-editor fieldset { min-inline-size: 0; margin: 0; padding: 0; border: 0; }
+.discovery-filter-editor legend { margin-block-end: var(--spacing-3); font-weight: var(--font-weight-bold); }
+.discovery-filter-editor__actions { display: flex; flex-wrap: wrap; gap: var(--spacing-3); }
+
+@media (max-width: 1200px) {
+  .discovery-screen .app-header__inner, .discovery-screen .app-header__divider, .discovery-page { inline-size: calc(100% - var(--spacing-16)); }
+  .discovery-page__controls { padding-inline-end: 0; gap: var(--spacing-6); }
+  .discovery-restaurants { gap: var(--spacing-6); }
+  .discovery-options { grid-template-columns: 156px minmax(0, 1fr) auto; }
+  .discovery-filter-editor__fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 1000px) {
+  .discovery-restaurants { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .discovery-options { margin-block-start: var(--spacing-12); grid-template-columns: 156px minmax(0, 1fr); }
+  .discovery-options__actions { grid-column: 2; flex-direction: row; flex-wrap: wrap; gap: var(--spacing-3); }
+  .discovery-demo-note { grid-template-columns: minmax(0, 1fr); }
+  .discovery-demo-note > .ui-text-action { grid-column: auto; grid-row: auto; }
+}
+@media (max-width: 768px) {
+  .discovery-screen .app-header { padding-block-start: var(--spacing-6); }
+  .discovery-screen .app-header__inner, .discovery-screen .app-header__divider, .discovery-page { inline-size: calc(100% - var(--spacing-8)); }
+  .discovery-screen .app-header__divider { margin-block-start: var(--spacing-6); }
+  .discovery-page { padding-block-start: var(--spacing-6); }
+  .discovery-page__heading { flex-direction: column; gap: var(--spacing-2); }
+  .discovery-page h1 { font-size: var(--font-size-heading-h2); line-height: var(--line-height-heading-h2); }
+  .discovery-page__controls { gap: var(--spacing-6); }
+  .discovery-page__filters { margin-block-start: var(--spacing-4); }
+  .discovery-restaurants { margin-block-start: var(--spacing-6); }
+}
+@media (max-width: 600px) {
+  .discovery-restaurants { grid-template-columns: minmax(0, 1fr); }
+  .discovery-options { grid-template-columns: minmax(0, 1fr); gap: var(--spacing-4); }
+  .discovery-options__actions { grid-column: auto; }
+  .discovery-filter-editor { padding: var(--spacing-4); }
+  .discovery-filter-editor__fields { grid-template-columns: minmax(0, 1fr); }
+}

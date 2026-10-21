@@ -3,6 +3,8 @@ import { Outlet, useMatch, useNavigate } from 'react-router'
 import { Dialog } from '../ui/Dialog'
 import { AppHeader } from './AppHeader'
 import { paths } from '../../routes/paths'
+import { VotingSessionProvider } from '../../features/voting/VotingSessionProvider'
+import { RouteNavigation } from './RouteNavigation'
 
 export function AppLayout() {
   const [showHowItWorks, setShowHowItWorks] = useState(false)
@@ -10,17 +12,23 @@ export function AppLayout() {
   const isCreateLobby = useMatch(paths.createLobby) !== null
   const isJoinLobby = useMatch(paths.joinLobby) !== null
   const isLobby = useMatch({ path: paths.lobby, end: true }) !== null
+  const isGroupChat = useMatch(paths.groupChat) !== null
+  const isDiscovery = useMatch(paths.discoveryPreview) !== null
+  const isVoting = useMatch(paths.voting) !== null
+  const isRestaurantDetails = useMatch(`${paths.lobby}/restaurants/*`) !== null
+  const isResults = useMatch(paths.results) !== null
 
   return (
     <>
       {/* Reuse the original Home canvas so its dimensions and cropping stay unchanged. */}
-      <div className={`home-screen${isCreateLobby || isJoinLobby ? ' lobby-screen' : ''}${isLobby ? ' lobby-detail-screen' : ''}`}>
+      <div className={`home-screen${isCreateLobby || isJoinLobby ? ' lobby-screen' : ''}${isLobby || isGroupChat ? ' lobby-detail-screen' : ''}${isLobby ? ' lobby-page-screen' : ''}${isDiscovery || isVoting || isRestaurantDetails || isResults ? ' discovery-screen' : ''}${isVoting ? ' voting-screen' : ''}`}>
         <AppHeader
           onHowItWorks={() => setShowHowItWorks(true)}
           onJoinLobby={() => navigate(paths.joinLobby)}
         />
-        <Outlet />
+        <VotingSessionProvider><Outlet /></VotingSessionProvider>
       </div>
+      <RouteNavigation />
       {showHowItWorks && (
         <Dialog title="How it works" onClose={() => setShowHowItWorks(false)}>
           <ol className="how-it-works">

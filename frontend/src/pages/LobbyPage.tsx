@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useLayoutEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import { generatePath, useNavigate, useParams } from 'react-router'
 import { LobbyCode } from '../components/lobby/LobbyCode'
@@ -82,7 +82,7 @@ function FilterEditor({ filters, onApply, onCancel }: {
   }
 
   return (
-    <form className="lobby-filter-editor" noValidate onSubmit={submit}>
+    <form id="lobby-filter-editor" className="lobby-filter-editor" noValidate onSubmit={submit}>
       <p className="text-caption-default">Demo settings only. Apply updates this preview; nothing is saved.</p>
       <div className="lobby-filter-editor__fields">
         <TextInput label="Location" name="location" required maxLength={120} autoFocus value={values.location} error={errors.location} onChange={event => setValue('location', event.target.value)} onBlur={() => onBlur('location')} />
@@ -121,7 +121,22 @@ function LobbyScreen({ lobbyId }: { lobbyId: string }) {
   const [role, setRole] = useState('leader')
   const [draft, setDraft] = useState('')
   const [status, setStatus] = useState('')
+  const editFiltersRef = useRef<HTMLButtonElement>(null)
+  const restoreFilterFocus = useRef(false)
   const isLeader = role === 'leader'
+
+  useLayoutEffect(() => {
+    if (!editing && restoreFilterFocus.current) {
+      // The trigger is unmounted while editing; wait until it exists again.
+      editFiltersRef.current?.focus()
+      restoreFilterFocus.current = false
+    }
+  }, [editing])
+
+  function closeFilterEditor() {
+    restoreFilterFocus.current = true
+    setEditing(false)
+  }
   // The installed React Router encodes parameters in generatePath.
   const routeParams = { lobbyId }
   const selectedChips = [
@@ -140,6 +155,7 @@ function LobbyScreen({ lobbyId }: { lobbyId: string }) {
   return (
     <main id="main-content" className="lobby-page" tabIndex={-1}>
       <div className="lobby-page__columns">
+        {/* Keep each column together when stacked so visual and keyboard order agree. */}
         <div className="lobby-page__people">
           <div className="lobby-page__title">
             <h1>Friday Food Crew</h1>
@@ -172,7 +188,7 @@ function LobbyScreen({ lobbyId }: { lobbyId: string }) {
             <h2 id="lobby-filters-heading" className="lobby-section-heading">Round filters</h2>
             <p className="lobby-round-filters__summary">{filters.location} · tonight at {displayTime(filters.time)} · within {filters.distance} {filters.distance === '1' ? 'mile' : 'miles'}</p>
             {editing ? (
-              <FilterEditor filters={filters} onApply={next => { setFilters(next); setEditing(false); setStatus('Filters applied locally. No changes have been saved.') }} onCancel={() => setEditing(false)} />
+              <FilterEditor filters={filters} onApply={next => { setFilters(next); closeFilterEditor(); setStatus('Filters applied locally. No changes have been saved.') }} onCancel={closeFilterEditor} />
             ) : (
               <>
                 <div className="lobby-filter-chips" aria-label="Selected round filters">
@@ -190,7 +206,7 @@ function LobbyScreen({ lobbyId }: { lobbyId: string }) {
                   <p>{hasDemoFilters(filters) ? 'Great variety for a decisive round.' : 'Restaurant counts require a connected backend.'}</p>
                 </div>
                 <div className="lobby-round-filters__controls">
-                  <TextAction disabled={!isLeader} onClick={() => setEditing(true)}>Edit filters</TextAction>
+                  <TextAction ref={editFiltersRef} disabled={!isLeader} aria-expanded={editing} aria-controls="lobby-filter-editor" onClick={() => setEditing(true)}>Edit filters</TextAction>
                   <TextAction disabled={!isLeader} onClick={resetFilters}>Reset</TextAction>
                 </div>
               </>
@@ -209,7 +225,7 @@ function LobbyScreen({ lobbyId }: { lobbyId: string }) {
       </div>
       <aside className="lobby-demo-note" aria-label="Demonstration details">
         <p id="lobby-demo-note"><strong>Frontend demonstration.</strong> Lobby data has not been loaded for route ID <span className="lobby-demo-note__id">{lobbyId}</span>. Names, roles, invitation code, filters, restaurant count, and messages are sample data. Edits and drafts are temporary. Leaving returns home without changing membership.</p>
-        <p id="lobby-navigation-note">Start voting opens the existing discovery placeholder; it does not start a round. Open group chat opens its existing placeholder.</p>
+        <p id="lobby-navigation-note">Start voting opens Discovery Preview with demonstration restaurants; it does not start a round. Open group chat opens a temporary, unsaved chat preview.</p>
         <SelectField label="Preview role (demo only)" value={role} onChange={event => { setRole(event.target.value); setEditing(false); setStatus('') }}>
           <option value="leader">Lobby leader</option>
           <option value="member">Member</option>

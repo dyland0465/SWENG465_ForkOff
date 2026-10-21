@@ -1,0 +1,79 @@
+/* 06_Voting (33:67). The header composes the existing Discovery shell. */
+.voting-page { inline-size: calc(100% - 160px); max-inline-size: var(--layout-content-max); margin-inline: auto; padding-block: 33px var(--spacing-8); }
+.voting-page__heading { display: flex; align-items: start; justify-content: space-between; gap: var(--spacing-6); }
+.voting-page__title { display: flex; align-items: center; flex-wrap: wrap; gap: var(--spacing-3); }
+.voting-page h1 { font-size: var(--font-size-heading-h1); line-height: 50px; }
+.voting-page__intro { margin-block-start: 6px; color: var(--color-text-secondary); font-size: var(--font-size-body-large); line-height: 23px; }
+.voting-page__heading .ui-progress { flex: 0 1 420px; margin-block-start: 10px; }
+.voting-page__columns { display: grid; grid-template-columns: minmax(0, 620fr) minmax(0, 612fr); gap: var(--spacing-12); margin-block-start: 51px; align-items: start; }
+.voting-page__visual { min-inline-size: 0; }
+.voting-photo { display: block; inline-size: 100%; block-size: 520px; border-radius: var(--spacing-6); object-fit: cover; }
+.voting-keyboard { margin-block-start: 42px; color: var(--color-text-secondary); font-size: var(--font-size-caption-default); line-height: 18px; }
+.voting-card { min-inline-size: 0; min-block-size: 583px; padding: 27px 31px; border: 1px solid var(--color-border-default); border-radius: var(--spacing-6); background: var(--color-bg-surface); }
+.voting-card > h2 { font-size: 2.125rem; line-height: 43px; }
+.voting-card__meta { margin-block-start: 7px; color: var(--color-text-secondary); font-size: var(--font-size-label-default); line-height: 20px; }
+.voting-card__features { display: flex; flex-wrap: wrap; gap: 10px; margin: 28px 0 0; padding: 0; list-style: none; }
+.voting-card__features .ui-filter-chip { background: var(--color-action-primary); cursor: default; }
+.voting-card__match { margin-block-start: 28px; }
+.voting-card__match h3 { font-size: var(--font-size-label-default); line-height: 20px; }
+.voting-card__match p { margin-block-start: 10px; color: var(--color-text-secondary); font-size: 0.9375rem; line-height: 19px; }
+.voting-card__details { margin-block-start: 27px; margin-inline-start: -8px; font-size: 0.9375rem; line-height: 19px; text-decoration: none; }
+.voting-card__details:hover { text-decoration: underline; }
+.voting-controls { display: flex; flex-wrap: wrap; gap: var(--spacing-4); margin-block-start: 6px; margin-inline-start: 42px; }
+.voting-page .voting-choice { flex: 0 0 104px; min-block-size: 56px; padding: var(--spacing-4); border-radius: var(--radius-lg); color: var(--color-text-inverse); }
+.voting-page .voting-choice--yes { --vote-color: var(--color-status-success); }
+.voting-page .voting-choice--no { --vote-color: var(--color-bg-inverse); }
+.voting-page .voting-choice--veto { --vote-color: var(--color-status-error); flex-basis: 120px; }
+.voting-page .voting-choice--skip { --vote-color: var(--color-text-secondary); }
+.voting-page .voting-choice, .voting-page .voting-choice:hover:not(:disabled) { background: var(--vote-color); }
+.voting-page .voting-choice:hover:not(:disabled) { filter: brightness(0.9); }
+.voting-undo { display: inline-flex; gap: var(--spacing-1); margin-block-start: 25px; margin-inline-start: -8px; }
+.voting-undo img { flex: 0 0 17px; inline-size: 17px; block-size: 17px; object-fit: cover; }
+.voting-card__footer { display: flex; align-items: start; justify-content: space-between; gap: var(--spacing-4); margin-block-start: 44px; }
+.voting-card__privacy { flex: 0 1 310px; min-block-size: 62px; padding: 11px 13px; border: 1px solid var(--color-bg-inverse); border-radius: var(--radius-md); background: var(--color-border-default); font-size: 0.8125rem; font-weight: var(--font-weight-bold); line-height: 16px; }
+.voting-card__privacy span { font-weight: var(--font-weight-regular); }
+.voting-status { margin-block-start: var(--spacing-4); color: var(--color-text-secondary); font-size: var(--font-size-caption-default); line-height: var(--line-height-caption-default); }
+.voting-status:empty { margin: 0; }
+.voting-demo-note { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: start; gap: var(--spacing-2) var(--spacing-6); margin-block-start: var(--spacing-8); padding-block-start: var(--spacing-4); border-block-start: 1px solid var(--color-border-default); color: var(--color-text-secondary); font-size: var(--font-size-caption-default); line-height: var(--line-height-caption-default); }
+.voting-demo-note span { overflow-wrap: anywhere; }
+.voting-shortcuts { display: inline-flex; align-items: center; gap: var(--spacing-2); min-block-size: var(--target-size-min); cursor: pointer; }
+.voting-shortcuts input { inline-size: 18px; block-size: 18px; accent-color: var(--color-action-primary); }
+.voting-complete { display: grid; justify-items: start; gap: var(--spacing-6); margin-block-start: 51px; padding: var(--spacing-8); border: 1px solid var(--color-border-default); border-radius: var(--spacing-6); background: var(--color-bg-surface); }
+.voting-complete__counts { display: flex; flex-wrap: wrap; gap: var(--spacing-12); margin: 0; }
+.voting-complete__counts dt { font-size: var(--font-size-caption-default); font-weight: var(--font-weight-bold); }
+.voting-complete__counts dd { margin: 0; font-size: var(--font-size-heading-h2); }
+.voting-complete__actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--spacing-6); }
+.voting-complete .voting-undo { margin-block-start: 0; }
+
+@media (max-width: 1200px) {
+  .voting-page { inline-size: calc(100% - var(--spacing-16)); }
+  .voting-page__heading .ui-progress { flex-basis: 320px; }
+  .voting-page__columns { gap: var(--spacing-8); }
+  .voting-card { padding-inline: 23px; }
+  .voting-controls { margin-inline-start: 0; gap: var(--spacing-3); }
+  .voting-page .voting-controls .voting-choice { flex: 1 1 0; min-inline-size: 0; }
+}
+@media (max-width: 1000px) {
+  .voting-page__columns { grid-template-columns: minmax(0, 1fr); margin-block-start: var(--spacing-8); }
+  .voting-photo { block-size: auto; aspect-ratio: 620 / 520; max-block-size: 520px; }
+  .voting-keyboard { margin-block-start: var(--spacing-4); }
+  .voting-page__heading { flex-direction: column; gap: var(--spacing-6); }
+  .voting-page__heading .ui-progress { flex: auto; inline-size: min(420px, 100%); margin: 0; }
+  .voting-card { min-block-size: 0; padding: var(--spacing-6); }
+  .voting-card__footer { margin-block-start: var(--spacing-6); }
+  .voting-demo-note { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 768px) {
+  .voting-page { inline-size: calc(100% - var(--spacing-8)); padding-block-start: var(--spacing-6); }
+  .voting-page h1 { font-size: var(--font-size-heading-h2); line-height: var(--line-height-heading-h2); }
+  .voting-card > h2 { font-size: var(--font-size-heading-h2); line-height: var(--line-height-heading-h2); }
+  .voting-card__features, .voting-card__match { margin-block-start: var(--spacing-6); }
+  .voting-card__details { margin-block-start: var(--spacing-4); }
+}
+@media (max-width: 480px) {
+  .voting-card, .voting-complete { padding: var(--spacing-4); }
+  .voting-controls { gap: var(--spacing-2); }
+  .voting-card__footer { flex-wrap: wrap; }
+  .voting-card__privacy { flex-basis: 100%; }
+  .voting-card__footer .voting-choice--skip { margin-inline-start: auto; }
+}

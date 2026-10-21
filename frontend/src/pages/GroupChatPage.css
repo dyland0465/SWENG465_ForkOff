@@ -1,0 +1,91 @@
+/* 08_Group_Chat (33:93), composed from the existing Fork Off foundations. */
+.group-chat-page {
+  inline-size: calc(100% - 160px);
+  max-inline-size: var(--layout-content-max);
+  margin-inline: auto;
+  padding-block: 33px var(--spacing-4);
+}
+
+.group-chat-page__heading { display: flex; align-items: start; justify-content: space-between; gap: var(--spacing-6); }
+.group-chat-page__heading h1 { font-size: var(--font-size-heading-h1); font-weight: var(--font-weight-bold); line-height: 50px; }
+.group-chat-page__intro { margin-block-start: 6px; color: var(--color-text-secondary); font-size: var(--font-size-body-large); line-height: 23px; }
+.group-chat-page__sample { font-weight: var(--font-weight-regular); white-space: nowrap; }
+.group-chat-page__back { flex: 0 0 auto; margin-block-start: var(--spacing-2); margin-inline-end: var(--spacing-4); padding: var(--spacing-3) var(--spacing-6); border-radius: var(--radius-md); background: var(--color-bg-surface); font-size: var(--font-size-label-default); text-decoration: none; }
+.group-chat-page__columns { display: grid; grid-template-columns: minmax(0, 860fr) minmax(348px, 380fr); gap: 40px; margin-block-start: 41px; }
+.group-chat-page__conversation-column { min-inline-size: 0; }
+
+.group-chat-conversation, .group-chat-people {
+  min-inline-size: 0;
+  block-size: 620px;
+  border: 1px solid var(--color-border-default);
+  border-radius: calc(var(--radius-lg) + var(--spacing-1));
+  background: var(--color-bg-surface);
+}
+.group-chat-conversation { display: flex; flex-direction: column; padding: 23px; }
+.group-chat-history { flex: 1; min-block-size: 0; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; scrollbar-width: thin; border-radius: var(--radius-sm); }
+.group-chat-history:focus-visible { outline-offset: 0; }
+.group-chat-history__list { display: grid; gap: 41px; margin: 0; padding: 0; list-style: none; }
+.group-chat-message { display: flex; align-items: start; gap: var(--spacing-3); min-block-size: 67px; }
+.group-chat-message__content { min-inline-size: 0; }
+.group-chat-message__sender { display: flex; align-items: baseline; flex-wrap: wrap; gap: 0 var(--spacing-1); font-size: var(--font-size-caption-default); font-weight: var(--font-weight-bold); line-height: 18px; }
+.group-chat-message__source { margin-inline-start: var(--spacing-2); color: var(--color-text-secondary); font-size: 0.75rem; font-weight: var(--font-weight-regular); }
+.group-chat-message__bubble { margin-block-start: 6px; padding: var(--spacing-3) var(--spacing-4); border-radius: var(--radius-lg); font-size: var(--font-size-label-default); line-height: 19px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.group-chat-message--local .group-chat-message__bubble { background: var(--color-bg-canvas); }
+.group-chat-history__empty { display: grid; align-content: center; gap: var(--spacing-3); min-block-size: 100%; padding: var(--spacing-4); color: var(--color-text-secondary); text-align: center; }
+.group-chat-history__empty h2 { color: var(--color-text-primary); font-size: var(--font-size-body-large); }
+.group-chat-history__empty p { font-size: var(--font-size-caption-default); line-height: var(--line-height-caption-default); }
+.group-chat-conversation__round { flex: 0 0 auto; align-self: center; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 0 var(--spacing-1); inline-size: min(480px, 100%); min-block-size: 44px; margin-block-start: var(--spacing-6); padding: var(--spacing-2) var(--spacing-4); border-radius: var(--radius-full); background: var(--color-action-primary); font-size: var(--font-size-caption-default); font-weight: var(--font-weight-bold); line-height: 18px; text-align: center; }
+.group-chat-result { flex: 0 0 auto; display: flex; align-items: start; justify-content: space-between; gap: var(--spacing-4); min-block-size: 96px; margin-block-start: 22px; padding: 14px 18px; border-radius: var(--radius-lg); color: var(--color-text-inverse); background: var(--color-bg-inverse); }
+.group-chat-result > div { min-inline-size: 0; }
+.group-chat-result h2 { font-size: 1.1875rem; line-height: 24px; }
+.group-chat-result p { margin-block-start: var(--spacing-3); font-size: var(--font-size-caption-default); line-height: 18px; }
+.group-chat-result .ui-text-action { flex: 0 0 auto; align-self: center; text-decoration: none; }
+.group-chat-composer { flex: 0 0 auto; display: flex; align-items: end; gap: var(--spacing-2); min-block-size: 52px; margin-block-start: 28px; padding: 3px; border: 1px solid var(--color-border-default); border-radius: calc(var(--radius-md) + 2px); background: var(--color-bg-canvas); }
+.group-chat-composer textarea { flex: 1; display: block; inline-size: 100%; min-inline-size: 0; min-block-size: 44px; max-block-size: 8.25rem; padding: var(--spacing-3); border: 0; border-radius: var(--radius-sm); color: var(--color-text-primary); background: transparent; font-size: var(--font-size-label-default); line-height: 20px; resize: none; }
+.group-chat-composer textarea::placeholder { color: var(--color-text-secondary); opacity: 1; }
+.group-chat-composer textarea:focus-visible { outline-offset: 0; }
+.group-chat-composer .ui-button { flex: 0 0 auto; inline-size: 104px; font-size: var(--font-size-caption-default); }
+
+.group-chat-people { padding: 23px 15px; }
+.group-chat-people > h2 { margin-inline: var(--spacing-2); font-size: 1.375rem; line-height: 28px; }
+.group-chat-people__list { display: grid; gap: var(--spacing-4); margin: var(--spacing-6) 0 0; padding: 0; list-style: none; }
+.group-chat-activity { margin: 46px var(--spacing-2) 0; }
+.group-chat-activity h3 { font-size: var(--font-size-body-large); line-height: 23px; }
+.group-chat-activity ul { margin: 13px 0 0; padding: 0; list-style: none; color: var(--color-text-secondary); font-size: var(--font-size-caption-default); line-height: 18px; }
+.group-chat-page__help { margin-block-start: var(--spacing-3); color: var(--color-text-secondary); font-size: var(--font-size-caption-default); line-height: var(--line-height-caption-default); }
+.group-chat-page__help label { font-weight: var(--font-weight-bold); cursor: text; }
+.group-chat-page__status { margin-block-start: var(--spacing-2); }
+.group-chat-page__status:empty { display: none; }
+.group-chat-page > .lobby-demo-note { grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: var(--spacing-4); margin-block-start: var(--spacing-3); padding-block-start: var(--spacing-3); }
+.group-chat-page__clear { justify-self: start; margin-inline-start: calc(-1 * var(--spacing-2)); }
+
+@media (max-width: 1200px) {
+  .group-chat-page { inline-size: calc(100% - var(--spacing-16)); }
+  .group-chat-page__columns { gap: var(--spacing-6); }
+}
+@media (max-width: 1000px) {
+  .group-chat-page__columns { grid-template-columns: minmax(0, 1fr); }
+  .group-chat-people { block-size: auto; padding: var(--spacing-6); }
+  .group-chat-people > h2 { margin: 0; }
+  .group-chat-people__list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .group-chat-activity { margin: var(--spacing-6) 0 0; }
+}
+@media (max-width: 768px) {
+  .group-chat-page { inline-size: calc(100% - var(--spacing-8)); padding-block-start: var(--spacing-6); }
+  .group-chat-page__heading { flex-wrap: wrap; gap: var(--spacing-4); }
+  .group-chat-page__heading h1 { font-size: clamp(2rem, 6vw, var(--font-size-heading-h1)); line-height: 1.2; }
+  .group-chat-page__intro { line-height: var(--line-height-body-large); }
+  .group-chat-page__back { margin: 0; }
+  .group-chat-page__columns { margin-block-start: var(--spacing-6); }
+  .group-chat-conversation { block-size: clamp(560px, 80svh, 700px); padding: var(--spacing-4); }
+  .group-chat-history__list { gap: var(--spacing-6); }
+  .group-chat-message__bubble { padding-inline: var(--spacing-2); line-height: 1.4; }
+  .group-chat-result { flex-wrap: wrap; gap: var(--spacing-2); margin-block-start: var(--spacing-4); padding: var(--spacing-3) var(--spacing-4); }
+  .group-chat-result p { margin-block-start: var(--spacing-2); }
+  .group-chat-result .ui-text-action { margin-inline-start: calc(-1 * var(--spacing-2)); }
+  .group-chat-composer { margin-block-start: var(--spacing-4); }
+  .group-chat-composer .ui-button { inline-size: auto; padding-inline: var(--spacing-4); }
+  .group-chat-people { padding: var(--spacing-4); }
+  .group-chat-people__list { grid-template-columns: minmax(0, 1fr); }
+  .group-chat-page > .lobby-demo-note { grid-template-columns: minmax(0, 1fr); }
+}

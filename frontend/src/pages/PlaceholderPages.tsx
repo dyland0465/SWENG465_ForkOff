@@ -1,4 +1,3 @@
-import { generatePath, useParams } from 'react-router'
 import { TextAction } from '../components/ui/TextAction'
 import { paths } from '../routes/paths'
 
@@ -20,38 +19,6 @@ function PlaceholderPage({
       <TextAction to={backTo}>{backLabel}</TextAction>
     </main>
   )
-}
-
-function LobbyPlaceholder({ title }: { title: string }) {
-  const { lobbyId } = useParams<'lobbyId'>()
-
-  return (
-    <PlaceholderPage
-      title={title}
-      backTo={lobbyId ? generatePath(paths.lobby, { lobbyId }) : paths.home}
-      backLabel={lobbyId ? 'Back to lobby' : 'Back to home'}
-    />
-  )
-}
-
-export function DiscoveryPreviewPage() {
-  return <LobbyPlaceholder title="Discovery preview" />
-}
-
-export function VotingPage() {
-  return <LobbyPlaceholder title="Voting" />
-}
-
-export function RestaurantDetailsPage() {
-  return <LobbyPlaceholder title="Restaurant details" />
-}
-
-export function GroupChatPage() {
-  return <LobbyPlaceholder title="Group chat" />
-}
-
-export function ResultsPage() {
-  return <LobbyPlaceholder title="Results and final choice" />
 }
 
 export function PartnerRestaurantPage() {
