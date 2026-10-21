@@ -4,6 +4,7 @@ import { Dialog } from '../ui/Dialog'
 import { AppHeader } from './AppHeader'
 import { paths } from '../../routes/paths'
 import { VotingSessionProvider } from '../../features/voting/VotingSessionProvider'
+import { RouteNavigation } from './RouteNavigation'
 
 export function AppLayout() {
   const [showHowItWorks, setShowHowItWorks] = useState(false)
@@ -27,6 +28,7 @@ export function AppLayout() {
         />
         <VotingSessionProvider><Outlet /></VotingSessionProvider>
       </div>
+      <RouteNavigation />
       {showHowItWorks && (
         <Dialog title="How it works" onClose={() => setShowHowItWorks(false)}>
           <ol className="how-it-works">
