@@ -7,7 +7,6 @@ import { Restaurant } from "../models/restaurant";
 import { hashPassword, validatePassword } from "./auth";
 import { getGooglePlace, GooglePlacesError, searchRestaurants } from "./googlePlaces";
 import { GroupchatMessage } from "../models/groupchat";
-import { text } from "stream/iter";
 
 
 const router = Router();
@@ -1389,8 +1388,8 @@ router.post("/api/lobbies/:id/messages", async (req, res) => {
     userId: req.body.userId,
     message: text.trim(),
   });
-})
   return res.status(201).json(savedMsg);
+});
 
 
 
