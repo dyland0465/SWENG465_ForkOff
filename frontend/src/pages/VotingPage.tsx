@@ -123,7 +123,7 @@ function VotingScreen({ lobbyId }: { lobbyId: string }) {
             {(['yes', 'no', 'veto'] as const).map(choice => <div key={choice}><dt>{choice.toUpperCase()}</dt><dd>{votes.filter(vote => vote.decision === choice).length}</dd></div>)}
           </dl>
           <p>No group results have been calculated. Nothing was sent or saved.</p>
-          <div className="voting-complete__actions">{undoControl}<Button onClick={() => dispatch({ type: 'restart' })}>Restart demo</Button></div>
+          <div className="voting-complete__actions">{undoControl}<Button onClick={() => dispatch({ type: 'restart' })}>Restart demo</Button><TextAction className="voting-results-link" to={generatePath(paths.results, routeParams)}>View your results →</TextAction></div>
         </section>
       )}
 

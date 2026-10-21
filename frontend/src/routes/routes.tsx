@@ -8,8 +8,8 @@ import { GroupChatPage } from '../pages/GroupChatPage'
 import { DiscoveryPreviewPage } from '../pages/DiscoveryPreviewPage'
 import { VotingPage } from '../pages/VotingPage'
 import { RestaurantDetailsPage } from '../pages/RestaurantDetailsPage'
+import { ResultsPage } from '../pages/ResultsPage'
 import {
-  ResultsPage,
   PartnerRestaurantPage,
   NotFoundPage,
 } from '../pages/PlaceholderPages'

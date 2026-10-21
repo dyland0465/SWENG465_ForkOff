@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { generatePath, useParams } from 'react-router'
+import { generatePath, useLocation, useParams } from 'react-router'
 import { Button } from '../components/ui/Button'
 import { TextAction } from '../components/ui/TextAction'
 import { demoRestaurants } from '../data/demoRestaurants'
@@ -21,6 +21,11 @@ function RestaurantDetailsScreen({ restaurant, lobbyId }: { restaurant: DemoRest
   const [action, setAction] = useState<RestaurantAction | null>(null)
   const sample = restaurant.sampleDetails
   const votingPath = generatePath(paths.voting, { lobbyId })
+  const location = useLocation()
+  const origin: unknown = location.state
+  const fromResults = typeof origin === 'object' && origin !== null && 'fromResults' in origin && origin.fromResults === true
+  const selection = fromResults && 'selection' in origin && typeof origin.selection === 'string' ? origin.selection : undefined
+  const returnPath = fromResults ? generatePath(paths.results, { lobbyId }) + (selection ? `?${new URLSearchParams({ selection })}` : '') : votingPath
 
   return (
     <main id="main-content" className="restaurant-details-page" tabIndex={-1}>
@@ -71,9 +76,9 @@ function RestaurantDetailsScreen({ restaurant, lobbyId }: { restaurant: DemoRest
           <p className="restaurant-details__map-label">Static sample map · not a real location</p>
         </section>
         <aside className="restaurant-details__return" aria-labelledby="restaurant-return-heading">
-          <h2 id="restaurant-return-heading">Back to your vote</h2>
+          <h2 id="restaurant-return-heading">{fromResults ? 'Back to your results' : 'Back to your vote'}</h2>
           <p>Details don’t reveal or change anyone else’s vote.</p>
-          <TextAction to={votingPath}>Return to voting</TextAction>
+          <TextAction to={returnPath}>{fromResults ? 'Return to results' : 'Return to voting'}</TextAction>
         </aside>
       </div>
 
