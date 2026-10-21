@@ -209,7 +209,7 @@ function LobbyScreen({ lobbyId }: { lobbyId: string }) {
       </div>
       <aside className="lobby-demo-note" aria-label="Demonstration details">
         <p id="lobby-demo-note"><strong>Frontend demonstration.</strong> Lobby data has not been loaded for route ID <span className="lobby-demo-note__id">{lobbyId}</span>. Names, roles, invitation code, filters, restaurant count, and messages are sample data. Edits and drafts are temporary. Leaving returns home without changing membership.</p>
-        <p id="lobby-navigation-note">Start voting opens the existing discovery placeholder; it does not start a round. Open group chat opens a temporary, unsaved chat preview.</p>
+        <p id="lobby-navigation-note">Start voting opens Discovery Preview with demonstration restaurants; it does not start a round. Open group chat opens a temporary, unsaved chat preview.</p>
         <SelectField label="Preview role (demo only)" value={role} onChange={event => { setRole(event.target.value); setEditing(false); setStatus('') }}>
           <option value="leader">Lobby leader</option>
           <option value="member">Member</option>

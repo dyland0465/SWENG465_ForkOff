@@ -34,10 +34,6 @@ function LobbyPlaceholder({ title }: { title: string }) {
   )
 }
 
-export function DiscoveryPreviewPage() {
-  return <LobbyPlaceholder title="Discovery preview" />
-}
-
 export function VotingPage() {
   return <LobbyPlaceholder title="Voting" />
 }

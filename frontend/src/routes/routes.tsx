@@ -5,8 +5,8 @@ import { CreateLobbyPage } from '../pages/CreateLobbyPage'
 import { JoinLobbyPage } from '../pages/JoinLobbyPage'
 import { LobbyPage } from '../pages/LobbyPage'
 import { GroupChatPage } from '../pages/GroupChatPage'
+import { DiscoveryPreviewPage } from '../pages/DiscoveryPreviewPage'
 import {
-  DiscoveryPreviewPage,
   VotingPage,
   RestaurantDetailsPage,
   ResultsPage,

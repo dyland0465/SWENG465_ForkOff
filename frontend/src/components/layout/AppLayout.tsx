@@ -11,11 +11,12 @@ export function AppLayout() {
   const isJoinLobby = useMatch(paths.joinLobby) !== null
   const isLobby = useMatch({ path: paths.lobby, end: true }) !== null
   const isGroupChat = useMatch(paths.groupChat) !== null
+  const isDiscovery = useMatch(paths.discoveryPreview) !== null
 
   return (
     <>
       {/* Reuse the original Home canvas so its dimensions and cropping stay unchanged. */}
-      <div className={`home-screen${isCreateLobby || isJoinLobby ? ' lobby-screen' : ''}${isLobby || isGroupChat ? ' lobby-detail-screen' : ''}`}>
+      <div className={`home-screen${isCreateLobby || isJoinLobby ? ' lobby-screen' : ''}${isLobby || isGroupChat ? ' lobby-detail-screen' : ''}${isDiscovery ? ' discovery-screen' : ''}`}>
         <AppHeader
           onHowItWorks={() => setShowHowItWorks(true)}
           onJoinLobby={() => navigate(paths.joinLobby)}
