@@ -1,7 +1,7 @@
 import { randomBytes } from "node:crypto";
 import dotenv from "dotenv";
 import mongoose from "mongoose";
-import { connectDB } from "./config/db";
+import { connectDB } from "./Config/db";
 import { GroupchatMessage } from "./models/groupchat";
 import { Lobby } from "./models/lobby";
 import { User } from "./models/user";
