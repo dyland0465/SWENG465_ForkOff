@@ -40,4 +40,4 @@ voteSchema.index(
     
 );
 
-export const Vote = mongoose.model("Vote", voteSchema);
+export const Vote = mongoose.model("Vote", voteSchema, "vote");

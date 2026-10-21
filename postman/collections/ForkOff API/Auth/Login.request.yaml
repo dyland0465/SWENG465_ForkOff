@@ -9,6 +9,22 @@ body:
   type: json
   content: |-
     {
-      "username": "testuser",
-      "password": "Password"
+      "username": "admin",
+      "password": "password"
     }
+scripts:
+  - type: post-response
+    code: |-
+      pm.test("login returns 200", function () {
+        pm.response.to.have.status(200);
+      });
+
+      pm.test("login response is JSON", function () {
+        pm.response.to.be.json;
+      });
+
+      pm.test("login returns the admin user", function () {
+        const body = pm.response.json();
+        pm.expect(body.user.username).to.eql("admin");
+        pm.expect(body.user.email).to.eql("admin@example.com");
+      });

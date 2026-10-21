@@ -20,3 +20,5 @@ const messageSchema = new Schema ({
 
 
 });
+
+export const GroupchatMessage = mongoose.model("GroupchatMessage", messageSchema, "groupchat");

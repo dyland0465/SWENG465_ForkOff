@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node server.js"
+    "start": "node server.js",
+    "db:init": "tsx src/init-collections.ts",
+    "db:seed:examples": "tsx src/seed-examples.ts"
   },
   "keywords": [],
   "type": "commonjs",

@@ -11,3 +11,4 @@ const lobbySchema = new Schema({
 
 
 
+export const Lobby = mongoose.model("Lobby", lobbySchema, "lobby");

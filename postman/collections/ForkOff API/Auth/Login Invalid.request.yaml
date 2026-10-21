@@ -1,0 +1,25 @@
+$kind: http-request
+method: POST
+url: '{{base_url}}/api/auth/login'
+order: 1001
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "username": "admin",
+      "password": "incorrect-password"
+    }
+scripts:
+  - type: post-response
+    code: |-
+      pm.test("invalid login returns 401", function () {
+        pm.response.to.have.status(401);
+      });
+
+      pm.test("invalid login returns an error message", function () {
+        const body = pm.response.json();
+        pm.expect(body.message).to.eql("Invalid username/email or password.");
+      });
