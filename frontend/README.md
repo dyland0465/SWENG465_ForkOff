@@ -2,6 +2,64 @@
 
 React + TypeScript + Vite, with plain CSS and the Fork Off Figma design system.
 
+## Partner Analytics
+
+Start Vite from `frontend` with `npm.cmd run dev`, then open
+`http://localhost:5173/partners/harbor` (use the port printed by Vite).
+The established `/partners/:restaurantId` route now implements
+[Figma Partner Analytics, 33:119](https://www.figma.com/design/NGidWJoB9QBFCdTd7U4BlQ/FORKOFF-?node-id=33-119).
+It has a separate partner header, four metric cards, a vote distribution chart,
+an expandable accessible data table, promotion engagement, and a privacy panel.
+It reuses Button, SelectField, TextAction, the foundation tokens, and self-hosted
+Atkinson Hyperlegible. The partner design contains no image or SVG assets.
+
+**Public demonstration only; no authenticated partner access.** Harbor & Hearth
+is the only analytics fixture. Other restaurant IDs show an empty report and an
+explicit link to this demo. No consumer vote/preference state is used or changed.
+Reporting controls select 30 or 7 sample days ending **September 8, 2026**, or an
+empty June period. Dates stay fixed and do not imply live or current reporting.
+Changing periods updates all metrics, chart values, promotion figures, and the
+screen-reader status. Overview and Promotions focus their sections; Support
+opens local guidance and restores focus when closed.
+
+`src/features/partner/demoPartnerAnalytics.ts` owns synthetic daily aggregates,
+report projection, rates, previous-period comparisons, and CSV serialization.
+Weekly buckets follow the Figma chart (135/170/188/219 Yes votes); the last
+bucket covers nine days, with precise dates in the table and CSV. Headline Yes
+votes and veto rate are derived from those same rows (712 and 10.1%) because the
+mockup's 3,842 and 3.2% disagree with its chart. Veto rate divides Veto by all
+Yes/No/Veto votes; promotion CTR divides clicks by views. Trends compare the
+preceding period of equal length. The chart states its scale, which adapts to
+daily or weekly counts while staying common across all series in a report.
+
+Export CSV downloads only the displayed sample period: summary metrics, exact
+vote bucket ranges/counts, and promotion views/clicks/CTR. Every row labels the
+synthetic source, restaurant, and report dates. Prior comparison rows are not
+exported. Empty reports show unavailable metrics and disable export. Controls
+reset on refresh; nothing is persisted. Desktop geometry follows the 1440px
+Figma layout, with responsive adaptations through 320–1920px.
+
+Future backend work must supply authenticated partner sessions, server-side
+restaurant authorization, privacy-safe aggregate APIs, reporting-period and
+comparison semantics, and persistence. This frontend does not authenticate,
+query MongoDB, manage restaurants/promotions, or call external services.
+
+Validation (browser checks require Vite on port 5175 and installed Chrome):
+
+```powershell
+npm.cmd run build
+npm.cmd run lint
+node --test tests/partnerAnalytics.test.mjs tests/votingSession.test.mjs tests/votingResults.test.mjs tests/restaurantPreferences.test.mjs
+node tests/partnerAnalytics.browser.mjs
+```
+
+The Partner browser suite checks actual CSV downloads, chart/metric consistency,
+keyboard controls, empty/unknown scopes, route focus and history, all nine
+consumer routes, and both populated periods at eight widths from 320 to 1920px.
+It writes screenshots and downloaded CSVs to a printed system temporary directory.
+Existing Lobby, navigation, Results, Details, and shared-preferences browser
+suites remain separate regression checks. No dependencies or backend changes.
+
 ## Shared restaurant preferences
 
 Lobby, Discovery Preview, and Voting read `useRestaurantPreferences(lobbyId)`.
@@ -154,7 +212,7 @@ verified service data and integrations are unavailable. The map is static.
 Voting choices survive client-side navigation and browser Back/Forward in the
 existing provider. Refresh clears these memory-only demo choices. Live restaurant
 data, menus, verified contact links, routing, and server persistence remain
-backend dependencies. Partner Restaurant remains a placeholder.
+backend dependencies. Partner Analytics is available as the public demo above.
 
 Validation:
 
@@ -224,8 +282,8 @@ replaced by navigation; “How it works” retains its content and native dialog
 behavior. The wordmark and Home link navigate to `/`, and Enter lobby code
 navigates to `/lobbies/join`. Home is marked current only on the Home route.
 
-The linked Figma file contains nine consumer screen frames. The tenth destination
-is the Partner Restaurant screen, confirmed separately and awaiting its design.
+The linked Figma file contains nine consumer screen frames and the tenth
+Partner Analytics screen on the separate Partner page.
 
 | Screen | Route | Figma node |
 | --- | --- | --- |
@@ -238,10 +296,10 @@ is the Partner Restaurant screen, confirmed separately and awaiting its design.
 | Restaurant Details | `/lobbies/:lobbyId/restaurants/:restaurantId` | `33:80` |
 | Group Chat | `/lobbies/:lobbyId/chat` | `33:93` |
 | Results and Final Choice | `/lobbies/:lobbyId/results` | `33:106` |
-| Partner Restaurant | `/partners/:restaurantId` | Design pending |
+| Partner Restaurant / Analytics | `/partners/:restaurantId` | `33:119` |
 
 Unknown URLs show a Page not found screen with a Home link. Consumer screens
-use local demonstrations; Partner Restaurant remains a placeholder. Lobby links
+use local demonstrations; Partner Analytics uses separate synthetic fixtures. Lobby links
 use the current URL's `lobbyId`; Restaurant Details retains both lobby
 and restaurant context. Use `useParams` to access IDs and `generatePath` with
 the patterns in `paths.ts` when adding future navigation. IDs must come from

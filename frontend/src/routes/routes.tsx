@@ -9,8 +9,8 @@ import { DiscoveryPreviewPage } from '../pages/DiscoveryPreviewPage'
 import { VotingPage } from '../pages/VotingPage'
 import { RestaurantDetailsPage } from '../pages/RestaurantDetailsPage'
 import { ResultsPage } from '../pages/ResultsPage'
+import { PartnerRestaurantPage } from '../pages/PartnerRestaurantPage'
 import {
-  PartnerRestaurantPage,
   NotFoundPage,
 } from '../pages/PlaceholderPages'
 import { paths } from './paths'
