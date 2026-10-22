@@ -286,3 +286,10 @@
   .lobby-chat-preview__messages { padding: 0; }
   .lobby-chat-preview__bubble { padding-inline: min(var(--spacing-2), 8px); }
 }
+
+/* Live lobby forms retain their draft while presence and messages update. */
+.lobby-settings-editor { margin-block: var(--spacing-4); }
+.lobby-filter-editor > fieldset { display: grid; gap: var(--spacing-4); }
+.lobby-global-notice { padding: var(--spacing-4); text-align: center; }
+.create-lobby__identity { grid-column: 1 / -1; }
+.group-chat-message__bubble { white-space: pre-wrap; overflow-wrap: anywhere; }

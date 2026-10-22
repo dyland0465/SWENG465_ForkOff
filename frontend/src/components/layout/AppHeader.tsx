@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Link, useLocation, useMatch, useNavigate } from 'react-router'
 import wordmark from '../../assets/figma/wordmark.png'
 import { TextAction } from '../ui/TextAction'
@@ -15,6 +16,7 @@ export function AppHeader({ onHowItWorks, onJoinLobby }: AppHeaderProps) {
   const isLogin = useMatch(paths.login) !== null
   const { pathname } = useLocation()
   const navigate = useNavigate()
+  const [logoutError, setLogoutError] = useState('')
   const { user, signOut } = useAuth()
   return (
     <header className="app-header">
@@ -30,7 +32,7 @@ export function AppHeader({ onHowItWorks, onJoinLobby }: AppHeaderProps) {
           {user ? (
             <span className="app-header__account">
               <span className="app-header__user">Hi, {user.username}</span>
-              <TextAction tone="nav" onClick={() => { signOut(); navigate(paths.home) }}>Log out</TextAction>
+              <TextAction tone="nav" onClick={() => { void signOut().then(() => navigate(paths.home)).catch(error => setLogoutError(error.message)) }}>Log out</TextAction>
             </span>
           ) : (
             <TextAction to={paths.login} state={isLogin ? undefined : { from: pathname }} tone="nav" current={isLogin}>Log in</TextAction>
@@ -38,6 +40,7 @@ export function AppHeader({ onHowItWorks, onJoinLobby }: AppHeaderProps) {
         </nav>
       </div>
       <div className="app-header__divider" />
+      {logoutError && <p role="alert">{logoutError}</p>}
     </header>
   )
 }

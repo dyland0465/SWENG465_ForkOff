@@ -1,50 +1,33 @@
-/**
- * AuthProvider.tsx
- *
- * Wraps the whole app (see App.tsx) and keeps track of who is logged in.
- *  - On first load it reads any saved user from localStorage, so refreshing
- *    the page doesn't log you out.
- *  - signIn(user) saves the user in React state and localStorage.
- *  - signOut() clears both.
- *
- * Every component inside the provider can get the user with useAuth().
- *
- * Note: the backend doesn't issue a token or session yet, so this is only
- * client-side state. It's fine for showing the username in the UI, but it
- * doesn't secure any API routes.
- */
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { AuthContext } from './authContext'
 import type { AuthUser } from './authContext'
 
-const STORAGE_KEY = 'forkoff:user'
-
-// Read the saved user, if any. try/catch because localStorage can be blocked
-// (private browsing) or contain bad data.
-function readStoredUser(): AuthUser | null {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    return raw ? JSON.parse(raw) as AuthUser : null
-  } catch {
-    return null
-  }
-}
-
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(readStoredUser)
-
+  const [user, setUser] = useState<AuthUser | null>(null)
+  const [loading, setLoading] = useState(true)
+  const generation = useRef(0)
+  useEffect(() => {
+    const controller = new AbortController()
+    const version = generation.current
+    try { localStorage.removeItem('forkoff:user') } catch { /* Storage is optional. */ }
+    fetch('/api/auth/session', { signal: controller.signal }).then(async response => {
+      if (!response.ok) throw new Error('Could not restore session.')
+      const result = await response.json()
+      if (generation.current === version) setUser(result.user)
+    }).catch(() => {}).finally(() => {
+      if (!controller.signal.aborted) setLoading(false)
+    })
+    return () => controller.abort()
+  }, [])
   const signIn = useCallback((nextUser: AuthUser) => {
-    setUser(nextUser)
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(nextUser)) } catch { /* in-memory only */ }
+    generation.current++; setUser(nextUser); setLoading(false)
   }, [])
-
-  const signOut = useCallback(() => {
-    setUser(null)
-    try { localStorage.removeItem(STORAGE_KEY) } catch { /* nothing stored */ }
+  const signOut = useCallback(async () => {
+    const response = await fetch('/api/auth/logout', { method: 'POST' })
+    if (!response.ok) throw new Error('Could not log out. Please try again.')
+    generation.current++; setUser(null); setLoading(false)
   }, [])
-
-  // useMemo so components only re-render when the user actually changes.
-  const value = useMemo(() => ({ user, signIn, signOut }), [user, signIn, signOut])
+  const value = useMemo(() => ({ user, loading, signIn, signOut }), [user, loading, signIn, signOut])
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

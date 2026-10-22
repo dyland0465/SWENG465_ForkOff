@@ -1,5 +1,6 @@
+import { LiveLobbyProvider } from '../../features/lobby/LiveLobbyProvider'
 import { useState } from 'react'
-import { Outlet, useMatch, useNavigate } from 'react-router'
+import { Outlet, useLocation, useMatch, useNavigate } from 'react-router'
 import { Dialog } from '../ui/Dialog'
 import { AppHeader } from './AppHeader'
 import { paths } from '../../routes/paths'
@@ -9,6 +10,7 @@ import { RouteNavigation } from './RouteNavigation'
 export function AppLayout() {
   const [showHowItWorks, setShowHowItWorks] = useState(false)
   const navigate = useNavigate()
+  const lobbyNotice = useLocation().state?.lobbyNotice as string | undefined
   const isCreateLobby = useMatch(paths.createLobby) !== null
   const isJoinLobby = useMatch(paths.joinLobby) !== null
   const isLogin = useMatch(paths.login) !== null
@@ -28,7 +30,7 @@ export function AppLayout() {
           onHowItWorks={() => setShowHowItWorks(true)}
           onJoinLobby={() => navigate(paths.joinLobby)}
         />
-        <VotingSessionProvider><Outlet /></VotingSessionProvider>
+        <VotingSessionProvider><LiveLobbyProvider>{lobbyNotice && <p className="lobby-global-notice" role="status">{lobbyNotice}</p>}<Outlet /></LiveLobbyProvider></VotingSessionProvider>
       </div>
       <RouteNavigation />
       {showHowItWorks && (

@@ -1,3 +1,4 @@
+import { useAuth } from '../features/auth/useAuth'
 import { generatePath, useNavigate } from 'react-router'
 import { useState } from 'react'
 import type { FormEvent } from 'react'
@@ -9,16 +10,18 @@ import { ForkEmblem } from '../components/lobby/ForkEmblem'
 import { useLobbyForm } from '../components/lobby/useLobbyForm'
 import {
   cuisineOptions, priceOptions, diningOptions, distanceOptions, ratingOptions,
-  validateLocation, validateDateTime, initialDinnerTime, formatDinnerTime, toggleOption,
+  validateLocation, validateDateTime, validateDisplayName, initialDinnerTime, formatDinnerTime, toggleOption,
 } from '../components/lobby/lobbyForm'
 import { paths } from '../routes/paths'
 import './LobbyForms.css'
 
 export function CreateLobbyPage() {
   const navigate = useNavigate()
+  const { user, loading } = useAuth()
   const { values, errors, setValue, onBlur, validate } = useLobbyForm(
-    { location: 'Erie, PA', dateTime: initialDinnerTime(), distance: '5', rating: '4.0' },
+    { displayName: '', location: 'Erie, PA', dateTime: initialDinnerTime(), distance: '5', rating: '4.0' },
     {
+      displayName: value => user ? undefined : validateDisplayName(value),
       location: validateLocation,
       dateTime: validateDateTime,
       distance: value => distanceOptions.some(option => option === value) ? undefined : 'Choose a distance.',
@@ -58,6 +61,7 @@ export function CreateLobbyPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          ...(!user ? { displayName: values.displayName.trim() } : {}),
           location: values.location.trim(),
           dinnerAt: new Date(values.dateTime).toISOString(),
           maxDistance: Number(values.distance),
@@ -99,6 +103,9 @@ export function CreateLobbyPage() {
       <h1 className="text-heading-h1">Create a lobby</h1>
       <p className="lobby-form-page__intro text-body-large">Set the guardrails. Your group can still explore inside them.</p>
       <form className="create-lobby" noValidate onSubmit={submit} onChange={() => setStatus('')}>
+        <div className="create-lobby__identity">
+          {user ? <p>Hosting as {user.username}</p> : <TextInput label="Your display name" name="displayName" required maxLength={40} autoComplete="nickname" value={values.displayName} error={errors.displayName} onChange={event => setValue('displayName', event.target.value)} onBlur={() => onBlur('displayName')} />}
+        </div>
         <div className="create-lobby__filters lobby-panel">
           <div className="create-lobby__fields">
             <TextInput label="Location" name="location" required autoComplete="street-address" value={values.location} error={errors.location} onChange={event => setValue('location', event.target.value)} onBlur={() => onBlur('location')} />
@@ -139,7 +146,7 @@ export function CreateLobbyPage() {
             <ul>{summary.map((line, index) => <li key={index}><span aria-hidden="true">✓</span><span>{line}</span></li>)}</ul>
           </aside>
           <div className="create-lobby__submit">
-            <Button type="submit" disabled={isSubmitting} aria-describedby="create-backend-note">
+            <Button type="submit" disabled={loading || isSubmitting} aria-describedby="create-backend-note">
               {isSubmitting ? 'Creating lobby…' : 'Create lobby'}
             </Button>
             <p className="lobby-form-note">You can edit these filters before voting starts.</p>

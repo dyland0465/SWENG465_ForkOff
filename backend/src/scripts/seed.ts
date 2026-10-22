@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+import { hashPassword } from "../services/auth";
 import dotenv from "dotenv";
 import mongoose from "mongoose";
 
@@ -25,27 +27,27 @@ async function seed() {
     const user1 = await User.create({
       username: "test1",
       email: "test1@example.com",
-      password: "123"
+      password: await hashPassword("test-password-123")
     })
 
     const user2 = await User.create({
       username: "test2",
       email: "test2@example.com",
-      password: "1234"
+      password: await hashPassword("test-password-1234")
     })
 
+    const hostMemberId = randomUUID();
     const lobby = await Lobby.create({
       lobbyCode: "12354",
       name: "lobby1",
-      hostID: user1._id,
-      members: [
-        user1._id,
-        user2._id
-      ],
+      hostMemberId,
+      nextJoinOrder: 2,
+      revision: 0,
+      members: [user1, user2].map((user, index) => ({ memberId: index === 0 ? hostMemberId : randomUUID(), identityKey: `user:${user._id}`, userId: user._id, type: "user", displayName: user.username, joinOrder: index, joinedAt: new Date() })),
       status: "waiting",
       filters: {
         maxDistance: 10,
-        minimuRating: 4,
+        minimumRating: 4,
         categories: ["Italian", "Mexican"],
         openNow: true
       }

@@ -26,10 +26,11 @@ type LoginLocationState = { from?: string; mode?: LoginMode } | null
 
 export function LoginPage() {
   const navigate = useNavigate()
-  const { user, signIn } = useAuth()
+  const { user, loading, signIn } = useAuth()
   const state = useLocation().state as LoginLocationState
   const redirectTo = state?.from ?? paths.home
 
+  if (loading) return <main id="main-content"><p role="status">Checking session…</p></main>
   if (user) return <Navigate to={redirectTo} replace />
 
   return (
