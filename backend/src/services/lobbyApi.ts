@@ -185,6 +185,9 @@ function filtersFrom(body: Record<string, unknown>) {
 }
 async function newMember(req: Request, res: Response, body: Record<string, unknown>): Promise<Member> {
   if (body.userId !== undefined || body.guestId !== undefined || body.hostId !== undefined || body.hostID !== undefined) reject("Identity is established by your session, not request IDs.");
+  if (!req.identity?.userId && body.displayName === undefined) {
+    throw new HttpError(401, "Your login session is missing or expired. Open this site over HTTPS and log in again, or join as a guest with a display name.");
+  }
   const displayName = req.identity?.userId ? req.identity.username! : shortString(body.displayName, "Guest display name", 40);
   if (!req.identity) await establishSession(req, res);
   return {

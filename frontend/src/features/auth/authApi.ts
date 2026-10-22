@@ -28,7 +28,17 @@ async function post(url: string, body: Record<string, string>): Promise<AuthUser
   const result = await response.json().catch(() => ({})) as AuthResponse
   if (!response.ok) throw new Error(result.message || 'Something went wrong. Please try again.')
   if (!result.user) throw new Error('The server did not return a user.')
-  return result.user
+  // A successful password check does not mean the browser accepted the cookie.
+  // Confirm it before displaying a logged-in account or hiding guest name fields.
+  const sessionResponse = await fetch('/api/auth/session', { credentials: 'same-origin', cache: 'no-store' })
+  if (!sessionResponse.ok) throw new Error('Could not verify your login session. Please try again.')
+  const session = await sessionResponse.json() as AuthResponse
+  if (!session.user || session.user.id !== result.user.id) {
+    throw new Error(window.location.protocol === 'http:' && !['localhost', '127.0.0.1', '[::1]'].includes(window.location.hostname)
+      ? 'Your login session could not be saved over HTTP. Open the HTTPS version of this site and log in again.'
+      : 'Your login session could not be saved. Allow cookies for this site and log in again.')
+  }
+  return session.user
 }
 
 export function login(identifier: string, password: string) {
