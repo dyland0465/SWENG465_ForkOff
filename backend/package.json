@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "dev": "tsx watch src/server.ts",
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "node --test lobby-routes.test.cjs",
     "start": "node server.js",
     "db:init": "tsx src/init-collections.ts",
     "db:seed:examples": "tsx src/seed-examples.ts",

@@ -12,6 +12,11 @@ import { GroupchatMessage } from "../models/groupchat";
 const router = Router();
 const lobbyCodeAlphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
+function lobbyFilter(id: string) {
+  const key = id.trim();
+  return mongoose.isValidObjectId(key) ? { _id: key } : { lobbyCode: key.toUpperCase() };
+}
+
 function generateLobbyCode() {
   return Array.from({ length: 6 }, () => lobbyCodeAlphabet[randomInt(lobbyCodeAlphabet.length)]).join("");
 }
@@ -896,19 +901,29 @@ router.get("/api/lobbies/:id", async (req, res) => {
  *     responses:
  *       200: { description: Lobby updated successfully. }
  */
-router.patch("/api/lobbies/:id", (req, res) => {
-  const lobbyId = req.params.id;
-
+router.patch("/api/lobbies/:id", async (req, res) => {
+  const body = req.body ?? {};
+  if (!Object.keys(body).length || Object.keys(body).some(key => !["name", "status"].includes(key))) {
+    return res.status(400).json({ message: "Provide name and/or status only." });
+  }
+  if (body.name !== undefined && (typeof body.name !== "string" || !body.name.trim() || body.name.trim().length > 120)) {
+    return res.status(400).json({ message: "name must be between 1 and 120 characters." });
+  }
+  if (body.status !== undefined && !["waiting", "playing", "finished"].includes(body.status)) {
+    return res.status(400).json({ message: "status must be waiting, playing, or finished." });
+  }
   const updates = {
-    name: req.body.name,
-    status: req.body.status,
+    ...(body.name !== undefined ? { name: body.name.trim() } : {}),
+    ...(body.status !== undefined ? { status: body.status } : {}),
   };
-
-  return res.status(200).json({
-    message: "Lobby updated",
-    lobbyId: lobbyId,
-    updates: updates,
-  });
+  try {
+    const lobby = await Lobby.findOneAndUpdate(lobbyFilter(req.params.id), { $set: updates }, { new: true, runValidators: true });
+    if (!lobby) return res.status(404).json({ message: "Lobby not found." });
+    return res.status(200).json({ message: "Lobby updated", lobbyId: lobby._id, updates });
+  } catch (error) {
+    console.error("Failed to update lobby:", error);
+    return res.status(500).json({ message: "Failed to update lobby." });
+  }
 });
 
 /** @swagger
@@ -1027,26 +1042,42 @@ router.post("/api/lobbies/:id/join", async (req, res) => {
  *     parameters: [{ in: path, name: id, required: true, schema: { type: string } }]
  *     requestBody:
  *       required: true
- *       content: { application/json: { schema: { type: object, required: [userId], properties: { userId: { type: string } } } } }
+ *       content: { application/json: { schema: { type: object, properties: { userId: { type: string }, guestId: { type: string } }, oneOf: [{ required: [userId] }, { required: [guestId] }] } } }
  *     responses:
- *       200: { description: User left lobby successfully. }
- *       400: { description: User ID is required. }
+ *       200: { description: Member left lobby successfully. }
+ *       400: { description: Provide either a valid userId or guestId. }
+ *       404: { description: Lobby not found. }
+ *       409: { description: Host cannot leave or member is no longer present. }
  */
-router.post("/api/lobbies/:id/leave", (req, res) => {
-  const lobbyId = req.params.id;
-  const userId = req.body.userId;
-
-  if (!userId) {
-    return res.status(400).json({
-      message: "User ID is required.",
-    });
+router.post("/api/lobbies/:id/leave", async (req, res) => {
+  const body = req.body ?? {};
+  const hasUser = body.userId !== undefined;
+  const hasGuest = body.guestId !== undefined;
+  if (hasUser === hasGuest || (hasUser && (typeof body.userId !== "string" || !mongoose.isValidObjectId(body.userId))) ||
+      (hasGuest && (typeof body.guestId !== "string" || !body.guestId.trim()))) {
+    return res.status(400).json({ message: "Provide either a valid userId or a nonempty guestId." });
   }
-
-  return res.status(200).json({
-    message: "User left lobby",
-    lobbyId: lobbyId,
-    userId: userId,
-  });
+  try {
+    // Keep the registered host in the lobby until ownership transfer is supported.
+    const filter = lobbyFilter(req.params.id);
+    const lobby = await Lobby.findOne(filter);
+    if (!lobby) return res.status(404).json({ message: "Lobby not found." });
+    if (hasUser && lobby.hostID?.equals(body.userId)) {
+      return res.status(409).json({ message: "The host cannot leave the lobby." });
+    }
+    const memberFilter = hasUser ? { members: body.userId } : { "guestMembers.guestId": body.guestId.trim() };
+    const removal = hasUser ? { members: body.userId } : { guestMembers: { guestId: body.guestId.trim() } };
+    const updated = await Lobby.findOneAndUpdate(
+      { ...filter, ...memberFilter, ...(hasUser ? { hostID: { $ne: body.userId } } : {}) },
+      { $pull: removal }, { new: true },
+    );
+    if (!updated) return res.status(409).json({ message: "Member is no longer in this lobby or cannot leave." });
+    return res.status(200).json({ message: "Member left lobby", lobbyId: updated._id,
+      ...(hasUser ? { userId: body.userId } : { guestId: body.guestId.trim() }) });
+  } catch (error) {
+    console.error("Failed to leave lobby:", error);
+    return res.status(500).json({ message: "Failed to leave lobby." });
+  }
 });
 
 /** @swagger
@@ -1058,24 +1089,15 @@ router.post("/api/lobbies/:id/leave", (req, res) => {
  *     responses:
  *       200: { description: Lobby members returned successfully. }
  */
-router.get("/api/lobbies/:id/members", (req, res) => {
-  const lobbyId = req.params.id;
-
-  const members = [
-    {
-      id: 1,
-      username: "UserOne",
-    },
-    {
-      id: 2,
-      username: "UserTwo",
-    },
-  ];
-
-  return res.status(200).json({
-    lobbyId: lobbyId,
-    members: members,
-  });
+router.get("/api/lobbies/:id/members", async (req, res) => {
+  try {
+    const lobby = await Lobby.findOne(lobbyFilter(req.params.id)).populate("members", "username");
+    if (!lobby) return res.status(404).json({ message: "Lobby not found." });
+    return res.status(200).json({ lobbyId: lobby._id, members: lobby.members, guestMembers: lobby.guestMembers });
+  } catch (error) {
+    console.error("Failed to fetch lobby members:", error);
+    return res.status(500).json({ message: "Failed to fetch lobby members." });
+  }
 });
 
 /** @swagger
@@ -1118,22 +1140,15 @@ router.get("/api/lobbies/:id/restaurants", (req, res) => {
  *     responses:
  *       200: { description: Lobby filters returned successfully. }
  */
-router.get("/api/lobbies/:id/filters", (req, res) => {
-  const lobbyId = req.params.id;
-
-  const filters = {
-    maxDistance: 10,
-    minimumRating: 4,
-    maxPriceLevel: 3,
-    categories: ["American", "Mexican"],
-    openNow: true,
-    alcoholAvailable: false,
-  };
-
-  return res.status(200).json({
-    lobbyId: lobbyId,
-    filters: filters,
-  });
+router.get("/api/lobbies/:id/filters", async (req, res) => {
+  try {
+    const lobby = await Lobby.findOne(lobbyFilter(req.params.id));
+    if (!lobby) return res.status(404).json({ message: "Lobby not found." });
+    return res.status(200).json({ lobbyId: lobby._id, filters: lobby.filters });
+  } catch (error) {
+    console.error("Failed to fetch lobby filters:", error);
+    return res.status(500).json({ message: "Failed to fetch lobby filters." });
+  }
 });
 
 /** @swagger
@@ -1143,27 +1158,51 @@ router.get("/api/lobbies/:id/filters", (req, res) => {
  *     tags: [lobby]
  *     parameters: [{ in: path, name: id, required: true, schema: { type: string } }]
  *     requestBody:
- *       content: { application/json: { schema: { type: object, properties: { maxDistance: { type: number }, minimumRating: { type: number }, maxPriceLevel: { type: integer }, categories: { type: array, items: { type: string } }, openNow: { type: boolean }, alcoholAvailable: { type: boolean } } } } }
+ *       content: { application/json: { schema: { type: object, properties: { maxDistance: { type: number }, minimumRating: { type: number }, priceLevels: { type: array, items: { type: string, enum: ["$", "$$", "$$$"] } }, categories: { type: array, items: { type: string } }, openNow: { type: boolean }, location: { type: string }, dinnerAt: { type: string, format: date-time }, diningNeeds: { type: array, items: { type: string } } } } } }
  *     responses:
  *       200: { description: Lobby filters updated successfully. }
  */
-router.patch("/api/lobbies/:id/filters", (req, res) => {
-  const lobbyId = req.params.id;
-
-  const filters = {
-    maxDistance: req.body.maxDistance,
-    minimumRating: req.body.minimumRating,
-    maxPriceLevel: req.body.maxPriceLevel,
-    categories: req.body.categories,
-    openNow: req.body.openNow,
-    alcoholAvailable: req.body.alcoholAvailable,
-  };
-
-  return res.status(200).json({
-    message: "Lobby filters updated",
-    lobbyId: lobbyId,
-    filters: filters,
-  });
+router.patch("/api/lobbies/:id/filters", async (req, res) => {
+  const body = req.body ?? {};
+  const allowed = ["location", "dinnerAt", "maxDistance", "minimumRating", "categories", "openNow", "priceLevels", "diningNeeds"];
+  if (!Object.keys(body).length || Object.keys(body).some(key => !allowed.includes(key))) {
+    return res.status(400).json({ message: "Provide at least one supported filter; unknown filters are not accepted." });
+  }
+  if (body.location !== undefined && (typeof body.location !== "string" || !body.location.trim() || body.location.trim().length > 120)) {
+    return res.status(400).json({ message: "location must be between 1 and 120 characters." });
+  }
+  if (body.dinnerAt !== undefined && (typeof body.dinnerAt !== "string" || !Number.isFinite(Date.parse(body.dinnerAt)) || Date.parse(body.dinnerAt) <= Date.now())) {
+    return res.status(400).json({ message: "Choose a valid dinner date and time in the future." });
+  }
+  for (const [key, min, max] of [["maxDistance", 1, 100], ["minimumRating", 0, 5]] as const) {
+    if (body[key] !== undefined && (typeof body[key] !== "number" || !Number.isFinite(body[key]) || body[key] < min || body[key] > max)) {
+      return res.status(400).json({ message: `${key} must be between ${min} and ${max}.` });
+    }
+  }
+  for (const [key, count, length] of [["categories", 20, 40], ["diningNeeds", 10, 60]] as const) {
+    if (body[key] !== undefined && (!Array.isArray(body[key]) || body[key].length > count || body[key].some((value: unknown) => typeof value !== "string" || !value.trim() || value.trim().length > length))) {
+      return res.status(400).json({ message: `${key} must be an array of up to ${count} nonempty short strings.` });
+    }
+  }
+  if (body.openNow !== undefined && typeof body.openNow !== "boolean") {
+    return res.status(400).json({ message: "openNow must be a boolean." });
+  }
+  if (body.priceLevels !== undefined && (!Array.isArray(body.priceLevels) || body.priceLevels.some((value: unknown) => typeof value !== "string" || !["$", "$$", "$$$"].includes(value)))) {
+    return res.status(400).json({ message: "priceLevels may only contain $, $$, or $$$." });
+  }
+  const updates: Record<string, unknown> = {};
+  for (const key of Object.keys(body)) {
+    updates[`filters.${key}`] = typeof body[key] === "string" ? body[key].trim() : body[key];
+  }
+  try {
+    // Update individual paths so omitted filters and concurrent edits are preserved.
+    const lobby = await Lobby.findOneAndUpdate(lobbyFilter(req.params.id), { $set: updates }, { new: true, runValidators: true });
+    if (!lobby) return res.status(404).json({ message: "Lobby not found." });
+    return res.status(200).json({ message: "Lobby filters updated", lobbyId: lobby._id, filters: lobby.filters });
+  } catch (error) {
+    console.error("Failed to update lobby filters:", error);
+    return res.status(500).json({ message: "Failed to update lobby filters." });
+  }
 });
 
 /** @swagger

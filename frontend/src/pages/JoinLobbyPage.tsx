@@ -37,6 +37,7 @@ export function JoinLobbyPage() {
       })
       const result = await response.json().catch(() => ({})) as {
         message?: string
+        member?: { guestId?: string }
         lobby?: { id?: string; name?: string; lobbyCode?: string }
       }
 
@@ -45,8 +46,10 @@ export function JoinLobbyPage() {
       }
 
       if (!result.lobby?.id) throw new Error('The server did not return a lobby ID.')
+      if (!result.member?.guestId) throw new Error('The server did not return a guest ID.')
+      try { sessionStorage.setItem(`lobby-member:${result.lobby.id}`, JSON.stringify({ guestId: result.member.guestId })) } catch { /* Navigation state retains identity for this visit. */ }
       setHasJoined(true)
-      navigate(generatePath(paths.lobby, { lobbyId: result.lobby.id }))
+      navigate(generatePath(paths.lobby, { lobbyId: result.lobby.id }), { state: { member: { guestId: result.member.guestId } } })
       setStatus(`Joined ${result.lobby?.name ?? 'the lobby'} as a guest.`)
     } catch (error) {
       setStatus(error instanceof Error ? error.message : 'Could not join the lobby. Please try again.')
