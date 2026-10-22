@@ -1,0 +1,85 @@
+/*
+ * LoginScreen.css
+ *
+ * Styles for the login screen. Built only from the design tokens in
+ * styles/tokens.css, so it matches the rest of the app.
+ *  - .login-card: the white card in the middle of the page
+ *  - .login-tabs: the pill-shaped "Log in / Create account" switcher;
+ *    the active tab uses the brand orange
+ *  - .login-card__form: spacing between the form fields
+ *  - .login-card__guest: the "Continue as a guest" line at the bottom
+ *  - The last rule stops the Home nav tab from looking active on /login.
+ */
+.login-card {
+  inline-size: min(480px, 100%);
+  margin: var(--spacing-8) auto 0;
+  padding: var(--spacing-8) var(--spacing-8) var(--spacing-6);
+  border-radius: var(--spacing-6);
+  box-shadow: var(--shadow-card);
+}
+
+.login-card__emblem {
+  display: flex;
+  justify-content: center;
+  margin-block-end: var(--spacing-6);
+}
+
+/* Segmented tab switcher */
+.login-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-1);
+  padding: var(--spacing-1);
+  margin-block-end: var(--spacing-6);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-full);
+  background: var(--color-bg-canvas);
+}
+
+.login-tabs__tab {
+  min-block-size: var(--target-size-min);
+  border: 0;
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font: inherit;
+  font-weight: var(--font-weight-bold);
+  cursor: pointer;
+}
+
+.login-tabs__tab:hover { color: var(--color-text-primary); }
+
+.login-tabs__tab.is-active {
+  background: var(--color-action-primary);
+  color: var(--color-action-primary-text);
+}
+
+.login-tabs__tab:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-border-focus);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.login-card__form {
+  display: grid;
+  gap: var(--spacing-4);
+}
+
+.login-card__form .ui-button { margin-block-start: var(--spacing-2); }
+
+.login-card__status { text-align: center; }
+
+.login-card__guest {
+  margin-block-start: var(--spacing-6);
+  padding-block-start: var(--spacing-4);
+  border-block-start: 1px solid var(--color-border-default);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-caption-default);
+  text-align: center;
+}
+
+@media (max-width: 768px) {
+  .login-card { padding: var(--spacing-6) var(--spacing-4); }
+}
+
+/* LobbyForms.css highlights Home on lobby-style screens; on login, the Log in tab is current instead. */
+.login-screen .app-header__nav .ui-text-action[href='/'] { background: transparent; }
