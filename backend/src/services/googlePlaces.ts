@@ -3,6 +3,7 @@ const SEARCH_FIELD_MASK =
   "places.id,places.displayName,places.formattedAddress,places.primaryType,places.googleMapsUri";
 const DETAILS_FIELD_MASK =
   "id,displayName,formattedAddress,location,primaryType,googleMapsUri,websiteUri,nationalPhoneNumber";
+import 'dotenv/config';
 
 export interface GooglePlace {
   id: string;
