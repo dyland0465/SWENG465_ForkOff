@@ -11,7 +11,6 @@ export function AppLayout() {
   const navigate = useNavigate()
   const isCreateLobby = useMatch(paths.createLobby) !== null
   const isJoinLobby = useMatch(paths.joinLobby) !== null
-  const isJoinLobby = useMatch(paths.joinLobby) !== null
   const isLogin = useMatch(paths.login) !== null
   const isLobby = useMatch({ path: paths.lobby, end: true }) !== null
   const isGroupChat = useMatch(paths.groupChat) !== null
