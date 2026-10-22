@@ -7,6 +7,8 @@ import { votingRestaurants } from '../data/demoRestaurants'
 import { useVotingSession } from '../features/voting/useVotingSession'
 import { getRecordedVotes } from '../features/voting/votingSession'
 import type { VotingDecision } from '../features/voting/votingSession'
+import { useRestaurantPreferences } from '../features/preferences/useRestaurantPreferences'
+import { preferenceSummary } from '../features/preferences/restaurantPreferences'
 import undoIcon from '../assets/figma/voting/undo.png'
 import { paths } from '../routes/paths'
 import '../components/ui/FilterChip.css'
@@ -16,6 +18,7 @@ const shortcutDecisions: Record<string, VotingDecision> = { y: 'yes', n: 'no', v
 
 function VotingScreen({ lobbyId }: { lobbyId: string }) {
   const { session, dispatch } = useVotingSession(lobbyId)
+  const { filters } = useRestaurantPreferences(lobbyId)
   const [shortcutsEnabled, setShortcutsEnabled] = useState(true)
   const mainRef = useRef<HTMLElement>(null)
   const completedRef = useRef<HTMLHeadingElement>(null)
@@ -99,8 +102,8 @@ function VotingScreen({ lobbyId }: { lobbyId: string }) {
               {current.features.map(feature => <li key={feature} className="ui-filter-chip">{feature}</li>)}
             </ul>
             <div className="voting-card__match">
-              <h3>Why it matches</h3>
-              <p>Inside the 5-mile radius · rating above 4.0 · fits your group’s price range</p>
+              <h3>Current restaurant preferences</h3>
+              <p>{preferenceSummary(filters)}</p>
             </div>
             <TextAction className="voting-card__details" to={generatePath(paths.restaurantDetails, { ...routeParams, restaurantId: current.id })}>View restaurant details →</TextAction>
             <div className="voting-controls" role="group" aria-label={`Vote on ${current.name}`}>
@@ -119,6 +122,7 @@ function VotingScreen({ lobbyId }: { lobbyId: string }) {
         <section className="voting-complete" aria-labelledby="voting-complete-heading">
           <h2 id="voting-complete-heading" ref={completedRef} className="text-heading-h2" tabIndex={-1}>Demo voting complete</h2>
           <p>You processed all {processed} sample restaurants: {votes.length} {votes.length === 1 ? 'vote' : 'votes'} and {skipped} skipped. These are only your local choices.</p>
+          <p aria-label="Current restaurant preferences">{preferenceSummary(filters)}</p>
           <dl className="voting-complete__counts" aria-label="Your local demo choices">
             {(['yes', 'no', 'veto'] as const).map(choice => <div key={choice}><dt>{choice.toUpperCase()}</dt><dd>{votes.filter(vote => vote.decision === choice).length}</dd></div>)}
           </dl>
@@ -129,7 +133,7 @@ function VotingScreen({ lobbyId }: { lobbyId: string }) {
 
       <p className="voting-status" role="status" aria-atomic="true">{status}</p>
       <aside className="voting-demo-note" aria-label="Voting demonstration details">
-        <p id="voting-demo-note"><strong>Frontend demonstration.</strong> Three sample restaurants; no live matches, group votes, or server saves. Lobby <span>{lobbyId}</span> is not loaded. Choices stay in memory per lobby during navigation and clear on refresh.</p>
+        <p id="voting-demo-note"><strong>Frontend demonstration.</strong> Three sample restaurants; eligibility has not been checked. No live matches, group votes, or server saves. Lobby <span>{lobbyId}</span> is not loaded. Choices stay in memory per lobby during navigation and clear on refresh. Filter edits update displayed preferences and keep existing choices.</p>
         <TextAction to={generatePath(paths.discoveryPreview, routeParams)}>Back to Discovery Preview</TextAction>
         <label className="voting-shortcuts"><input type="checkbox" checked={shortcutsEnabled} onChange={event => setShortcutsEnabled(event.target.checked)} />Enable letter shortcuts</label>
       </aside>

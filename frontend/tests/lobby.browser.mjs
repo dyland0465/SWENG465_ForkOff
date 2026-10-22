@@ -112,7 +112,7 @@ async function tabOrder(label, mobile) {
   const count = await evaluate('window.lobbyTabStops.length')
   for (let i = 1; i < count; i++) {
     await key('Tab')
-    // Native time inputs have several internal keyboard stops on the same DOM element.
+    // Native date/time inputs have several internal keyboard stops on the same DOM element.
     for (let segment = 0; segment < 5 && await evaluate(`document.activeElement === window.lobbyTabStops[${i-1}]`); segment++) await key('Tab')
     assert.ok(await evaluate(`document.activeElement === window.lobbyTabStops[${i}] && document.activeElement.matches(':focus-visible') && getComputedStyle(document.activeElement).outlineStyle === 'solid'`), `${label} Tab ${i}: DOM order and visible focus`)
     assert.ok(await evaluate(`(() => {
@@ -125,7 +125,7 @@ async function tabOrder(label, mobile) {
   for (let i = count - 2; i >= 0; i--) {
     await key('Tab', 8)
     for (let segment = 0; segment < 5 && await evaluate(`document.activeElement === window.lobbyTabStops[${i+1}]`); segment++) await key('Tab', 8)
-    assert.ok(await evaluate(`document.activeElement === window.lobbyTabStops[${i}] && (document.activeElement.matches(':focus-visible') || document.activeElement.matches('input[type=time]:focus-within')) && getComputedStyle(document.activeElement).outlineStyle === 'solid'`), `${label} Shift+Tab ${i}: DOM order and visible focus`)
+    assert.ok(await evaluate(`document.activeElement === window.lobbyTabStops[${i}] && (document.activeElement.matches(':focus-visible') || document.activeElement.matches('input:is([type=time],[type=date]):focus-within')) && getComputedStyle(document.activeElement).outlineStyle === 'solid'`), `${label} Shift+Tab ${i}: DOM order and visible focus`)
   }
   pass(label + ' Shift+Tab reverses the sequence')
   if (mobile) await check(`window.lobbyTabStops.slice(1).every((el,i,all) => !i || el.getBoundingClientRect().top >= all[i-1].getBoundingClientRect().top - 1)`, `${label} visual reading order matches DOM`)

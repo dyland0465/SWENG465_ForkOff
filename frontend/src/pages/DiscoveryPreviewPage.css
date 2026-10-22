@@ -91,6 +91,8 @@
 .discovery-filter-editor fieldset { min-inline-size: 0; margin: 0; padding: 0; border: 0; }
 .discovery-filter-editor legend { margin-block-end: var(--spacing-3); font-weight: var(--font-weight-bold); }
 .discovery-filter-editor__actions { display: flex; flex-wrap: wrap; gap: var(--spacing-3); }
+.discovery-page .ui-filter-chip { max-inline-size: 100%; white-space: normal; overflow-wrap: anywhere; text-align: center; }
+.discovery-page input:is([type='date'], [type='time']):focus-within { outline: var(--focus-ring-width) solid var(--color-border-focus); outline-offset: var(--focus-ring-offset); }
 
 @media (max-width: 1200px) {
   .discovery-screen .app-header__inner, .discovery-screen .app-header__divider, .discovery-page { inline-size: calc(100% - var(--spacing-16)); }

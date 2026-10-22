@@ -2,6 +2,80 @@
 
 React + TypeScript + Vite, with plain CSS and the Fork Off Figma design system.
 
+## Shared restaurant preferences
+
+Lobby, Discovery Preview, and Voting read `useRestaurantPreferences(lobbyId)`.
+`RestaurantPreferencesProvider` lives in `AppLayout`, alongside the independent
+voting provider. Its reducer stores immutable snapshots in nested maps by the exact
+router-decoded lobby ID and optional round ID (`null` for current local settings).
+Client-side links and browser Back/Forward read the latest selections; history
+does not restore old filter snapshots. Refresh clears this memory-only state.
+There is no storage, group synchronization, restaurant search, or API integration.
+
+`src/features/preferences/restaurantPreferences.ts` owns the shared model,
+options, defaults, validation, formatting, and pure reducer. Both screens use
+`RestaurantFilterEditor`, the existing form hook, FormField, and FilterChip.
+Apply validates and saves the whole draft; Cancel discards only the draft.
+Prices and cuisines remain multi-select arrays, and dining needs are preserved.
+Availability distinguishes **Any availability**, **Open now**, and **Open at
+dining time** instead of relabeling scheduled availability as open now.
+Dates use `YYYY-MM-DD` and times use `HH:mm` as local calendar values without
+timezone conversion. A blank date/time means any date/time; scheduled availability
+does not invent a missing date or time. These demo preferences do not reject past
+dates or change themselves when the clock advances. Create/Join retain their
+existing independent form behavior and backend boundaries.
+
+Reset on either screen restores **all** defaults for that lobby: Erie, PA;
+any date; 7:30 PM; within 5 miles; rating 4.0+; Italian and Ramen; $$;
+Mocktails; open at dining time. Empty selections mean any cuisine/price or no
+dining needs. Voting displays the current preferences, including after completion,
+without claiming sample restaurants meet them. Cards, votes, Undo, Restart, and
+Results remain independent of filter edits and Reset.
+
+A future backend adapter can validate hydrated settings at `preferencesFromFields`
+and apply them within the same lobby/round scope. Before real rounds are supported,
+the product/backend must define whether filters lock once voting begins or changes
+create a new versioned round, and how existing votes are retained or invalidated.
+This implementation does not select that policy, start rounds, or clear votes on edits.
+
+Focused checks (with Vite running on port 5175 for the browser check):
+
+```powershell
+node --test tests/restaurantPreferences.test.mjs
+node tests/restaurantPreferences.browser.mjs
+```
+
+The full preference summary uses normal text flow: the default Voting card grows
+from 583px to 602px tall while retaining its desktop columns and 620px by 520px
+photo. Older temporary scripts that assert the original fixed card height need
+that expectation updated; longer selections can grow the card further.
+
+Files created for this change:
+
+- `src/features/preferences/restaurantPreferences.ts`
+- `src/features/preferences/RestaurantPreferencesProvider.tsx`
+- `src/features/preferences/useRestaurantPreferences.ts`
+- `src/features/preferences/RestaurantFilterEditor.tsx`
+- `tests/restaurantPreferences.test.mjs`
+- `tests/restaurantPreferences.browser.mjs`
+
+Files modified: `src/components/layout/AppLayout.tsx`,
+`src/components/lobby/lobbyForm.ts`, `src/pages/LobbyPage.tsx`,
+`src/pages/DiscoveryPreviewPage.tsx`, `src/pages/VotingPage.tsx`, the three
+corresponding page CSS files, `tests/lobby.browser.mjs` (native date focus
+expectations), and this README. Backend files and dependencies are unchanged.
+
+Validation: TypeScript/Vite build and lint passed; all 15 unit tests passed;
+the four existing repository browser suites passed (94 Lobby accessibility,
+49 navigation/focus, 56 Results, 54 Restaurant Details checks). The focused
+shared-preferences browser suite passed 46 checks, including empty selections,
+multiple prices, dates/times, Apply/Cancel, both Resets, Back/Forward, encoded
+IDs, independent lobbies, retained votes, Undo, Restart, Results, keyboard
+focus, refresh, and responsive layouts at 320/375/768/1440px. The existing
+temporary consumer/chat regression suite also passed 58 checks. The older
+temporary Voting suite stops at its fixed 583px card-height assertion described
+above; its remaining assertions were not reached.
+
 ## Results and Final Choice
 
 Start Vite with `npm.cmd run dev` from `frontend`, open

@@ -1,14 +1,5 @@
-export const cuisineOptions = ['Italian', 'Ramen', 'Mexican', 'American', 'Vegetarian'] as const
-export const priceOptions = ['$', '$$', '$$$'] as const
+export { cuisineOptions, priceOptions, distanceOptions, ratingOptions, validateLocation } from '../../features/preferences/restaurantPreferences'
 export const diningOptions = ['Open at dining time', 'Serves alcohol', 'Mocktails'] as const
-export const distanceOptions = ['1', '3', '5', '8', '10', '15', '25'] as const
-export const ratingOptions = ['any', '3.0', '3.5', '4.0', '4.5'] as const
-
-export function validateLocation(value: string) {
-  if (!value.trim()) return 'Enter a city, ZIP code, or address.'
-  if (value.trim().length < 2) return 'Enter at least 2 characters for the location.'
-  if (value.trim().length > 120) return 'Keep the location to 120 characters or fewer.'
-}
 
 export function validateDateTime(value: string) {
   if (!value) return 'Choose a date and time for dinner.'

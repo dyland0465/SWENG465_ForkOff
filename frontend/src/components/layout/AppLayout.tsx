@@ -4,6 +4,7 @@ import { Dialog } from '../ui/Dialog'
 import { AppHeader } from './AppHeader'
 import { paths } from '../../routes/paths'
 import { VotingSessionProvider } from '../../features/voting/VotingSessionProvider'
+import { RestaurantPreferencesProvider } from '../../features/preferences/RestaurantPreferencesProvider'
 import { RouteNavigation } from './RouteNavigation'
 
 export function AppLayout() {
@@ -26,7 +27,7 @@ export function AppLayout() {
           onHowItWorks={() => setShowHowItWorks(true)}
           onJoinLobby={() => navigate(paths.joinLobby)}
         />
-        <VotingSessionProvider><Outlet /></VotingSessionProvider>
+        <RestaurantPreferencesProvider><VotingSessionProvider><Outlet /></VotingSessionProvider></RestaurantPreferencesProvider>
       </div>
       <RouteNavigation />
       {showHowItWorks && (

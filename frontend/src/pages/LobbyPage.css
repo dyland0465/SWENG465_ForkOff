@@ -40,7 +40,7 @@
   text-align: center;
 }
 /* Chrome can focus a time input's internal picker without matching :focus-visible. */
-.lobby-page input[type='time']:focus-within {
+.lobby-page input:is([type='time'], [type='date']):focus-within {
   outline: var(--focus-ring-width) solid var(--color-border-focus);
   outline-offset: var(--focus-ring-offset);
 }

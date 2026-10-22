@@ -15,6 +15,7 @@
 .voting-card__features { display: flex; flex-wrap: wrap; gap: 10px; margin: 28px 0 0; padding: 0; list-style: none; }
 .voting-card__features .ui-filter-chip { background: var(--color-action-primary); cursor: default; }
 .voting-card__match { margin-block-start: 28px; }
+.voting-card__match, .voting-complete > p { overflow-wrap: anywhere; }
 .voting-card__match h3 { font-size: var(--font-size-label-default); line-height: 20px; }
 .voting-card__match p { margin-block-start: 10px; color: var(--color-text-secondary); font-size: 0.9375rem; line-height: 19px; }
 .voting-card__details { margin-block-start: 27px; margin-inline-start: -8px; font-size: 0.9375rem; line-height: 19px; text-decoration: none; }
