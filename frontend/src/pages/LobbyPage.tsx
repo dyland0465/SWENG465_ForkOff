@@ -16,6 +16,7 @@ type Lobby = {
 }
 
 function LobbyScreen({ lobbyId }: { lobbyId: string }) {
+  const [editingFilters, setEditingFilters] = useState(false)
   const navigate = useNavigate()
   const location = useLocation()
   const [member] = useState<{ guestId?: string; userId?: string } | null>(() => {
@@ -88,13 +89,41 @@ function LobbyScreen({ lobbyId }: { lobbyId: string }) {
       <TextAction disabled={busy} onClick={() => { setLobby(null); setError(''); setAttempt(value => value + 1) }}>Refresh lobby</TextAction>
       {lobby && <div className="lobby-page__columns">
         <section>
-          <h2>Members</h2>
-          <ul>
-            {lobby.members.map(member => <li key={member._id}>{member.username}</li>)}
-            {lobby.guestMembers.map(member => <li key={member.guestId}>{member.displayName} · Guest</li>)}
-          </ul>
+         <h2 className="lobby-section-heading">
+  Members · {lobby.members.length + lobby.guestMembers.length}
+</h2>
+
+<ul className="lobby-members__list">
+  {lobby.members.map(member => (
+    <li key={member._id} className="lobby-member">
+      <span className="lobby-avatar" aria-hidden="true">
+        {member.username.slice(0, 2).toUpperCase()}
+      </span>
+
+      <div className="lobby-member__identity">
+        <strong>{member.username}</strong>
+      </div>
+    </li>
+  ))}
+
+  {lobby.guestMembers.map(guest => (
+    <li key={guest.guestId} className="lobby-member">
+      <span className="lobby-avatar" aria-hidden="true">
+        {guest.displayName.slice(0, 2).toUpperCase()}
+      </span>
+
+      <div className="lobby-member__identity">
+        <strong>{guest.displayName}</strong>
+        <p className="text-caption-default">Guest</p>
+      </div>
+    </li>
+  ))}
+</ul> 
           {!lobby.members.length && !lobby.guestMembers.length && <p>Share your code to invite your crew.</p>}
           <p>Lobby status: {lobby.status}</p>
+          <details className="lobby-settings-editor">
+          <summary>Edit lobby settings</summary>
+         
           <form key={`settings-${attempt}`} onSubmit={saveSettings} className="lobby-filter-editor">
             <fieldset disabled={busy} className="lobby-filter-editor__group">
               <legend>Lobby settings</legend>
@@ -105,34 +134,54 @@ function LobbyScreen({ lobbyId }: { lobbyId: string }) {
               <Button type="submit">Save settings</Button>
             </fieldset>
           </form>
+          </details>
           {member && <Button disabled={busy} variant="secondary" onClick={() => void mutate('/leave', member, true)}>{busy ? 'Please wait…' : 'Leave lobby'}</Button>}
           {!member && <p>Join this lobby with its invitation code to save your membership on this browser and use Leave lobby.</p>}
         </section>
-        <section>
-          <LobbyCode code={lobby.lobbyCode} />
-          <h2>Round filters</h2>
-          <p>{filters?.location} {filters?.dinnerAt && `· ${new Date(filters.dinnerAt).toLocaleString()}`}</p>
-          <p>Within {filters?.maxDistance ?? 10} miles · Minimum rating: {filters?.minimumRating || 'Any'}</p>
-          <p>{filters?.categories?.join(', ') || 'Any cuisine'} · {filters?.priceLevels?.join(', ') || 'Any price'}</p>
-          <p>{filters?.diningNeeds?.join(', ')}</p>
-          <form key={`filters-${attempt}`} onSubmit={saveFilters} className="lobby-filter-editor">
-            <fieldset disabled={busy} className="lobby-filter-editor__group">
-              <legend>Edit round filters</legend>
-              <div className="lobby-filter-editor__fields">
-                <TextInput label="Location" name="location" required maxLength={120} defaultValue={filters?.location ?? ''} />
-                <TextInput label="New dinner date and time (optional)" name="dinnerAt" type="datetime-local" hint="Leave blank to keep the current dinner time." />
-                <TextInput label="Maximum distance (miles)" name="maxDistance" type="number" required min={1} max={100} step="any" defaultValue={filters?.maxDistance ?? 10} />
-                <TextInput label="Minimum rating" name="minimumRating" type="number" required min={0} max={5} step="0.1" defaultValue={filters?.minimumRating ?? 0} />
-                <TextInput label="Cuisines (comma separated)" name="categories" defaultValue={filters?.categories?.join(', ') ?? ''} />
-                <TextInput label="Dining needs (comma separated)" name="diningNeeds" defaultValue={filters?.diningNeeds?.join(', ') ?? ''} />
-              </div>
-              <fieldset className="lobby-filter-editor__group"><legend>Price levels (none means any price)</legend>
-                {['$', '$$', '$$$'].map(price => <label key={price}><input type="checkbox" name="priceLevels" value={price} defaultChecked={filters?.priceLevels?.includes(price)} />{price} </label>)}
+        <section className="lobby-page__filters">
+        <LobbyCode code={lobby.lobbyCode} />
+        <div className="lobby-round-filters_controls">
+        <TextAction
+           aria-expanded={editingFilters} onClick={() => setEditingFilters(current=>!current)}
+           >
+            {editingFilters ? 'Close editor': 'Edit filters'}
+            </TextAction> 
+          </div>
+
+        <h2>Round filters</h2>
+        <p>{filters?.location} {filters?.dinnerAt && `· ${new Date(filters.dinnerAt).toLocaleString()}`}</p>
+        <p>Within {filters?.maxDistance ?? 10} miles · Minimum rating: {filters?.minimumRating || 'Any'}</p>
+        <div className="lobby-filter-chips">
+          {[
+            ...(filters?.categories?.length ? filters.categories : ['Any cuisine']),
+            ...(filters?.priceLevels?.length ? filters.priceLevels : ['Any price']),
+            ...(filters?.openNow ? ['Open now'] : []),
+            ...(filters?.diningNeeds ?? []),
+          ].map((label,index) => (
+            <span className="lobby-filter-tag" key={`${label}-${index}`}>{label}</span>
+          ))} 
+          </div> 
+        {editingFilters && (
+        <form key={`filters-${attempt}`} onSubmit={saveFilters} className="lobby-filter-editor">
+          <fieldset disabled={busy} className="lobby-filter-editor__group">
+            <legend>Edit round filters</legend>
+            <div className="lobby-filter-editor__fields">
+              <TextInput label="Location" name="location" required maxLength={120} defaultValue={filters?.location ?? ''} />
+              <TextInput label="New dinner date and time (optional)" name="dinnerAt" type="datetime-local" hint="Leave blank to keep the current dinner time." />
+              <TextInput label="Maximum distance (miles)" name="maxDistance" type="number" required min={1} max={100} step="any" defaultValue={filters?.maxDistance ?? 10} />
+              <TextInput label="Minimum rating" name="minimumRating" type="number" required min={0} max={5} step="0.1" defaultValue={filters?.minimumRating ?? 0} />
+              <TextInput label="Cuisines (comma separated)" name="categories" defaultValue={filters?.categories?.join(', ') ?? ''} />
+              <TextInput label="Dining needs (comma separated)" name="diningNeeds" defaultValue={filters?.diningNeeds?.join(', ') ?? ''} />
+         
+            </div>
+            <fieldset className="lobby-filter-editor__group"><legend>Price levels (none means any price)</legend>
+              {['$', '$$', '$$$'].map(price => <label key={price}><input type="checkbox" name="priceLevels" value={price} defaultChecked={filters?.priceLevels?.includes(price)} />{price} </label>)}
               </fieldset>
               <label><input type="checkbox" name="openNow" defaultChecked={filters?.openNow ?? false} /> Open now</label>
               <Button type="submit">Save filters</Button>
             </fieldset>
           </form>
+        )}
           <div className="lobby-actions">
             <TextAction to={generatePath(paths.discoveryPreview, params)}>Preview restaurants</TextAction>
             <TextAction to={generatePath(paths.voting, params)}>Try voting</TextAction>
