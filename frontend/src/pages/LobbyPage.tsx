@@ -1,163 +1,162 @@
-import { useLayoutEffect, useRef, useState } from 'react'
-import { generatePath, useNavigate, useParams } from 'react-router'
-import { LobbyCode } from '../components/lobby/LobbyCode'
-import { PlayerList } from '../components/lobby/PlayerList'
-import type { LobbyMember } from '../components/lobby/PlayerCard'
+import { useLiveLobby } from '../features/lobby/liveLobby'
+import { useState } from 'react'
+import { generatePath, useParams } from 'react-router'
+import type { FormEvent } from 'react'
 import { Button } from '../components/ui/Button'
-import { FilterChip } from '../components/ui/FilterChip'
-import { SelectField } from '../components/ui/FormField'
-import { RestaurantFilterEditor } from '../features/preferences/RestaurantFilterEditor'
-import { useRestaurantPreferences } from '../features/preferences/useRestaurantPreferences'
-import { formatPreferenceAvailability, formatPreferenceDistance, formatPreferenceSchedule, hasDefaultPreferences } from '../features/preferences/restaurantPreferences'
+import { TextInput, SelectField } from '../components/ui/FormField'
+import { LobbyCode } from '../components/lobby/LobbyCode'
 import { TextAction } from '../components/ui/TextAction'
 import { paths } from '../routes/paths'
 import './LobbyPage.css'
 
-// Figma demonstration data, never a response for the lobby ID in the URL.
-const demoMembers: readonly LobbyMember[] = [
-  { name: 'Jordan Reed', initials: 'JR', role: 'Lobby leader', ready: true },
-  { name: 'Avery Chen', initials: 'AC', role: 'Member · Ready', ready: true },
-  { name: 'Maya Singh', initials: 'MS', role: 'Member · Ready', ready: true },
-  { name: 'Sam Kim', initials: 'SK', role: 'Member · Choosing preferences', ready: false },
-]
-const demoMessages = [
-  { name: 'Avery Chen', initials: 'AC', time: '7:42 PM', message: 'Ramen sounds perfect tonight.' },
-  { name: 'Jordan Reed', initials: 'JR', time: '7:43 PM', message: 'I’m good with the top three—no spoilers yet.' },
-  { name: 'Maya Singh', initials: 'MS', time: '7:44 PM', message: 'Copper Bowl has great mocktails.' },
-]
 function LobbyScreen({ lobbyId }: { lobbyId: string }) {
-  const navigate = useNavigate()
-  const { filters, setFilters, resetFilters: resetSharedFilters } = useRestaurantPreferences(lobbyId)
-  const [editing, setEditing] = useState(false)
-  const [role, setRole] = useState('leader')
-  const [draft, setDraft] = useState('')
-  const [status, setStatus] = useState('')
-  const editFiltersRef = useRef<HTMLButtonElement>(null)
-  const restoreFilterFocus = useRef(false)
-  const isLeader = role === 'leader'
-
-  useLayoutEffect(() => {
-    if (!editing && restoreFilterFocus.current) {
-      // The trigger is unmounted while editing; wait until it exists again.
-      editFiltersRef.current?.focus()
-      restoreFilterFocus.current = false
-    }
-  }, [editing])
-
-  function closeFilterEditor() {
-    restoreFilterFocus.current = true
-    setEditing(false)
+  const { lobby, error, notice, connection, mutate: requestMutation } = useLiveLobby()
+  const [editingFilters, setEditingFilters] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const [actionError, setActionError] = useState('')
+  const [editorVersion, setEditorVersion] = useState(0)
+  async function mutate(path: string, body: Record<string, unknown>, leave = false) {
+    setBusy(true); setActionError('')
+    try {
+      await requestMutation(path, leave ? 'POST' : 'PATCH', body)
+      setEditorVersion(value => value + 1)
+      if (path === '/filters') setEditingFilters(false)
+    } catch (cause) { setActionError(cause instanceof Error ? cause.message : 'Request failed.') }
+    finally { setBusy(false) }
   }
-  // The installed React Router encodes parameters in generatePath.
-  const routeParams = { lobbyId }
-  const selectedChips = [
-    ...filters.cuisines.map(label => ({ label, group: 'cuisines' as const, value: label })),
-    ...filters.prices.map(label => ({ label, group: 'prices' as const, value: label })),
-    ...(filters.rating !== 'any' ? [{ label: `${filters.rating}+`, group: 'rating' as const, value: filters.rating }] : []),
-    ...filters.diningNeeds.map(value => ({ label: value, group: 'diningNeeds' as const, value })),
-  ]
-
-  function resetFilters() {
-    resetSharedFilters()
-    setEditing(false)
-    setStatus('Demo defaults restored across screens for this lobby. Existing votes are unchanged.')
+  async function deleteLobby() {
+    if (!window.confirm('Delete this lobby and its chat history?')) return
+    setBusy(true); setActionError('')
+    try { await requestMutation('', 'DELETE') }
+    catch (cause) { setActionError(cause instanceof Error ? cause.message : 'Could not delete lobby.') }
+    finally { setBusy(false) }
   }
-
+  function saveSettings(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    const values = new FormData(event.currentTarget)
+    void mutate('', { name: values.get('name'), status: values.get('status') })
+  }
+  function saveFilters(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    const values = new FormData(event.currentTarget)
+    const list = (key: string) => String(values.get(key) ?? '').split(',').map(value => value.trim()).filter(Boolean)
+    const dinner = String(values.get('dinnerAt') ?? '')
+    void mutate('/filters', {
+      location: values.get('location'), maxDistance: Number(values.get('maxDistance')), minimumRating: Number(values.get('minimumRating')),
+      categories: list('categories'), priceLevels: values.getAll('priceLevels'), diningNeeds: list('diningNeeds'), openNow: values.has('openNow'),
+      ...(dinner ? { dinnerAt: new Date(dinner).toISOString() } : {}),
+    })
+  }
+  const filters = lobby?.filters
+  const params = { lobbyId }
   return (
     <main id="main-content" className="lobby-page" tabIndex={-1}>
-      <div className="lobby-page__columns">
-        {/* Keep each column together when stacked so visual and keyboard order agree. */}
-        <div className="lobby-page__people">
-          <div className="lobby-page__title">
-            <h1>Friday Food Crew</h1>
-            <span className="lobby-page__demo-label">Demo data</span>
-          </div>
-          <p className="lobby-page__intro">Waiting for everyone to get ready.</p>
-          <PlayerList members={demoMembers} />
-          <section className="lobby-chat-preview" aria-label="Recent messages (demonstration)">
-            <ol className="lobby-chat-preview__messages">
-              {demoMessages.map(message => (
-                <li key={message.name} className="lobby-chat-preview__message">
-                  <span className="lobby-avatar lobby-avatar--chat" aria-hidden="true">{message.initials}</span>
-                  <div>
-                    <p className="lobby-chat-preview__sender">{message.name} · {message.time}</p>
-                    <p className="lobby-chat-preview__bubble">{message.message}</p>
-                  </div>
-                </li>
-              ))}
-            </ol>
-            <label className="lobby-visually-hidden" htmlFor="lobby-message-draft">Message draft (local only, not sent)</label>
-            <input id="lobby-message-draft" className="lobby-chat-preview__draft" placeholder="Write a message…" maxLength={500} value={draft} onChange={event => setDraft(event.target.value)} aria-describedby="lobby-demo-note lobby-draft-status" />
-            <p id="lobby-draft-status" className="lobby-chat-preview__draft-status" role="status">{draft ? 'Draft only · not sent or saved.' : ''}</p>
-          </section>
-          <TextAction className="lobby-page__leave" tone="danger" to={paths.home} aria-describedby="lobby-demo-note">Leave lobby</TextAction>
-        </div>
+      <h1>{lobby?.name ?? 'Your dinner crew'}</h1>
+      {!lobby && !error && <p role="status">Loading lobby…</p>}
+      {(error || actionError) && <p role="alert">{actionError || error}</p>}
+      <p role="status">{connection}</p>
+      {!lobby && error && <TextAction to={paths.joinLobby}>Join with invitation code</TextAction>}
+      <p role="status">{notice}</p>
+      {lobby && <div className="lobby-page__columns">
+        <section>
+         <h2 className="lobby-section-heading">
+  Members · {lobby.members.length}
+</h2>
 
-        <div className="lobby-page__settings">
-          <LobbyCode code="FORK42" />
-          <section className="lobby-round-filters" aria-labelledby="lobby-filters-heading">
-            <h2 id="lobby-filters-heading" className="lobby-section-heading">Round filters</h2>
-            <p className="lobby-round-filters__summary">{filters.location} · {formatPreferenceSchedule(filters)} · {formatPreferenceDistance(filters.distance)}</p>
-            {editing ? (
-              <RestaurantFilterEditor variant="lobby" filters={filters} onApply={next => { setFilters(next); closeFilterEditor(); setStatus('Filters applied across screens for this lobby for this visit. Existing votes are unchanged.') }} onCancel={closeFilterEditor} />
-            ) : (
-              <>
-                <div className="lobby-filter-chips" aria-label="Selected round filters">
-                  {filters.availability !== 'any' && <FilterChip selected disabled={!isLeader} aria-label={`Remove ${formatPreferenceAvailability(filters.availability)} filter locally`} onClick={() => { setFilters({ ...filters, availability: 'any' }); setStatus('Availability removed locally. Existing votes are unchanged.') }}>{formatPreferenceAvailability(filters.availability)}</FilterChip>}
-                  {selectedChips.length ? selectedChips.map(chip => (
-                    <FilterChip key={`${chip.group}-${chip.value}`} selected disabled={!isLeader} aria-label={`Remove ${chip.label} filter locally`} onClick={() => {
-                      setFilters(chip.group === 'rating'
-                        ? { ...filters, rating: 'any' }
-                        : { ...filters, [chip.group]: filters[chip.group].filter(value => value !== chip.value) })
-                      setStatus('Filter removed locally. No changes have been saved.')
-                    }}>{chip.label}</FilterChip>
-                  )) : <p className="text-caption-default">Any cuisine · Any price · Any rating · No dining requirements</p>}
-                </div>
-                <div className="lobby-round-filters__matches">
-                  <h3>{hasDefaultPreferences(filters) ? '18 sample restaurants · demo' : 'Matches not calculated'}</h3>
-                  <p>{hasDefaultPreferences(filters) ? 'Sample count only; eligibility has not been checked.' : 'Restaurant counts require a connected backend.'}</p>
-                </div>
-                <div className="lobby-round-filters__controls">
-                  <TextAction ref={editFiltersRef} disabled={!isLeader} aria-expanded={editing} aria-controls="lobby-filter-form" onClick={() => setEditing(true)}>Edit filters</TextAction>
-                  <TextAction disabled={!isLeader} onClick={resetFilters}>Reset</TextAction>
-                </div>
-              </>
-            )}
-          </section>
-          <div className="lobby-actions lobby-page__navigation">
-            <Button disabled={!isLeader} onClick={() => navigate(generatePath(paths.discoveryPreview, routeParams))} aria-describedby="lobby-navigation-note">Start voting</Button>
-            <Button variant="secondary" onClick={() => navigate(generatePath(paths.groupChat, routeParams))} aria-describedby="lobby-navigation-note">Open group chat</Button>
-          </div>
-          <div className="lobby-page__host-controls">
-            <TextAction tone="danger" disabled={!isLeader} onClick={() => setStatus('Closing a lobby requires a connected backend and a verified leader. This demo remains open.')}>Close lobby for everyone</TextAction>
-            <p>Only the lobby leader can close the lobby or start voting.</p>
-          </div>
-          <p className="lobby-page__status" role="status">{status}</p>
-        </div>
+<ul className="lobby-members__list">
+  {lobby.members.map(member => (
+    <li key={member.memberId} className="lobby-member">
+      <span className="lobby-avatar" aria-hidden="true">
+        {member.displayName.slice(0, 2).toUpperCase()}
+      </span>
+
+      <div className="lobby-member__identity">
+        <strong>{member.displayName}{member.memberId === lobby.selfMemberId ? " (you)" : ""}</strong>
+        <p>{member.memberId === lobby.hostMemberId ? "Host · " : ""}{member.type === "guest" ? "Guest · " : ""}{member.online ? "Online" : "Offline"}</p>
       </div>
-      <aside className="lobby-demo-note" aria-label="Demonstration details">
-        <p id="lobby-demo-note"><strong>Frontend demonstration.</strong> Lobby data has not been loaded for route ID <span className="lobby-demo-note__id">{lobbyId}</span>. Names, roles, invitation code, filters, restaurant count, and messages are sample data. Filter edits stay in memory per lobby across navigation and clear on refresh. Chat drafts are temporary. Leaving returns home without changing membership.</p>
-        <p id="lobby-navigation-note">Start voting opens Discovery Preview with demonstration restaurants; it does not start a round. Open group chat opens a temporary, unsaved chat preview.</p>
-        <SelectField label="Preview role (demo only)" value={role} onChange={event => { setRole(event.target.value); setEditing(false); setStatus('') }}>
-          <option value="leader">Lobby leader</option>
-          <option value="member">Member</option>
-        </SelectField>
-      </aside>
+    </li>
+  ))}
+
+</ul>
+          {!lobby.members.length && <p>Share your code to invite your crew.</p>}
+          <p>Lobby status: {lobby.status}</p>
+          {lobby.isHost && <details className="lobby-settings-editor">
+          <summary>Edit lobby settings</summary>
+
+          <form key={`settings-${editorVersion}`} onSubmit={saveSettings} className="lobby-filter-editor">
+            <fieldset disabled={busy} className="lobby-filter-editor__group">
+              <legend>Lobby settings</legend>
+              <TextInput label="Lobby name" name="name" required maxLength={120} defaultValue={lobby.name} />
+              <SelectField label="Status" name="status" defaultValue={lobby.status}>
+                <option value="waiting">Waiting</option><option value="playing">Playing</option><option value="finished">Finished</option>
+              </SelectField>
+              <Button type="submit">Save settings</Button>
+            </fieldset>
+          </form>
+          </details>}
+          <Button disabled={busy} variant="secondary" onClick={() => void mutate('/leave', {}, true)}>{busy ? 'Please wait…' : 'Leave lobby'}</Button>
+          {lobby.isHost && <TextAction tone="danger" disabled={busy} onClick={() => void deleteLobby()}>Delete lobby</TextAction>}
+          {!lobby.isHost && <p>Only the host can change settings, filters, or the round status.</p>}
+        </section>
+        <section className="lobby-page__filters">
+        <LobbyCode code={lobby.lobbyCode} />
+        <div className="lobby-round-filters_controls">
+        {lobby.isHost && <TextAction
+           aria-expanded={editingFilters} onClick={() => setEditingFilters(current=>!current)}
+           >
+            {editingFilters ? 'Close editor': 'Edit filters'}
+            </TextAction>}
+          </div>
+
+        <h2>Round filters</h2>
+        <p>{filters?.location} {filters?.dinnerAt && `· ${new Date(filters.dinnerAt).toLocaleString()}`}</p>
+        <p>Within {filters?.maxDistance ?? 10} miles · Minimum rating: {filters?.minimumRating || 'Any'}</p>
+        <div className="lobby-filter-chips">
+          {[
+            ...(filters?.categories?.length ? filters.categories : ['Any cuisine']),
+            ...(filters?.priceLevels?.length ? filters.priceLevels : ['Any price']),
+            ...(filters?.openNow ? ['Open now'] : []),
+            ...(filters?.diningNeeds ?? []),
+          ].map((label,index) => (
+            <span className="lobby-filter-tag" key={`${label}-${index}`}>{label}</span>
+          ))}
+          </div>
+        {lobby.isHost && editingFilters && (
+        <form key={`filters-${editorVersion}`} onSubmit={saveFilters} className="lobby-filter-editor">
+          <fieldset disabled={busy} className="lobby-filter-editor__group">
+            <legend>Edit round filters</legend>
+            <div className="lobby-filter-editor__fields">
+              <TextInput label="Location" name="location" required maxLength={120} defaultValue={filters?.location ?? ''} />
+              <TextInput label="New dinner date and time (optional)" name="dinnerAt" type="datetime-local" hint="Leave blank to keep the current dinner time." />
+              <TextInput label="Maximum distance (miles)" name="maxDistance" type="number" required min={1} max={100} step="any" defaultValue={filters?.maxDistance ?? 10} />
+              <TextInput label="Minimum rating" name="minimumRating" type="number" required min={0} max={5} step="0.1" defaultValue={filters?.minimumRating ?? 0} />
+              <TextInput label="Cuisines (comma separated)" name="categories" defaultValue={filters?.categories?.join(', ') ?? ''} />
+              <TextInput label="Dining needs (comma separated)" name="diningNeeds" defaultValue={filters?.diningNeeds?.join(', ') ?? ''} />
+
+            </div>
+            <fieldset className="lobby-filter-editor__group"><legend>Price levels (none means any price)</legend>
+              {['$', '$$', '$$$'].map(price => <label key={price}><input type="checkbox" name="priceLevels" value={price} defaultChecked={filters?.priceLevels?.includes(price)} />{price} </label>)}
+              </fieldset>
+              <label><input type="checkbox" name="openNow" defaultChecked={filters?.openNow ?? false} /> Open now</label>
+              <Button type="submit">Save filters</Button>
+            </fieldset>
+          </form>
+        )}
+          <div className="lobby-actions">
+            <TextAction to={generatePath(paths.discoveryPreview, params)}>Preview restaurants</TextAction>
+            <TextAction to={generatePath(paths.voting, params)}>Try voting</TextAction>
+            <TextAction to={generatePath(paths.results, params)}>Your voting results</TextAction>
+            <TextAction to={generatePath(paths.groupChat, params)}>Open chat</TextAction>
+          </div>
+          <p>Restaurant browsing, voting, and results currently use demo data. Votes stay in this browser tab. TODO</p>
+        </section>
+      </div>}
+      <TextAction to={paths.home}>Back home</TextAction>
     </main>
   )
 }
 
 export function LobbyPage() {
-  const { lobbyId } = useParams<'lobbyId'>()
-  if (!lobbyId?.trim() || lobbyId.startsWith(':')) {
-    return (
-      <main id="main-content" className="route-placeholder" tabIndex={-1}>
-        <h1 className="text-heading-h1">Lobby ID unavailable</h1>
-        <p className="text-body-large">Open a lobby link with its ID to view this screen.</p>
-        <TextAction to={paths.joinLobby}>Enter lobby code</TextAction>
-      </main>
-    )
-  }
-  // Page-only UI resets by ID; shared preferences remain in the app provider.
+  const { lobbyId = '' } = useParams()
   return <LobbyScreen key={lobbyId} lobbyId={lobbyId} />
 }

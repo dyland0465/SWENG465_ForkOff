@@ -204,7 +204,11 @@
 }
 .lobby-round-filters__summary { margin-block-start: var(--spacing-3); font-size: 0.9375rem; line-height: 1.266667; color: var(--color-text-secondary); overflow-wrap: anywhere; }
 .lobby-filter-chips { display: flex; flex-wrap: wrap; gap: 10px; }
+.lobby-filter-tag { display: inline-flex; align-items: center; padding: 8px 12px; border-radius: var(--radius-full); background: var(--color-action-primary); color: var(--color-text-primary); color: var(--color-text-primary); font-sie: 0.8125rem; font-weight: var(--font-weight-bold);}
 .lobby-round-filters > .lobby-filter-chips { min-block-size: 44px; margin-block-start: 27px; }
+.lobby-settings-editor {margin-block-start: var(--spacing-6);}
+.lobby-settings-editor > summary { cursor: pointer; font-weight: var(--font-weight-bold);}
+
 .lobby-page .ui-filter-chip:disabled { cursor: not-allowed; }
 .lobby-round-filters__matches {
   min-block-size: 92px;
@@ -282,3 +286,10 @@
   .lobby-chat-preview__messages { padding: 0; }
   .lobby-chat-preview__bubble { padding-inline: min(var(--spacing-2), 8px); }
 }
+
+/* Live lobby forms retain their draft while presence and messages update. */
+.lobby-settings-editor { margin-block: var(--spacing-4); }
+.lobby-filter-editor > fieldset { display: grid; gap: var(--spacing-4); }
+.lobby-global-notice { padding: var(--spacing-4); text-align: center; }
+.create-lobby__identity { grid-column: 1 / -1; }
+.group-chat-message__bubble { white-space: pre-wrap; overflow-wrap: anywhere; }

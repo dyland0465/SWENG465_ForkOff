@@ -1,6 +1,7 @@
 import type { RouteObject } from 'react-router'
 import { AppLayout } from '../components/layout/AppLayout'
 import { HomePage } from '../pages/HomePage'
+import { LoginPage } from '../pages/LoginPage'
 import { CreateLobbyPage } from '../pages/CreateLobbyPage'
 import { JoinLobbyPage } from '../pages/JoinLobbyPage'
 import { LobbyPage } from '../pages/LobbyPage'
@@ -23,6 +24,7 @@ export const appRoutes: RouteObject[] = [
     element: <AppLayout />,
     children: [
       { path: paths.home, element: <HomePage /> },
+      { path: paths.login, element: <LoginPage /> },
       { path: paths.createLobby, element: <CreateLobbyPage /> },
       { path: paths.joinLobby, element: <JoinLobbyPage /> },
       { path: paths.lobby, element: <LobbyPage /> },

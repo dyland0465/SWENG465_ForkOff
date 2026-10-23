@@ -70,7 +70,7 @@ function VotingScreen({ lobbyId }: { lobbyId: string }) {
       ? `Undid ${choice === 'skip' ? 'skip' : choice.toUpperCase()} for ${name}. Its previous choice has been removed.`
       : choice === 'skip' ? `Skipped ${name}. No vote recorded.` : `${choice.toUpperCase()} recorded locally for ${name}.`
   }
-  if (status) status += complete ? ' Demo complete; nothing was sent or saved.' : ` ${processed} of ${votingRestaurants.length} processed. Now showing ${current.name}.`
+  if (status) status += complete ? ' Demo complete; choices saved in this tab only.' : ` ${processed} of ${votingRestaurants.length} processed. Now showing ${current.name}.`
 
   const undoControl = (
     <TextAction className="voting-undo" disabled={!processed} onClick={() => dispatch({ type: 'undo' })} aria-keyshortcuts={shortcutsEnabled ? 'U' : undefined}>
@@ -133,7 +133,7 @@ function VotingScreen({ lobbyId }: { lobbyId: string }) {
 
       <p className="voting-status" role="status" aria-atomic="true">{status}</p>
       <aside className="voting-demo-note" aria-label="Voting demonstration details">
-        <p id="voting-demo-note"><strong>Frontend demonstration.</strong> Three sample restaurants; eligibility has not been checked. No live matches, group votes, or server saves. Lobby <span>{lobbyId}</span> is not loaded. Choices stay in memory per lobby during navigation and clear on refresh. Filter edits update displayed preferences and keep existing choices.</p>
+        <p id="voting-demo-note"><strong>Frontend demonstration.</strong> Three sample restaurants; no live matches, group votes, or server saves. Lobby <span>{lobbyId}</span> is not loaded. Choices stay in this browser tab per lobby, including after refresh.</p>
         <TextAction to={generatePath(paths.discoveryPreview, routeParams)}>Back to Discovery Preview</TextAction>
         <label className="voting-shortcuts"><input type="checkbox" checked={shortcutsEnabled} onChange={event => setShortcutsEnabled(event.target.checked)} />Enable letter shortcuts</label>
       </aside>

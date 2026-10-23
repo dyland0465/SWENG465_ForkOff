@@ -1,3 +1,5 @@
+import { useAuth } from '../features/auth/useAuth'
+import { generatePath, useNavigate } from 'react-router'
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Button } from '../components/ui/Button'
@@ -8,15 +10,18 @@ import { ForkEmblem } from '../components/lobby/ForkEmblem'
 import { useLobbyForm } from '../components/lobby/useLobbyForm'
 import {
   cuisineOptions, priceOptions, diningOptions, distanceOptions, ratingOptions,
-  validateLocation, validateDateTime, initialDinnerTime, formatDinnerTime, toggleOption,
+  validateLocation, validateDateTime, validateDisplayName, initialDinnerTime, formatDinnerTime, toggleOption,
 } from '../components/lobby/lobbyForm'
 import { paths } from '../routes/paths'
 import './LobbyForms.css'
 
 export function CreateLobbyPage() {
+  const navigate = useNavigate()
+  const { user, loading } = useAuth()
   const { values, errors, setValue, onBlur, validate } = useLobbyForm(
-    { location: 'Erie, PA', dateTime: initialDinnerTime(), distance: '5', rating: '4.0' },
+    { displayName: '', location: 'Erie, PA', dateTime: initialDinnerTime(), distance: '5', rating: '4.0' },
     {
+      displayName: value => user ? undefined : validateDisplayName(value),
       location: validateLocation,
       dateTime: validateDateTime,
       distance: value => distanceOptions.some(option => option === value) ? undefined : 'Choose a distance.',
@@ -27,6 +32,7 @@ export function CreateLobbyPage() {
   const [prices, setPrices] = useState<string[]>(['$$'])
   const [diningNeeds, setDiningNeeds] = useState<string[]>(['Open at dining time', 'Mocktails'])
   const [status, setStatus] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const diningTime = new Date(values.dateTime)
   const openLabel = Number.isFinite(diningTime.getTime())
     ? `Open at ${diningTime.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}`
@@ -41,11 +47,46 @@ export function CreateLobbyPage() {
     setStatus('')
   }
 
-  function submit(event: FormEvent<HTMLFormElement>) {
+  async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    setStatus(validate(event.currentTarget)
-      ? 'Your settings are valid. Lobby creation will be available when the backend is connected.'
-      : 'Check the highlighted fields before continuing.')
+    if (!validate(event.currentTarget)) {
+      setStatus('Check the highlighted fields before continuing.')
+      return
+    }
+
+    setIsSubmitting(true)
+    setStatus('Saving lobby…')
+    try {
+      const response = await fetch('/api/lobbies', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...(!user ? { displayName: values.displayName.trim() } : {}),
+          location: values.location.trim(),
+          dinnerAt: new Date(values.dateTime).toISOString(),
+          maxDistance: Number(values.distance),
+          minimumRating: values.rating === 'any' ? 0 : Number(values.rating),
+          categories: cuisines,
+          priceLevels: prices,
+          diningNeeds,
+        }),
+      })
+      const result = await response.json() as {
+        message?: string
+        lobby?: { id?: string; lobbyCode?: string; name?: string }
+      }
+
+      if (!response.ok) {
+        throw new Error(result.message || 'Could not create the lobby.')
+      }
+
+      if (!result.lobby?.id) throw new Error('The server did not return a lobby ID.')
+      navigate(generatePath(paths.lobby, { lobbyId: result.lobby.id }))
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : 'Could not create the lobby. Please try again.')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   const summary = [
@@ -61,7 +102,7 @@ export function CreateLobbyPage() {
     <main id="main-content" className="lobby-form-page" tabIndex={-1}>
       <h1 className="text-heading-h1">Create a lobby</h1>
       <p className="lobby-form-page__intro text-body-large">Set the guardrails. Your group can still explore inside them.</p>
-      <form className="create-lobby" noValidate onSubmit={submit} onChange={() => setStatus('')} onClick={() => setStatus('')}>
+      <form className="create-lobby" noValidate onSubmit={submit} onChange={() => setStatus('')}>
         <div className="create-lobby__filters lobby-panel">
           <div className="create-lobby__fields">
             <TextInput label="Location" name="location" required autoComplete="street-address" value={values.location} error={errors.location} onChange={event => setValue('location', event.target.value)} onBlur={() => onBlur('location')} />
@@ -92,7 +133,7 @@ export function CreateLobbyPage() {
             <ForkEmblem />
             <div className="create-lobby__match-note">
               <strong>Restaurant matches pending</strong>
-              <p>Match counts will appear when restaurant search is connected.</p>
+              <p>Match counts will appear when restaurant search is connected. TODO</p>
             </div>
           </div>
         </div>
@@ -102,9 +143,10 @@ export function CreateLobbyPage() {
             <ul>{summary.map((line, index) => <li key={index}><span aria-hidden="true">✓</span><span>{line}</span></li>)}</ul>
           </aside>
           <div className="create-lobby__submit">
-            <Button type="submit" aria-describedby="create-backend-note">Create lobby</Button>
+            <Button type="submit" disabled={loading || isSubmitting} aria-describedby="create-backend-note">
+              {isSubmitting ? 'Creating lobby…' : 'Create lobby'}
+            </Button>
             <p className="lobby-form-note">You can edit these filters before voting starts.</p>
-            <p id="create-backend-note" className="lobby-form-note">Lobby creation is not connected yet.</p>
             <p className="lobby-form-status" role="status">{status}</p>
           </div>
         </div>

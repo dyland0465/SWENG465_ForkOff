@@ -1,6 +1,7 @@
 /** Dynamic paths require real IDs supplied by the caller; no IDs are invented here. */
 export const paths = {
   home: '/',
+    login: '/login',
   createLobby: '/lobbies/create',
   joinLobby: '/lobbies/join',
   lobby: '/lobbies/:lobbyId',

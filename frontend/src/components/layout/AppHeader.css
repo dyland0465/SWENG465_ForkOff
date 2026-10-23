@@ -94,3 +94,17 @@
     margin-block-start: var(--spacing-6);
   }
 }
+
+/* Login tab: when logged in, the header shows "Hi, {username}" next to the
+   Log out button. .app-header__account lines the two up side by side, and
+   .app-header__user makes the greeting gray and keeps it on one line. */
+.app-header__account {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.app-header__user {
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}

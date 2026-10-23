@@ -1,5 +1,6 @@
+import { LiveLobbyProvider } from '../../features/lobby/LiveLobbyProvider'
 import { useState } from 'react'
-import { Outlet, useMatch, useNavigate } from 'react-router'
+import { Outlet, useLocation, useMatch, useNavigate } from 'react-router'
 import { Dialog } from '../ui/Dialog'
 import { AppHeader } from './AppHeader'
 import { paths } from '../../routes/paths'
@@ -10,8 +11,10 @@ import { RouteNavigation } from './RouteNavigation'
 export function AppLayout() {
   const [showHowItWorks, setShowHowItWorks] = useState(false)
   const navigate = useNavigate()
+  const lobbyNotice = useLocation().state?.lobbyNotice as string | undefined
   const isCreateLobby = useMatch(paths.createLobby) !== null
   const isJoinLobby = useMatch(paths.joinLobby) !== null
+  const isLogin = useMatch(paths.login) !== null
   const isLobby = useMatch({ path: paths.lobby, end: true }) !== null
   const isGroupChat = useMatch(paths.groupChat) !== null
   const isDiscovery = useMatch(paths.discoveryPreview) !== null
@@ -23,12 +26,13 @@ export function AppLayout() {
   return (
     <>
       {/* Reuse the original Home canvas so its dimensions and cropping stay unchanged. */}
-      <div className={`home-screen${isCreateLobby || isJoinLobby ? ' lobby-screen' : ''}${isLobby || isGroupChat ? ' lobby-detail-screen' : ''}${isLobby ? ' lobby-page-screen' : ''}${isDiscovery || isVoting || isRestaurantDetails || isResults ? ' discovery-screen' : ''}${isVoting ? ' voting-screen' : ''}`}>
-        {!isPartner && <AppHeader
+      {/* Login: added `|| isLogin` to reuse the lobby-screen styling, and the
+          login-screen class so LoginScreen.css can un-highlight the Home tab. */}
+      <div className={`home-screen${isCreateLobby || isJoinLobby || isLogin ? ' lobby-screen' : ''}${isLobby || isGroupChat ? ' lobby-detail-screen' : ''}${isLobby ? ' lobby-page-screen' : ''}${isDiscovery || isVoting || isRestaurantDetails || isResults ? ' discovery-screen' : ''}${isVoting ? ' voting-screen' : ''}${isLogin ? ' login-screen' : ''}`}>        <AppHeader
           onHowItWorks={() => setShowHowItWorks(true)}
           onJoinLobby={() => navigate(paths.joinLobby)}
-        />}
-        <RestaurantPreferencesProvider><VotingSessionProvider><Outlet /></VotingSessionProvider></RestaurantPreferencesProvider>
+        />
+        <VotingSessionProvider><LiveLobbyProvider>{lobbyNotice && <p className="lobby-global-notice" role="status">{lobbyNotice}</p>}<Outlet /></LiveLobbyProvider></VotingSessionProvider>
       </div>
       <RouteNavigation />
       {showHowItWorks && (
@@ -44,3 +48,5 @@ export function AppLayout() {
     </>
   )
 }
+
+

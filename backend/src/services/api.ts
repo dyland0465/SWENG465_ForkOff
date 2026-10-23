@@ -1,19 +1,74 @@
-import { Router } from "express";
+import { Router, type Request, type Response } from "express";
+import mongoose from "mongoose";
 import { User } from "../models/user";
+import { Restaurant } from "../models/restaurant";
 import { hashPassword, validatePassword } from "./auth";
+import { getGooglePlace, getGooglePlaceReviews, GooglePlacesError, searchRestaurants } from "./googlePlaces";
+import { establishSession, revokeUserSessions } from "./session";
+import { HttpError } from "./lobbyState";
+
 
 const router = Router();
+function requireOwnProfile(req: Request) {
+  if (!mongoose.isObjectIdOrHexString(req.params.id)) throw new HttpError(400, "Invalid user ID.");
+  if (!req.identity?.userId) throw new HttpError(401, "Login is required.");
+  if (req.identity.userId !== String(req.params.id).toLowerCase()) throw new HttpError(403, "You can only access your own account.");
+}
+function isDuplicateKeyError(error: unknown) {
+  return Boolean(
+    error &&
+      typeof error === "object" &&
+      "code" in error &&
+      error.code === 11000,
+  );
+}
+
+function handlePlacesError(res: Response, error: unknown, context: string) {
+  if (error instanceof GooglePlacesError) {
+    console.error(`${context} Google Places responded ${error.statusCode}: ${error.message}`);
+    const status = error.statusCode === 503 ? 503 : error.statusCode === 404 ? 404 : 502;
+    const message =
+      status === 503
+        ? "Google Places is not configured."
+        : status === 404
+          ? "Google Place not found."
+          : "Google Places request failed.";
+    return res.status(status).json({ message, providerStatus: error.statusCode });
+  }
+
+  console.error(context, error);
+  return res.status(500).json({ message: "Failed to process restaurant request." });
+}
 
 /*
 Resource Types:
 Auth - user authentication
 User - account related actions
 Restaurants - Partner restaurant configuration
-Places - Our own data stored pulled from Google Places
+Places - Place IDs stored locally; details are fetched live from Google Places
 Lobby - Endpoints to run the lobby/game
 Group Chat - Endpoints to run group chat
-Google Places - Google Places API, 10,000 requests/month
+Google Places - Google Places API (New)
  */
+
+/** @swagger
+ * /api/health/:
+ *   get:
+ *     summary: Check API and database health.
+ *     tags: [health]
+ *     responses:
+ *       200: { description: API and MongoDB are healthy. }
+ *       503: { description: MongoDB is unavailable. }
+ */
+router.get("/api/health/", (_req, res) => {
+  const databaseConnected = mongoose.connection.readyState === 1;
+
+  return res.status(databaseConnected ? 200 : 503).json({
+    status: databaseConnected ? "ok" : "unavailable",
+    database: databaseConnected ? "connected" : "disconnected",
+  });
+});
+
 
 // Authorize user login.
 /**
@@ -80,6 +135,7 @@ router.post("/api/auth/login", async (req, res) => {
     });
   }
 
+  await establishSession(req, res, { id: String(user._id), username: user.username, email: user.email });
   return res.status(200).json({
     message: "User authorized to login.",
     user: {
@@ -145,6 +201,7 @@ router.post("/api/users", async (req, res) => {
       password: await hashPassword(user.password),
     });
 
+    await establishSession(req, res, { id: String(createdUser._id), username: createdUser.username, email: createdUser.email });
     return res.status(201).json({
       message: "User created",
       user: {
@@ -169,7 +226,8 @@ router.post("/api/users", async (req, res) => {
  * @swagger
  * /api/users/{id}:
  *   get:
- *     summary: Get a user's information by ID.
+ *     summary: Get the logged-in user's own profile by ID.
+ *     security: [{ lobbySession: [] }]
  *     tags:
  *       - user
  *     parameters:
@@ -187,18 +245,14 @@ router.post("/api/users", async (req, res) => {
  *       404:
  *         description: User not found.
  */
-router.get("/api/users/:id", (req, res) => {
+router.get("/api/users/:id", async (req, res) => {
+  requireOwnProfile(req);
   const userId = req.params.id;
 
-  // TODO: Query user from database using userId
-  let user = {
-    id: userId,
-    username: "User",
-    email: "Example@example.com",
-  };
+  const user = await User.findById(userId).select("username email").lean();
 
   if (user) {
-    return res.status(200).json(user);
+    return res.status(200).json({ id: user._id, username: user.username, email: user.email });
   }
 
   return res.status(404).json({
@@ -210,7 +264,8 @@ router.get("/api/users/:id", (req, res) => {
  * @swagger
  * /api/users/{id}:
  *   patch:
- *     summary: Edit a user's information by ID.
+ *     summary: Update the logged-in user's own username or email.
+ *     security: [{ lobbySession: [] }]
  *     tags:
  *       - user
  *     parameters:
@@ -230,9 +285,6 @@ router.get("/api/users/:id", (req, res) => {
  *               username:
  *                 type: string
  *                 example: "Billy"
- *               password:
- *                 type: string
- *                 example: "Password"
  *               email:
  *                 type: string
  *                 example: "example@example.com"
@@ -244,43 +296,57 @@ router.get("/api/users/:id", (req, res) => {
  *       404:
  *         description: User not found.
  */
-router.patch("/api/users/:id", (req, res) => {
+router.patch("/api/users/:id", async (req, res) => {
+  requireOwnProfile(req);
   const userId = req.params.id;
 
-  let updates = {
-    username: req.body.username,
-    password: req.body.password,
-    email: req.body.email,
-  };
-
-  // TODO:
-  // Find user by userId
-  // Validate provided fields
-  // Hash password if password changes
-  // Apply updates
-
-  return res.status(200).json({
-    message: "User updated",
-    userId: userId,
-    updates: updates,
-  });
+  const body = req.body;
+  if (!body || typeof body !== "object" || Array.isArray(body) ||
+      !Object.keys(body).length || Object.keys(body).some(key => !["username", "email"].includes(key))) {
+    return res.status(400).json({ message: "Provide username and/or email only. Password changes are not supported here." });
+  }
+  const updates: { username?: string; email?: string } = {};
+  if (body.username !== undefined) {
+    if (typeof body.username !== "string" || !body.username.trim() || body.username.trim().length > 100) {
+      return res.status(400).json({ message: "username must be between 1 and 100 characters." });
+    }
+    updates.username = body.username.trim();
+  }
+  if (body.email !== undefined) {
+    if (typeof body.email !== "string" || body.email.trim().length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(body.email.trim())) {
+      return res.status(400).json({ message: "A valid email is required." });
+    }
+    updates.email = body.email.trim().toLowerCase();
+  }
+  try {
+    const user = await User.findByIdAndUpdate(userId, { $set: updates }, { new: true, runValidators: true }).select("username email").lean();
+    if (!user) return res.status(404).json({ message: "User not found." });
+    return res.status(200).json({ message: "User updated", user: { id: user._id, username: user.username, email: user.email } });
+  } catch (error) {
+    if (isDuplicateKeyError(error)) return res.status(409).json({ message: "A user with that email already exists." });
+    throw error;
+  }
 });
 
 /** @swagger
  * /api/users/{id}:
  *   delete:
- *     summary: Delete a user by ID.
+ *     summary: Delete the logged-in user's own account and revoke all sessions.
+ *     security: [{ lobbySession: [] }]
  *     tags: [user]
  *     parameters: [{ in: path, name: id, required: true, schema: { type: string } }]
  *     responses:
  *       200: { description: User deleted successfully. }
  *       404: { description: User not found. }
  */
-// TODO: Implement connection to db to delete user
-router.delete("/api/users/:id", (req, res) => {
+router.delete("/api/users/:id", async (req, res) => {
+  requireOwnProfile(req);
   const userId = req.params.id;
 
-  // TODO: Delete user from database
+  const user = await User.findByIdAndDelete(userId);
+  if (!user) return res.status(404).json({ message: "User not found." });
+  await revokeUserSessions(String(user._id));
+  res.clearCookie("forkoff_session", { path: "/", httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax" });
 
   return res.status(200).json({
     message: "User deleted",
@@ -291,28 +357,130 @@ router.delete("/api/users/:id", (req, res) => {
 /** @swagger
  * /api/restaurants/{id}:
  *   get:
- *     summary: Get restaurant information by ID.
+ *     summary: Get saved restaurant details by MongoDB ID or Google Place ID.
  *     tags: [restaurant]
  *     parameters: [{ in: path, name: id, required: true, schema: { type: string } }]
  *     responses:
  *       200: { description: Restaurant information returned successfully. }
  *       404: { description: Restaurant not found. }
+ *       502: { description: Google Places request failed. }
  */
-// TODO: Connect to db to actually grab restaurant info.
-router.get("/api/restaurants/:id", (req, res) => {
-  const restaurantId = req.params.id;
+router.get("/api/restaurants/:id", async (req, res) => {
+  const id = req.params.id;
+  const filter = mongoose.isValidObjectId(id)
+    ? { $or: [{ placeId: id }, { _id: new mongoose.Types.ObjectId(id) }] }
+    : { placeId: id };
 
-  const info = {
-    restaurantId: restaurantId,
-    restaurantName: "The Bistro Grill",
-    address: "123 Main Street",
-    phone: "555-555-5555",
-    website: "https://example.com",
-    currency: "USD",
-    categories: ["American", "Grill"],
-  };
+  try {
+    const savedRestaurant = await Restaurant.findOne(filter).select({ placeId: 1 }).lean();
+    if (!savedRestaurant) {
+      return res.status(404).json({ message: "Restaurant not found in the saved collection." });
+    }
 
-  return res.status(200).json(info);
+    const place = await getGooglePlace(savedRestaurant.placeId);
+    return res.status(200).json({ attribution: "Google Maps", place });
+  } catch (error) {
+    return handlePlacesError(res, error, "Failed to load restaurant:");
+  }
+});
+
+/** @swagger
+ * /api/restaurants:
+ *   get:
+ *     summary: List saved restaurant Place IDs with live Google Places details.
+ *     tags: [restaurant]
+ *     parameters:
+ *       - in: query
+ *         name: limit
+ *         schema: { type: integer, minimum: 1, maximum: 10, default: 2 }
+ *     responses:
+ *       200: { description: Live restaurant details. Display Google Maps attribution to users. }
+ *       502: { description: Google Places request failed. }
+ */
+router.get("/api/restaurants", async (req, res) => {
+  const limit = Number(req.query.limit ?? 2);
+  if (!Number.isInteger(limit) || limit < 1 || limit > 10) {
+    return res.status(400).json({ message: "limit must be an integer from 1 to 10." });
+  }
+
+  try {
+    const savedRestaurants = await Restaurant.find()
+      .sort({ createdAt: 1 })
+      .limit(limit)
+      .select({ placeId: 1 })
+      .lean();
+    const places = await Promise.all(
+      savedRestaurants.map(({ placeId }) => getGooglePlace(placeId)),
+    );
+
+    return res.status(200).json({
+      count: places.length,
+      attribution: "Google Maps",
+      places,
+    });
+  } catch (error) {
+    return handlePlacesError(res, error, "Failed to load saved restaurants:");
+  }
+});
+
+/** @swagger
+ * /api/restaurants/import:
+ *   post:
+ *     summary: Search Google Places for restaurants and save their Place IDs.
+ *     description: Only Place IDs are stored in MongoDB. Full restaurant details are returned from live Places requests.
+ *     tags: [restaurant]
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               query: { type: string, example: "restaurants in Erie, PA" }
+ *               limit: { type: integer, minimum: 1, maximum: 10, default: 2 }
+ *     responses:
+ *       200: { description: Search results and persisted Place IDs. }
+ *       400: { description: Invalid query or limit. }
+ *       502: { description: Google Places request failed. }
+ */
+router.post("/api/restaurants/import", async (req, res) => {
+  const query = typeof req.body?.query === "string"
+    ? req.body.query.trim()
+    : "restaurants in Erie, PA";
+  const limit = Number(req.body?.limit ?? 2);
+
+  if (!query || query.length > 200) {
+    return res.status(400).json({ message: "query must be between 1 and 200 characters." });
+  }
+  if (!Number.isInteger(limit) || limit < 1 || limit > 10) {
+    return res.status(400).json({ message: "limit must be an integer from 1 to 10." });
+  }
+
+  try {
+    const places = (await searchRestaurants(query, limit)).slice(0, limit);
+    if (places.length > 0) {
+      await Restaurant.bulkWrite(
+        places.map(({ id }) => ({
+          updateOne: {
+            filter: { placeId: id },
+            update: { $setOnInsert: { placeId: id } },
+            upsert: true,
+          },
+        })),
+        { ordered: false },
+      );
+    }
+
+    return res.status(200).json({
+      query,
+      imported: places.length,
+      attribution: "Google Maps",
+      persistence: "Only Google Place IDs are stored; details are fetched live.",
+      places,
+    });
+  } catch (error) {
+    return handlePlacesError(res, error, "Failed to save Google Place IDs:");
+  }
 });
 
 /** @swagger
@@ -352,18 +520,24 @@ router.patch("/api/restaurants/:id", (req, res) => {
 /** @swagger
  * /api/restaurants/{id}:
  *   delete:
- *     summary: Delete custom restaurant information.
+ *     summary: Remove a saved restaurant reference by MongoDB ID or Google Place ID.
+ *     description: Requires login. Removes the shared saved Place ID, not the listing on Google Maps.
+ *     security: [{ lobbySession: [] }]
  *     tags: [restaurant]
  *     parameters: [{ in: path, name: id, required: true, schema: { type: string } }]
  *     responses:
  *       200: { description: Restaurant deleted successfully. }
  *       404: { description: Restaurant not found. }
  */
-// TODO: Connect to db.
-router.delete("/api/restaurants/:id", (req, res) => {
+router.delete("/api/restaurants/:id", async (req, res) => {
+  if (!req.identity?.userId) return res.status(401).json({ message: "Login is required." });
   const restaurantId = req.params.id;
 
-  // TODO: Delete custom restaurant info from database
+  const filter = mongoose.isObjectIdOrHexString(restaurantId)
+    ? { $or: [{ placeId: restaurantId }, { _id: new mongoose.Types.ObjectId(restaurantId) }] }
+    : { placeId: restaurantId };
+  const restaurant = await Restaurant.findOneAndDelete(filter);
+  if (!restaurant) return res.status(404).json({ message: "Restaurant not found in the saved collection." });
 
   return res.status(200).json({
     message: "Restaurant deleted",
@@ -486,21 +660,15 @@ router.get("/api/restaurants/:id/analytics", (req, res) => {
  *     responses:
  *       200: { description: Place information returned successfully. }
  *       404: { description: Place not found. }
+ *       502: { description: Google Places request failed. }
  */
-// TODO: Connect to Google Places API.
-router.get("/api/places/:id", (req, res) => {
-  const placeId = req.params.id;
-
-  const place = {
-    placeId: placeId,
-    displayName: "Example Restaurant",
-    address: "123 Main Street",
-    rating: 4.5,
-    priceLevel: 2,
-    openNow: true,
-  };
-
-  return res.status(200).json(place);
+router.get("/api/places/:id", async (req, res) => {
+  try {
+    const place = await getGooglePlace(req.params.id);
+    return res.status(200).json({ attribution: "Google Maps", place });
+  } catch (error) {
+    return handlePlacesError(res, error, "Failed to load Google Place:");
+  }
 });
 
 /** @swagger
@@ -537,312 +705,21 @@ router.get("/api/places/:id/photos", (req, res) => {
  * /api/places/{id}/reviews:
  *   get:
  *     summary: Get restaurant reviews from Google Places.
+ *     description: Returns live Google review objects including authorAttribution. Display Google Maps and review author attribution.
  *     tags: [places]
  *     parameters: [{ in: path, name: id, required: true, schema: { type: string } }]
  *     responses:
  *       200: { description: Place reviews returned successfully. }
  */
-// TODO: Fetch reviews from Google Places API.
-router.get("/api/places/:id/reviews", (req, res) => {
+router.get("/api/places/:id/reviews", async (req, res) => {
   const placeId = req.params.id;
 
-  const reviews = [
-    {
-      author: "Test User",
-      rating: 5,
-      text: "Great restaurant.",
-    },
-    {
-      author: "Example User",
-      rating: 4,
-      text: "Good food.",
-    },
-  ];
-
-  return res.status(200).json({
-    placeId: placeId,
-    reviews: reviews,
-  });
-});
-
-/** @swagger
- * /api/lobbies:
- *   post:
- *     summary: Create a lobby.
- *     tags: [lobby]
- *     requestBody:
- *       required: true
- *       content: { application/json: { schema: { type: object, required: [hostId], properties: { name: { type: string }, hostId: { type: string }, maxDistance: { type: number } } } } }
- *     responses:
- *       201: { description: Lobby created successfully. }
- *       400: { description: Host ID is required. }
- */
-// TODO: Save lobby to database.
-router.post("/api/lobbies", (req, res) => {
-  const lobby = {
-    id: "ABC123",
-    name: req.body.name,
-    hostId: req.body.hostId,
-    maxDistance: req.body.maxDistance,
-    createdAt: new Date(),
-  };
-
-  if (!lobby.hostId) {
-    return res.status(400).json({
-      message: "Host ID is required.",
-    });
+  try {
+    const reviews = await getGooglePlaceReviews(placeId);
+    return res.status(200).json({ placeId, attribution: "Google Maps", reviews });
+  } catch (error) {
+    return handlePlacesError(res, error, "Failed to load Google Place reviews:");
   }
-
-  return res.status(201).json({
-    message: "Lobby created",
-    lobby: lobby,
-  });
-});
-
-/** @swagger
- * /api/lobbies/{id}:
- *   get:
- *     summary: Get lobby information.
- *     tags: [lobby]
- *     parameters: [{ in: path, name: id, required: true, schema: { type: string } }]
- *     responses:
- *       200: { description: Lobby returned successfully. }
- *       404: { description: Lobby not found. }
- */
-router.get("/api/lobbies/:id", (req, res) => {
-  const lobbyId = req.params.id;
-
-  const lobby = {
-    id: lobbyId,
-    name: "Dinner Group",
-    hostId: "1",
-    memberCount: 3,
-    status: "waiting",
-  };
-
-  return res.status(200).json(lobby);
-});
-
-/** @swagger
- * /api/lobbies/{id}:
- *   patch:
- *     summary: Update lobby settings.
- *     tags: [lobby]
- *     parameters: [{ in: path, name: id, required: true, schema: { type: string } }]
- *     requestBody:
- *       content: { application/json: { schema: { type: object, properties: { name: { type: string }, status: { type: string } } } } }
- *     responses:
- *       200: { description: Lobby updated successfully. }
- */
-router.patch("/api/lobbies/:id", (req, res) => {
-  const lobbyId = req.params.id;
-
-  const updates = {
-    name: req.body.name,
-    status: req.body.status,
-  };
-
-  return res.status(200).json({
-    message: "Lobby updated",
-    lobbyId: lobbyId,
-    updates: updates,
-  });
-});
-
-/** @swagger
- * /api/lobbies/{id}:
- *   delete:
- *     summary: Delete a lobby.
- *     tags: [lobby]
- *     parameters: [{ in: path, name: id, required: true, schema: { type: string } }]
- *     responses:
- *       200: { description: Lobby deleted successfully. }
- *       404: { description: Lobby not found. }
- */
-router.delete("/api/lobbies/:id", (req, res) => {
-  const lobbyId = req.params.id;
-
-  return res.status(200).json({
-    message: "Lobby deleted",
-    lobbyId: lobbyId,
-  });
-});
-
-/** @swagger
- * /api/lobbies/{id}/join:
- *   post:
- *     summary: Join a lobby.
- *     tags: [lobby]
- *     parameters: [{ in: path, name: id, required: true, schema: { type: string } }]
- *     requestBody:
- *       required: true
- *       content: { application/json: { schema: { type: object, required: [userId], properties: { userId: { type: string } } } } }
- *     responses:
- *       200: { description: User joined lobby successfully. }
- *       400: { description: User ID is required. }
- */
-router.post("/api/lobbies/:id/join", (req, res) => {
-  const lobbyId = req.params.id;
-  const userId = req.body.userId;
-
-  if (!userId) {
-    return res.status(400).json({
-      message: "User ID is required.",
-    });
-  }
-
-  return res.status(200).json({
-    message: "User joined lobby",
-    lobbyId: lobbyId,
-    userId: userId,
-  });
-});
-
-/** @swagger
- * /api/lobbies/{id}/leave:
- *   post:
- *     summary: Leave a lobby.
- *     tags: [lobby]
- *     parameters: [{ in: path, name: id, required: true, schema: { type: string } }]
- *     requestBody:
- *       required: true
- *       content: { application/json: { schema: { type: object, required: [userId], properties: { userId: { type: string } } } } }
- *     responses:
- *       200: { description: User left lobby successfully. }
- *       400: { description: User ID is required. }
- */
-router.post("/api/lobbies/:id/leave", (req, res) => {
-  const lobbyId = req.params.id;
-  const userId = req.body.userId;
-
-  if (!userId) {
-    return res.status(400).json({
-      message: "User ID is required.",
-    });
-  }
-
-  return res.status(200).json({
-    message: "User left lobby",
-    lobbyId: lobbyId,
-    userId: userId,
-  });
-});
-
-/** @swagger
- * /api/lobbies/{id}/members:
- *   get:
- *     summary: Get lobby members.
- *     tags: [lobby]
- *     parameters: [{ in: path, name: id, required: true, schema: { type: string } }]
- *     responses:
- *       200: { description: Lobby members returned successfully. }
- */
-router.get("/api/lobbies/:id/members", (req, res) => {
-  const lobbyId = req.params.id;
-
-  const members = [
-    {
-      id: 1,
-      username: "UserOne",
-    },
-    {
-      id: 2,
-      username: "UserTwo",
-    },
-  ];
-
-  return res.status(200).json({
-    lobbyId: lobbyId,
-    members: members,
-  });
-});
-
-/** @swagger
- * /api/lobbies/{id}/restaurants:
- *   get:
- *     summary: Get restaurants in a lobby.
- *     tags: [lobby]
- *     parameters: [{ in: path, name: id, required: true, schema: { type: string } }]
- *     responses:
- *       200: { description: Lobby restaurants returned successfully. }
- */
-router.get("/api/lobbies/:id/restaurants", (req, res) => {
-  const lobbyId = req.params.id;
-
-  const restaurants = [
-    {
-      id: 1,
-      name: "Restaurant One",
-      rating: 4.4,
-    },
-    {
-      id: 2,
-      name: "Restaurant Two",
-      rating: 4.7,
-    },
-  ];
-
-  return res.status(200).json({
-    lobbyId: lobbyId,
-    restaurants: restaurants,
-  });
-});
-
-/** @swagger
- * /api/lobbies/{id}/filters:
- *   get:
- *     summary: Get lobby filters.
- *     tags: [lobby]
- *     parameters: [{ in: path, name: id, required: true, schema: { type: string } }]
- *     responses:
- *       200: { description: Lobby filters returned successfully. }
- */
-router.get("/api/lobbies/:id/filters", (req, res) => {
-  const lobbyId = req.params.id;
-
-  const filters = {
-    maxDistance: 10,
-    minimumRating: 4,
-    maxPriceLevel: 3,
-    categories: ["American", "Mexican"],
-    openNow: true,
-    alcoholAvailable: false,
-  };
-
-  return res.status(200).json({
-    lobbyId: lobbyId,
-    filters: filters,
-  });
-});
-
-/** @swagger
- * /api/lobbies/{id}/filters:
- *   patch:
- *     summary: Update lobby filters.
- *     tags: [lobby]
- *     parameters: [{ in: path, name: id, required: true, schema: { type: string } }]
- *     requestBody:
- *       content: { application/json: { schema: { type: object, properties: { maxDistance: { type: number }, minimumRating: { type: number }, maxPriceLevel: { type: integer }, categories: { type: array, items: { type: string } }, openNow: { type: boolean }, alcoholAvailable: { type: boolean } } } } }
- *     responses:
- *       200: { description: Lobby filters updated successfully. }
- */
-router.patch("/api/lobbies/:id/filters", (req, res) => {
-  const lobbyId = req.params.id;
-
-  const filters = {
-    maxDistance: req.body.maxDistance,
-    minimumRating: req.body.minimumRating,
-    maxPriceLevel: req.body.maxPriceLevel,
-    categories: req.body.categories,
-    openNow: req.body.openNow,
-    alcoholAvailable: req.body.alcoholAvailable,
-  };
-
-  return res.status(200).json({
-    message: "Lobby filters updated",
-    lobbyId: lobbyId,
-    filters: filters,
-  });
 });
 
 /** @swagger

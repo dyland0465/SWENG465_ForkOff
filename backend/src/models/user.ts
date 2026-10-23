@@ -9,4 +9,5 @@ const userSchema = new Schema({
 }
 );
 
-export const User = mongoose.model("User", userSchema);
+// changed it to use users in mongodb instead of user
+export const User = mongoose.model("User", userSchema, "users");

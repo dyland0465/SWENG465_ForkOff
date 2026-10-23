@@ -10,21 +10,24 @@ const lobbySchema = new Schema(
 
     name: {
       type: String,
-      required: true
+      required: true,
+      trim: true,
+      maxlength: 120,
     },
 
-    hostID: {
-      type: Schema.Types.ObjectId,
-      ref: "User",
-      required: true
-    },
-
-    members: [
-      {
-        type: Schema.Types.ObjectId,
-        ref: "User"
-      }
-    ],
+    hostMemberId: { type: String, default: null },
+    nextJoinOrder: { type: Number, default: 1 },
+    revision: { type: Number, default: 0 },
+    members: [{
+      _id: false,
+      memberId: { type: String, required: true },
+      identityKey: { type: String, required: true },
+      userId: { type: Schema.Types.ObjectId, ref: "User" },
+      type: { type: String, enum: ["user", "guest"], required: true },
+      displayName: { type: String, required: true, maxlength: 40 },
+      joinOrder: { type: Number, required: true },
+      joinedAt: { type: Date, default: Date.now },
+    }],
 
     status: {
       type: String,
@@ -33,13 +36,26 @@ const lobbySchema = new Schema(
     },
 
     filters: {
+      location: {
+        type: String,
+        trim: true,
+        maxlength: 120,
+      },
+
+      dinnerAt: {
+        type: Date,
+      },
+
       maxDistance: {
         type: Number,
+        min: 1,
         default: 10
       },
 
       minimumRating: {
         type: Number,
+        min: 0,
+        max: 5,
         default: 0
       },
 
@@ -51,15 +67,26 @@ const lobbySchema = new Schema(
       openNow: {
         type: Boolean,
         default: false
+      },
+
+      priceLevels: {
+        type: [String],
+        default: [],
+      },
+
+      diningNeeds: {
+        type: [String],
+        default: [],
       }
     }
   },
   {
-    timestamps: true
+    timestamps: true,
+    collection: "lobbies",
   }
 );
 
-export const Lobby = mongoose.model("Lobby", lobbySchema);
+export const Lobby = mongoose.model("Lobby", lobbySchema, "lobbies");
 
 
 
