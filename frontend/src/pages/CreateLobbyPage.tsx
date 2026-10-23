@@ -133,7 +133,7 @@ export function CreateLobbyPage() {
             <ForkEmblem />
             <div className="create-lobby__match-note">
               <strong>Restaurant matches pending</strong>
-              <p>Match counts will appear when restaurant search is connected.</p>
+              <p>Match counts will appear when restaurant search is connected. TODO</p>
             </div>
           </div>
         </div>
@@ -147,7 +147,6 @@ export function CreateLobbyPage() {
               {isSubmitting ? 'Creating lobby…' : 'Create lobby'}
             </Button>
             <p className="lobby-form-note">You can edit these filters before voting starts.</p>
-            <p id="create-backend-note" className="lobby-form-note">Your lobby and selected preferences will be saved in the database.</p>
             <p className="lobby-form-status" role="status">{status}</p>
           </div>
         </div>

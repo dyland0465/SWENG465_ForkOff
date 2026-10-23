@@ -148,7 +148,7 @@ function LobbyScreen({ lobbyId }: { lobbyId: string }) {
             <TextAction to={generatePath(paths.results, params)}>Your voting results</TextAction>
             <TextAction to={generatePath(paths.groupChat, params)}>Open chat</TextAction>
           </div>
-          <p>Restaurant browsing, voting, and results currently use demo data. Votes stay in this browser tab.</p>
+          <p>Restaurant browsing, voting, and results currently use demo data. Votes stay in this browser tab. TODO</p>
         </section>
       </div>}
       <TextAction to={paths.home}>Back home</TextAction>
