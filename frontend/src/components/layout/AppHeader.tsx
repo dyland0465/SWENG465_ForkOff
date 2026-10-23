@@ -14,6 +14,7 @@ type AppHeaderProps = {
 export function AppHeader({ onHowItWorks, onJoinLobby }: AppHeaderProps) {
   const isHome = useMatch({ path: paths.home, end: true }) !== null
   const isLogin = useMatch(paths.login) !== null
+  const isJoinLobby = useMatch(paths.joinLobby) !== null
   const { pathname } = useLocation()
   const navigate = useNavigate()
   const [logoutError, setLogoutError] = useState('')
@@ -28,7 +29,7 @@ export function AppHeader({ onHowItWorks, onJoinLobby }: AppHeaderProps) {
         <nav className="app-header__nav" aria-label="Main navigation">
           <TextAction to={paths.home} tone="nav" current={isHome}>Home</TextAction>
           <TextAction tone="nav" onClick={onHowItWorks}>How it works</TextAction>
-          <TextAction tone="nav" onClick={onJoinLobby}>Enter lobby code</TextAction>
+          <TextAction tone="nav" current={isJoinLobby} onClick={onJoinLobby}>Enter lobby code</TextAction>
           {user ? (
             <span className="app-header__account">
               <span className="app-header__user">Hi, {user.username}</span>

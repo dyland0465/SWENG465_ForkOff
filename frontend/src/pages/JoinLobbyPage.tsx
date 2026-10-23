@@ -59,8 +59,9 @@ export function JoinLobbyPage() {
 
   return (
     <main id="main-content" className="lobby-form-page" tabIndex={-1}>
-      <h1 className="text-heading-h1">Join dinner crew</h1>
+      {/*<h1 className="text-heading-h1">Join dinner crew</h1>
       <p className="lobby-form-page__intro text-body-large">Enter your invitation code to help choose your crew’s restaurant.</p>
+      */}
       <div className="join-lobby lobby-panel">
         <div className="join-lobby__invitation">
           <div className="join-lobby__crew">
@@ -84,7 +85,6 @@ export function JoinLobbyPage() {
         </form>
         <div className="join-lobby__help">Invite not working? Check the full link or ask your host for the six-character lobby code.</div>
       </div>
-      <TextAction className="lobby-form-page__back" to={paths.home}>Back to home</TextAction>
     </main>
   )
 }
