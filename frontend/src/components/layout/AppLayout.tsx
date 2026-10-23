@@ -5,8 +5,10 @@ import { Dialog } from '../ui/Dialog'
 import { AppHeader } from './AppHeader'
 import { paths } from '../../routes/paths'
 import { VotingSessionProvider } from '../../features/voting/VotingSessionProvider'
-import { RestaurantPreferencesProvider } from '../../features/preferences/RestaurantPreferencesProvider'
 import { RouteNavigation } from './RouteNavigation'
+import { RestaurantPreferencesProvider } from '../../features/preferences/RestaurantPreferencesProvider'
+
+
 
 export function AppLayout() {
   const [showHowItWorks, setShowHowItWorks] = useState(false)
@@ -28,12 +30,30 @@ export function AppLayout() {
       {/* Reuse the original Home canvas so its dimensions and cropping stay unchanged. */}
       {/* Login: added `|| isLogin` to reuse the lobby-screen styling, and the
           login-screen class so LoginScreen.css can un-highlight the Home tab. */}
-      <div className={`home-screen${isCreateLobby || isJoinLobby || isLogin ? ' lobby-screen' : ''}${isLobby || isGroupChat ? ' lobby-detail-screen' : ''}${isLobby ? ' lobby-page-screen' : ''}${isDiscovery || isVoting || isRestaurantDetails || isResults ? ' discovery-screen' : ''}${isVoting ? ' voting-screen' : ''}${isLogin ? ' login-screen' : ''}`}>        <AppHeader
-          onHowItWorks={() => setShowHowItWorks(true)}
-          onJoinLobby={() => navigate(paths.joinLobby)}
-        />
-        <VotingSessionProvider><LiveLobbyProvider>{lobbyNotice && <p className="lobby-global-notice" role="status">{lobbyNotice}</p>}<Outlet /></LiveLobbyProvider></VotingSessionProvider>
+      <div
+        className={`home-screen${isCreateLobby || isJoinLobby || isLogin ? ' lobby-screen' : ''}${isLobby || isGroupChat ? ' lobby-detail-screen' : ''}${isLobby ? ' lobby-page-screen' : ''}${isDiscovery || isVoting || isRestaurantDetails || isResults ? ' discovery-screen' : ''}${isVoting ? ' voting-screen' : ''}${isLogin ? ' login-screen' : ''}`}
+      >
+        {!isPartner && (
+          <AppHeader
+            onHowItWorks={() => setShowHowItWorks(true)}
+            onJoinLobby={() => navigate(paths.joinLobby)}
+          />
+        )}
+
+        <RestaurantPreferencesProvider>
+          <VotingSessionProvider>
+            <LiveLobbyProvider>
+              {lobbyNotice && (
+                <p className="lobby-global-notice" role="status">
+                  {lobbyNotice}
+                </p>
+              )}
+              <Outlet />
+            </LiveLobbyProvider>
+          </VotingSessionProvider>
+        </RestaurantPreferencesProvider>
       </div>
+
       <RouteNavigation />
       {showHowItWorks && (
         <Dialog title="How it works" onClose={() => setShowHowItWorks(false)}>
