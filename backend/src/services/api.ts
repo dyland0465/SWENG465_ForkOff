@@ -1,13 +1,19 @@
-import { Router, type Response } from "express";
+import { Router, type Request, type Response } from "express";
 import mongoose from "mongoose";
 import { User } from "../models/user";
 import { Restaurant } from "../models/restaurant";
 import { hashPassword, validatePassword } from "./auth";
-import { getGooglePlace, GooglePlacesError, searchRestaurants } from "./googlePlaces";
-import { establishSession } from "./session";
+import { getGooglePlace, getGooglePlaceReviews, GooglePlacesError, searchRestaurants } from "./googlePlaces";
+import { establishSession, revokeUserSessions } from "./session";
+import { HttpError } from "./lobbyState";
 
 
 const router = Router();
+function requireOwnProfile(req: Request) {
+  if (!mongoose.isObjectIdOrHexString(req.params.id)) throw new HttpError(400, "Invalid user ID.");
+  if (!req.identity?.userId) throw new HttpError(401, "Login is required.");
+  if (req.identity.userId !== String(req.params.id).toLowerCase()) throw new HttpError(403, "You can only access your own account.");
+}
 function isDuplicateKeyError(error: unknown) {
   return Boolean(
     error &&
@@ -220,7 +226,8 @@ router.post("/api/users", async (req, res) => {
  * @swagger
  * /api/users/{id}:
  *   get:
- *     summary: Get a user's information by ID.
+ *     summary: Get the logged-in user's own profile by ID.
+ *     security: [{ lobbySession: [] }]
  *     tags:
  *       - user
  *     parameters:
@@ -238,18 +245,14 @@ router.post("/api/users", async (req, res) => {
  *       404:
  *         description: User not found.
  */
-router.get("/api/users/:id", (req, res) => {
+router.get("/api/users/:id", async (req, res) => {
+  requireOwnProfile(req);
   const userId = req.params.id;
 
-  // TODO: Query user from database using userId
-  let user = {
-    id: userId,
-    username: "User",
-    email: "Example@example.com",
-  };
+  const user = await User.findById(userId).select("username email").lean();
 
   if (user) {
-    return res.status(200).json(user);
+    return res.status(200).json({ id: user._id, username: user.username, email: user.email });
   }
 
   return res.status(404).json({
@@ -261,7 +264,8 @@ router.get("/api/users/:id", (req, res) => {
  * @swagger
  * /api/users/{id}:
  *   patch:
- *     summary: Edit a user's information by ID.
+ *     summary: Update the logged-in user's own username or email.
+ *     security: [{ lobbySession: [] }]
  *     tags:
  *       - user
  *     parameters:
@@ -281,9 +285,6 @@ router.get("/api/users/:id", (req, res) => {
  *               username:
  *                 type: string
  *                 example: "Billy"
- *               password:
- *                 type: string
- *                 example: "Password"
  *               email:
  *                 type: string
  *                 example: "example@example.com"
@@ -295,43 +296,57 @@ router.get("/api/users/:id", (req, res) => {
  *       404:
  *         description: User not found.
  */
-router.patch("/api/users/:id", (req, res) => {
+router.patch("/api/users/:id", async (req, res) => {
+  requireOwnProfile(req);
   const userId = req.params.id;
 
-  let updates = {
-    username: req.body.username,
-    password: req.body.password,
-    email: req.body.email,
-  };
-
-  // TODO:
-  // Find user by userId
-  // Validate provided fields
-  // Hash password if password changes
-  // Apply updates
-
-  return res.status(200).json({
-    message: "User updated",
-    userId: userId,
-    updates: updates,
-  });
+  const body = req.body;
+  if (!body || typeof body !== "object" || Array.isArray(body) ||
+      !Object.keys(body).length || Object.keys(body).some(key => !["username", "email"].includes(key))) {
+    return res.status(400).json({ message: "Provide username and/or email only. Password changes are not supported here." });
+  }
+  const updates: { username?: string; email?: string } = {};
+  if (body.username !== undefined) {
+    if (typeof body.username !== "string" || !body.username.trim() || body.username.trim().length > 100) {
+      return res.status(400).json({ message: "username must be between 1 and 100 characters." });
+    }
+    updates.username = body.username.trim();
+  }
+  if (body.email !== undefined) {
+    if (typeof body.email !== "string" || body.email.trim().length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(body.email.trim())) {
+      return res.status(400).json({ message: "A valid email is required." });
+    }
+    updates.email = body.email.trim().toLowerCase();
+  }
+  try {
+    const user = await User.findByIdAndUpdate(userId, { $set: updates }, { new: true, runValidators: true }).select("username email").lean();
+    if (!user) return res.status(404).json({ message: "User not found." });
+    return res.status(200).json({ message: "User updated", user: { id: user._id, username: user.username, email: user.email } });
+  } catch (error) {
+    if (isDuplicateKeyError(error)) return res.status(409).json({ message: "A user with that email already exists." });
+    throw error;
+  }
 });
 
 /** @swagger
  * /api/users/{id}:
  *   delete:
- *     summary: Delete a user by ID.
+ *     summary: Delete the logged-in user's own account and revoke all sessions.
+ *     security: [{ lobbySession: [] }]
  *     tags: [user]
  *     parameters: [{ in: path, name: id, required: true, schema: { type: string } }]
  *     responses:
  *       200: { description: User deleted successfully. }
  *       404: { description: User not found. }
  */
-// TODO: Implement connection to db to delete user
-router.delete("/api/users/:id", (req, res) => {
+router.delete("/api/users/:id", async (req, res) => {
+  requireOwnProfile(req);
   const userId = req.params.id;
 
-  // TODO: Delete user from database
+  const user = await User.findByIdAndDelete(userId);
+  if (!user) return res.status(404).json({ message: "User not found." });
+  await revokeUserSessions(String(user._id));
+  res.clearCookie("forkoff_session", { path: "/", httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax" });
 
   return res.status(200).json({
     message: "User deleted",
@@ -505,18 +520,24 @@ router.patch("/api/restaurants/:id", (req, res) => {
 /** @swagger
  * /api/restaurants/{id}:
  *   delete:
- *     summary: Delete custom restaurant information.
+ *     summary: Remove a saved restaurant reference by MongoDB ID or Google Place ID.
+ *     description: Requires login. Removes the shared saved Place ID, not the listing on Google Maps.
+ *     security: [{ lobbySession: [] }]
  *     tags: [restaurant]
  *     parameters: [{ in: path, name: id, required: true, schema: { type: string } }]
  *     responses:
  *       200: { description: Restaurant deleted successfully. }
  *       404: { description: Restaurant not found. }
  */
-// TODO: Connect to db.
-router.delete("/api/restaurants/:id", (req, res) => {
+router.delete("/api/restaurants/:id", async (req, res) => {
+  if (!req.identity?.userId) return res.status(401).json({ message: "Login is required." });
   const restaurantId = req.params.id;
 
-  // TODO: Delete custom restaurant info from database
+  const filter = mongoose.isObjectIdOrHexString(restaurantId)
+    ? { $or: [{ placeId: restaurantId }, { _id: new mongoose.Types.ObjectId(restaurantId) }] }
+    : { placeId: restaurantId };
+  const restaurant = await Restaurant.findOneAndDelete(filter);
+  if (!restaurant) return res.status(404).json({ message: "Restaurant not found in the saved collection." });
 
   return res.status(200).json({
     message: "Restaurant deleted",
@@ -684,32 +705,21 @@ router.get("/api/places/:id/photos", (req, res) => {
  * /api/places/{id}/reviews:
  *   get:
  *     summary: Get restaurant reviews from Google Places.
+ *     description: Returns live Google review objects including authorAttribution. Display Google Maps and review author attribution.
  *     tags: [places]
  *     parameters: [{ in: path, name: id, required: true, schema: { type: string } }]
  *     responses:
  *       200: { description: Place reviews returned successfully. }
  */
-// TODO: Fetch reviews from Google Places API.
-router.get("/api/places/:id/reviews", (req, res) => {
+router.get("/api/places/:id/reviews", async (req, res) => {
   const placeId = req.params.id;
 
-  const reviews = [
-    {
-      author: "Test User",
-      rating: 5,
-      text: "Great restaurant.",
-    },
-    {
-      author: "Example User",
-      rating: 4,
-      text: "Good food.",
-    },
-  ];
-
-  return res.status(200).json({
-    placeId: placeId,
-    reviews: reviews,
-  });
+  try {
+    const reviews = await getGooglePlaceReviews(placeId);
+    return res.status(200).json({ placeId, attribution: "Google Maps", reviews });
+  } catch (error) {
+    return handlePlacesError(res, error, "Failed to load Google Place reviews:");
+  }
 });
 
 /** @swagger

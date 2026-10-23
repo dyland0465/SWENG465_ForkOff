@@ -58,6 +58,11 @@ export async function revokeSession(cookie?: string) {
   if (token) { await Session.deleteOne({ tokenHash: hash(token) }); sessionEvents.emit("revoked", cookie); }
 }
 
+export async function revokeUserSessions(userId: string) {
+  await Session.deleteMany({ userId });
+  sessionEvents.emit("userRevoked", userId);
+}
+
 export async function establishSession(req: Request, res: Response, user?: { id: string; username: string; email: string }) {
   await revokeSession(req.headers.cookie);
   const token = randomBytes(32).toString("hex");

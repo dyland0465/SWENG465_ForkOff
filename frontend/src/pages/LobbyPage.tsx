@@ -10,7 +10,7 @@ import { paths } from '../routes/paths'
 import './LobbyPage.css'
 
 function LobbyScreen({ lobbyId }: { lobbyId: string }) {
-  const { lobby, error, notice, connection, refresh, mutate: requestMutation } = useLiveLobby()
+  const { lobby, error, notice, connection, mutate: requestMutation } = useLiveLobby()
   const [editingFilters, setEditingFilters] = useState(false)
   const [busy, setBusy] = useState(false)
   const [actionError, setActionError] = useState('')
@@ -57,7 +57,6 @@ function LobbyScreen({ lobbyId }: { lobbyId: string }) {
       <p role="status">{connection}</p>
       {!lobby && error && <TextAction to={paths.joinLobby}>Join with invitation code</TextAction>}
       <p role="status">{notice}</p>
-      <TextAction disabled={busy} onClick={refresh}>Refresh lobby</TextAction>
       {lobby && <div className="lobby-page__columns">
         <section>
          <h2 className="lobby-section-heading">

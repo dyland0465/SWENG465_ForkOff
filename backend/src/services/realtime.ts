@@ -106,6 +106,12 @@ export function attachRealtime(server: HttpServer, options: { graceMs?: number; 
     }
   };
   sessionEvents.on("revoked", revoked);
+  const userRevoked = (userId: string) => {
+    for (const socket of io.sockets.sockets.values()) {
+      if (socket.data.identity?.userId === userId) socket.disconnect(true);
+    }
+  };
+  sessionEvents.on("userRevoked", userRevoked);
   let ticking = false;
   const timer = setInterval(async () => {
     if (ticking) return;
@@ -124,7 +130,8 @@ export function attachRealtime(server: HttpServer, options: { graceMs?: number; 
   const stop = () => {
     clearInterval(timer);
     lobbyEvents.off("changed", changed); lobbyEvents.off("deleted", deleted); lobbyEvents.off("message", message);
-    sessionEvents.off("revoked", revoked); presence.clear();
+    sessionEvents.off("revoked", revoked);
+    sessionEvents.off("userRevoked", userRevoked); presence.clear();
   };
   server.once("close", stop);
   return { io, stop };

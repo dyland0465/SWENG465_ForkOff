@@ -4,6 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "test": "node --import tsx --test tests/*.test.ts",
     "dev": "tsx watch src/server.ts",
     "start": "node server.js",
     "db:init": "tsx src/init-collections.ts",

@@ -20,6 +20,24 @@ interface TextSearchResponse {
   places?: GooglePlace[];
 }
 
+export interface GoogleReview {
+  name?: string;
+  rating?: number;
+  text?: { text: string; languageCode?: string };
+  originalText?: { text: string; languageCode?: string };
+  authorAttribution?: { displayName: string; uri?: string; photoUri?: string };
+  publishTime?: string;
+  relativePublishTimeDescription?: string;
+  googleMapsUri?: string;
+}
+
+export async function getGooglePlaceReviews(placeId: string): Promise<GoogleReview[]> {
+  const place = await requestPlaces<{ reviews?: GoogleReview[] }>(
+    `${PLACES_API_BASE}/places/${encodeURIComponent(placeId)}`, "reviews",
+  );
+  return place.reviews ?? [];
+}
+
 export class GooglePlacesError extends Error {
   constructor(
     public readonly statusCode: number,
