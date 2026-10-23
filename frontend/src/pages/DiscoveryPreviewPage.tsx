@@ -1,15 +1,8 @@
-import { useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { generatePath, useParams } from 'react-router'
-import { FilterChip } from '../components/ui/FilterChip'
 import { TextAction } from '../components/ui/TextAction'
-import { RestaurantFilterEditor } from '../features/preferences/RestaurantFilterEditor'
-import { useRestaurantPreferences } from '../features/preferences/useRestaurantPreferences'
-import { defaultRestaurantPreferences, formatPreferenceAvailability, formatPreferenceDistance, formatPreferenceSchedule, hasDefaultPreferences } from '../features/preferences/restaurantPreferences'
-import type { RestaurantPreferences } from '../features/preferences/restaurantPreferences'
-import { demoRestaurants } from '../data/demoRestaurants'
 import { paths } from '../routes/paths'
 import './DiscoveryPreviewPage.css'
-
 
 type Restaurant = {
   id: string
@@ -123,7 +116,7 @@ function DiscoveryPreviewScreen({ lobbyId }: { lobbyId: string }) {
       {!loading && !error && (
         <>
           <p className="discovery-page__intro" role="status">
-            {restaurants.length === 0 ? 'No restaurants found. Try changing lobby's location.' : `${restaurants.length} restaurants found.`}
+            {restaurants.length === 0 ? 'No restaurants found. Try changing lobby location.' : `${restaurants.length} restaurants found.`}
           </p>
 
           <p className="discovery-page__intro">
@@ -193,7 +186,7 @@ function DiscoveryPreviewScreen({ lobbyId }: { lobbyId: string }) {
 export function DiscoveryPreviewPage() {
   const { lobbyId } = useParams<'lobbyId'>()
 
-  if (!lobbyId.trim() || lobbyId.startsWith(':')) {
+  if (!lobbyId?.trim() || lobbyId.startsWith(':')) {
     return (
       <main id="main-content" className="route-placeholder">
         <h1>Lobby unavailable</h1>
