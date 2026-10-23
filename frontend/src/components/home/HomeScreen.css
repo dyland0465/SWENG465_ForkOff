@@ -17,11 +17,6 @@
   max-inline-size: none;
 }
 
-.home-screen:has(.home-hero) > .app-header {
-  max-inline-size: var(--layout-page-max);
-  margin-inline: auto;
-}
-
 .home-hero__copy {
   position: relative;
   z-index: 1;
