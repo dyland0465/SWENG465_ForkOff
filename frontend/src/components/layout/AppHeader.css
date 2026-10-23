@@ -45,6 +45,11 @@
   white-space: nowrap;
 }
 
+.app-header--home .app-header__nav {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
 .app-header__divider {
   block-size: 1px;
   margin-block-start: 11px;
@@ -74,6 +79,10 @@
     flex-wrap: wrap;
     justify-content: center;
     gap: var(--spacing-1);
+  }
+
+  .app-header--home .app-header__nav {
+    justify-content: center;
   }
 
   .app-header__nav .ui-text-action {

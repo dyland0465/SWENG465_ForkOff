@@ -19,7 +19,7 @@ export function AppHeader({ onHowItWorks, onJoinLobby }: AppHeaderProps) {
   const [logoutError, setLogoutError] = useState('')
   const { user, signOut } = useAuth()
   return (
-    <header className="app-header">
+    <header className={`app-header${isHome ? ' app-header--home' : ''}`}>
       <a className="skip-link" href="#main-content">Skip to main content</a>
       <div className="app-header__inner">
         <Link className="app-header__brand" to={paths.home} aria-label="Fork Off home">

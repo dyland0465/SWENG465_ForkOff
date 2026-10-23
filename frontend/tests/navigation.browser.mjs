@@ -175,7 +175,7 @@ try {
   await atRoute('/lobbies/join', 0, 'Home Join action focuses destination')
   await activate('.app-header__nav a')
   await atRoute('/', 0, 'Header Home navigation focuses destination')
-  await activate('.app-header__nav button:last-child')
+  await activate('.app-header__nav button:last-of-type')
   await atRoute('/lobbies/join', 0, 'Header Enter lobby code focuses destination')
   await activate('.app-header__nav button:first-of-type')
   await check("document.querySelector('dialog[open]').contains(document.activeElement)", 'Existing dialog focuses modal content')

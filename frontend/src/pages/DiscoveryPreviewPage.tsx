@@ -1,90 +1,26 @@
 import { useRef, useState } from 'react'
-import type { FormEvent } from 'react'
 import { generatePath, useParams } from 'react-router'
-import { Button } from '../components/ui/Button'
 import { FilterChip } from '../components/ui/FilterChip'
-import { SelectField, TextInput } from '../components/ui/FormField'
 import { TextAction } from '../components/ui/TextAction'
-import { cuisineOptions, distanceOptions, priceOptions, ratingOptions, toggleOption } from '../components/lobby/lobbyForm'
+import { RestaurantFilterEditor } from '../features/preferences/RestaurantFilterEditor'
+import { useRestaurantPreferences } from '../features/preferences/useRestaurantPreferences'
+import { defaultRestaurantPreferences, formatPreferenceAvailability, formatPreferenceDistance, formatPreferenceSchedule, hasDefaultPreferences } from '../features/preferences/restaurantPreferences'
+import type { RestaurantPreferences } from '../features/preferences/restaurantPreferences'
 import { demoRestaurants } from '../data/demoRestaurants'
 import { paths } from '../routes/paths'
 import './DiscoveryPreviewPage.css'
 
-type PreviewFilters = {
-  distance: string
-  time: string
-  cuisines: string[]
-  price: string
-  rating: string
-  openNow: boolean
-}
-
-const initialFilters: PreviewFilters = {
-  distance: '5', time: '19:30', cuisines: ['Italian', 'Ramen'], price: '$$', rating: '4.0', openNow: true,
-}
-
-function timeLabel(time: string) {
-  const [hour, minute] = time.split(':').map(Number)
-  return `${hour % 12 || 12}:${String(minute).padStart(2, '0')}${time === '19:30' ? '' : hour < 12 ? ' AM' : ' PM'}`
-}
-
-function PreviewFilterEditor({ filters, onApply, onCancel }: {
-  filters: PreviewFilters
-  onApply: (filters: PreviewFilters) => void
-  onCancel: () => void
-}) {
-  const [draft, setDraft] = useState(filters)
-
-  function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    onApply(draft)
-  }
-
-  return (
-    <form className="discovery-filter-editor" onSubmit={submit} aria-label="Edit demonstration filters">
-      <h2 className="text-heading-h2">Edit filters</h2>
-      <p>Adjust round settings locally. Sample cards stay visible; restaurant eligibility is not recalculated.</p>
-      <div className="discovery-filter-editor__fields">
-        <SelectField label="Distance" value={draft.distance} onChange={event => setDraft({ ...draft, distance: event.target.value })} autoFocus>
-          <option value="any">Any distance</option>
-          {distanceOptions.map(value => <option key={value} value={value}>Within {value} mi</option>)}
-        </SelectField>
-        <TextInput label="Dining time (demo)" type="time" hint="Leave blank for any time." value={draft.time} onChange={event => setDraft({ ...draft, time: event.target.value })} />
-        <SelectField label="Price" value={draft.price} onChange={event => setDraft({ ...draft, price: event.target.value })}>
-          <option value="any">Any price</option>
-          {priceOptions.map(value => <option key={value}>{value}</option>)}
-        </SelectField>
-        <SelectField label="Minimum rating" value={draft.rating} onChange={event => setDraft({ ...draft, rating: event.target.value })}>
-          {ratingOptions.map(value => <option key={value} value={value}>{value === 'any' ? 'Any rating' : `${value}+`}</option>)}
-        </SelectField>
-      </div>
-      <fieldset>
-        <legend>Cuisine</legend>
-        <div className="discovery-filter-chips">
-          {cuisineOptions.map(value => <FilterChip key={value} selected={draft.cuisines.includes(value)} onClick={() => setDraft({ ...draft, cuisines: toggleOption(draft.cuisines, value) })}>{value}</FilterChip>)}
-        </div>
-      </fieldset>
-      <FilterChip selected={draft.openNow} onClick={() => setDraft({ ...draft, openNow: !draft.openNow })}>Open now</FilterChip>
-      <div className="discovery-filter-editor__actions">
-        <Button type="submit">Apply locally</Button>
-        <Button variant="secondary" onClick={onCancel}>Cancel</Button>
-      </div>
-    </form>
-  )
-}
-
 function DiscoveryPreviewScreen({ lobbyId }: { lobbyId: string }) {
-  const [filters, setFilters] = useState(initialFilters)
+  const { filters, setFilters, resetFilters } = useRestaurantPreferences(lobbyId)
   const [editing, setEditing] = useState(false)
-  const [changed, setChanged] = useState(false)
+  const changed = !hasDefaultPreferences(filters)
   const [expanded, setExpanded] = useState<string | null>(null)
   const [status, setStatus] = useState('')
   const editRef = useRef<HTMLButtonElement>(null)
   const routeParams = { lobbyId }
 
-  function updateFilters(next: PreviewFilters, message = 'Demo round settings updated locally.') {
+  function updateFilters(next: RestaurantPreferences, message = 'Demo round settings updated locally.') {
     setFilters(next)
-    setChanged(true)
     setStatus(`${message} Sample cards are unchanged; eligibility and totals require a backend.`)
   }
 
@@ -106,23 +42,26 @@ function DiscoveryPreviewScreen({ lobbyId }: { lobbyId: string }) {
         <div className="discovery-page__controls">
           <TextAction ref={editRef} aria-expanded={editing} aria-controls="discovery-filter-editor" onClick={() => setEditing(previous => !previous)}>Edit filters</TextAction>
           <TextAction onClick={() => {
-            updateFilters({ distance: 'any', time: '', cuisines: [], price: 'any', rating: 'any', openNow: false }, 'Demo filters cleared locally.')
+            resetFilters()
+            setStatus('Demo defaults restored across screens for this lobby. Sample cards and existing votes are unchanged.')
             setEditing(false)
           }}>Reset</TextAction>
         </div>
       </div>
 
       <div id="discovery-filter-editor">
-        {editing && <PreviewFilterEditor filters={filters} onCancel={closeEditor} onApply={next => { updateFilters(next); closeEditor() }} />}
+        {editing && <RestaurantFilterEditor variant="discovery" filters={filters} onCancel={closeEditor} onApply={next => { updateFilters(next); closeEditor() }} />}
       </div>
 
       <div className="discovery-filter-chips discovery-page__filters" aria-label="Demonstration round settings" aria-describedby="discovery-demo-note">
-        <FilterChip selected={filters.distance !== 'any'} onClick={() => updateFilters({ ...filters, distance: filters.distance === 'any' ? '5' : 'any' })}>{filters.distance === 'any' ? 'Any distance' : `Within ${filters.distance} mi`}</FilterChip>
-        <FilterChip selected={!!filters.time} onClick={() => { if (filters.time) updateFilters({ ...filters, time: '' }); else setEditing(true) }}>{filters.time ? `Tonight ${timeLabel(filters.time)}` : 'Any time'}</FilterChip>
-        <FilterChip selected={!!filters.cuisines.length} onClick={() => updateFilters({ ...filters, cuisines: filters.cuisines.length ? [] : initialFilters.cuisines })}>{filters.cuisines.length ? filters.cuisines.join(' + ') : 'Any cuisine'}</FilterChip>
-        <FilterChip selected={filters.price !== 'any'} onClick={() => updateFilters({ ...filters, price: filters.price === 'any' ? '$$' : 'any' })}>{filters.price === 'any' ? 'Any price' : filters.price}</FilterChip>
+        <FilterChip selected onClick={() => setEditing(true)}>{filters.location}</FilterChip>
+        <FilterChip selected={filters.distance !== 'any'} onClick={() => updateFilters({ ...filters, distance: filters.distance === 'any' ? '5' : 'any' })}>{formatPreferenceDistance(filters.distance)}</FilterChip>
+        <FilterChip selected={!!filters.date || !!filters.time} onClick={() => { if (filters.time) updateFilters({ ...filters, time: '' }); else setEditing(true) }}>{formatPreferenceSchedule(filters)}</FilterChip>
+        <FilterChip selected={!!filters.cuisines.length} onClick={() => updateFilters({ ...filters, cuisines: filters.cuisines.length ? [] : defaultRestaurantPreferences().cuisines })}>{filters.cuisines.length ? filters.cuisines.join(' + ') : 'Any cuisine'}</FilterChip>
+        <FilterChip selected={!!filters.prices.length} onClick={() => updateFilters({ ...filters, prices: filters.prices.length ? [] : defaultRestaurantPreferences().prices })}>{filters.prices.join(' / ') || 'Any price'}</FilterChip>
         <FilterChip selected={filters.rating !== 'any'} onClick={() => updateFilters({ ...filters, rating: filters.rating === 'any' ? '4.0' : 'any' })}>{filters.rating === 'any' ? 'Any rating' : `${filters.rating}+`}</FilterChip>
-        <FilterChip selected={filters.openNow} onClick={() => updateFilters({ ...filters, openNow: !filters.openNow })}>Open now</FilterChip>
+        <FilterChip selected={filters.availability !== 'any'} onClick={() => updateFilters({ ...filters, availability: filters.availability === 'any' ? 'openNow' : 'any' })}>{formatPreferenceAvailability(filters.availability)}</FilterChip>
+        {filters.diningNeeds.map(value => <FilterChip key={value} selected onClick={() => updateFilters({ ...filters, diningNeeds: filters.diningNeeds.filter(option => option !== value) })}>{value}</FilterChip>)}
       </div>
 
       <section className="discovery-restaurants" aria-label="Sample restaurants from Figma">
@@ -150,7 +89,7 @@ function DiscoveryPreviewScreen({ lobbyId }: { lobbyId: string }) {
           <h2 id="discovery-options-heading">Only a few options?</h2>
           <p>{changed
             ? 'Lakeview Taqueria is a missing-photo example. Sample cards stay in this preview while you adjust settings; eligibility has not been checked.'
-            : 'Lakeview Taqueria has no current photo, but still matches every group filter. Keep it in the round or widen distance to 8 miles.'}</p>
+            : 'Lakeview Taqueria is a sample without a photo; eligibility has not been checked. Keep it in the demo or widen distance to 8 miles.'}</p>
         </div>
         <div className="discovery-options__actions">
           <TextAction to={generatePath(paths.voting, routeParams)} aria-describedby="discovery-demo-note">{changed ? 'Continue to voting' : 'Keep 18 and start'}</TextAction>
@@ -159,7 +98,7 @@ function DiscoveryPreviewScreen({ lobbyId }: { lobbyId: string }) {
       </section>
 
       <aside className="discovery-demo-note" aria-label="Demonstration details">
-        <p id="discovery-demo-note"><strong>Frontend demonstration.</strong> The 18-place count, restaurants, ratings, distances, and open statuses are Figma samples, not live results or verified matches. Filters edit temporary settings; cards stay unchanged. Lobby <span>{lobbyId}</span> is not loaded. Continue opens a local voting demo without starting a group round.</p>
+        <p id="discovery-demo-note"><strong>Frontend demonstration.</strong> The 18-place count, restaurants, ratings, distances, and open statuses are Figma samples, not live results or verified matches. Filters stay in memory per lobby across navigation and clear on refresh; sample cards and existing votes stay unchanged. Lobby <span>{lobbyId}</span> is not loaded. Continue opens a local voting demo without starting a group round.</p>
         <p className="discovery-page__status" role="status">{status}</p>
         <TextAction to={generatePath(paths.lobby, routeParams)}>Back to lobby</TextAction>
       </aside>
