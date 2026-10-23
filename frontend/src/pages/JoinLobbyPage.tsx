@@ -82,7 +82,6 @@ export function JoinLobbyPage() {
           <p id="join-backend-note" className="lobby-form-note">{user ? 'Your account username will be shown to the lobby.' : 'No account is needed; your display name is saved as a guest member.'}</p>
           <p className="lobby-form-status" role="status">{status}</p>
         </form>
-        <p className="join-lobby__privacy">By joining, your name and presence are visible to this lobby. Your individual votes remain private.</p>
         <div className="join-lobby__help">Invite not working? Check the full link or ask your host for the six-character lobby code.</div>
       </div>
       <TextAction className="lobby-form-page__back" to={paths.home}>Back to home</TextAction>

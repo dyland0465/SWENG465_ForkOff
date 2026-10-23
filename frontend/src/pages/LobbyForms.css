@@ -35,7 +35,7 @@
   display: grid;
   grid-template-columns: minmax(0, 850fr) minmax(0, 390fr);
   gap: 40px;
-  margin-block-start: 37px;
+  margin-block-start: 20px;
 }
 
 .create-lobby__filters {
@@ -162,7 +162,7 @@
 
 .join-lobby {
   inline-size: min(800px, 100%);
-  margin: 65px auto 0;
+  margin: 20px auto 0;
   padding: 28px 47px 23px;
   border-radius: var(--lobby-radius-join);
 }
