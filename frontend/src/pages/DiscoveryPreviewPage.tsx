@@ -10,6 +10,11 @@ type Restaurant = {
   address: string | null
   category: string | null
   googleMapsUri: string | null
+  photoUrl?: string | null
+  photoAuthors?: {
+    displayName: string
+    uri?: string
+  }[]
 
 }
 
@@ -19,6 +24,53 @@ type RestaurantResponse = {
   count: number
   restaurants: Restaurant[]
 }
+
+function RestaurantPhoto({ restaurant }: { restaurant: Restaurant }) {
+  const [failed, setFailed] = useState(false)
+
+  if (!restaurant.photoUrl || failed) {
+    return (
+      <div className="discovery-restaurant__photo-placeholder">
+        Photo Unavailable
+      </div>
+    )
+  }
+  return (
+    <figure className="discovery-restaurant__photo">
+      <img
+        src={restaurant.photoUrl}
+        alt={`Photo of ${restaurant.name}`}
+        loading="lazy"
+        onError={() => setFailed(true)}
+      />
+
+      {!!restaurant.photoAuthors?.length && (
+        <figcaption>
+          Photo: {' '}
+          {restaurant.photoAuthors.map((author, index) => (
+            <span key={`${author.displayName}-${index}`}>
+              {index > 0 && ', '}
+              {author.uri ? (
+                <a
+                  href={author.uri}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {author.displayName}
+                </a>
+              ) : (
+                author.displayName
+              )}
+            </span>
+          ))}
+        </figcaption>
+      )}
+
+    </figure>
+  )
+}
+
+
 
 function DiscoveryPreviewScreen({ lobbyId }: { lobbyId: string }) {
   const [restaurants, setRestaurants] = useState<Restaurant[]>([])
@@ -131,6 +183,10 @@ function DiscoveryPreviewScreen({ lobbyId }: { lobbyId: string }) {
                 className="discovery-restaurant"
                 key={restaurant.id}
               >
+                <RestaurantPhoto
+                  key={restaurant.photoUrl ?? 'no-photo'}
+                  restaurant={restaurant}
+                />
                 <div className="discovery-restaurant__content" >
                   <h2 className="discovery-restaurant__name">
                     {restaurant.name}

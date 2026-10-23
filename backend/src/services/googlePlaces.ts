@@ -1,9 +1,20 @@
 const PLACES_API_BASE = "https://places.googleapis.com/v1";
 const SEARCH_FIELD_MASK =
-  "places.id,places.displayName,places.formattedAddress,places.primaryType,places.googleMapsUri";
+  "places.id,places.displayName,places.formattedAddress,places.primaryType,places.googleMapsUri,places.photos";
 const DETAILS_FIELD_MASK =
   "id,displayName,formattedAddress,location,primaryType,googleMapsUri,websiteUri,nationalPhoneNumber";
+
 import 'dotenv/config';
+
+export interface GooglePhoto {
+  name: string;
+  authorAttributions?: {
+    displayName: string;
+    uri?: string;
+  }[];
+}
+
+
 
 export interface GooglePlace {
   id: string;
@@ -14,6 +25,7 @@ export interface GooglePlace {
   googleMapsUri?: string;
   websiteUri?: string;
   nationalPhoneNumber?: string;
+  photos?: GooglePhoto[];
 }
 
 interface TextSearchResponse {
@@ -98,3 +110,38 @@ export async function getGooglePlace(placeId: string): Promise<GooglePlace> {
   const url = `${PLACES_API_BASE}/places/${encodeURIComponent(placeId)}`;
   return requestPlaces<GooglePlace>(url, DETAILS_FIELD_MASK);
 }
+
+export async function getPhotoUrl(
+  photo: GooglePhoto | undefined,
+
+): Promise<string | null> {
+  if (!photo) return null;
+
+  const apiKey = process.env.GOOGLE_PLACES?.trim();
+  if (!apiKey) return null;
+
+  try {
+    const url = new URL(
+      `${PLACES_API_BASE}/${photo.name}/media`,
+    );
+
+    url.searchParams.set("maxWidthPx", "600");
+    url.searchParams.set("skipHttpRedirect", "true");
+
+    const response = await fetch(url, {
+      headers: { "X-Goog-Api-Key": apiKey },
+      signal: AbortSignal.timeout(5000),
+    });
+
+    if (!response.ok) return null;
+
+    const result = await response.json() as {
+      photoUri?: string;
+    };
+    return result.photoUri ?? null;
+  }
+  catch {
+    return null;
+  }
+}
+

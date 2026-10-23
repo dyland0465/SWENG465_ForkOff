@@ -5,9 +5,7 @@ import { Lobby } from "../models/lobby";
 import { GroupchatMessage } from "../models/groupchat";
 import { establishSession, publicUser, revokeSession } from "./session";
 import { changeLobby, findLobby, HttpError, lobbyEvents, memberFor, nextOnline, requireHost, serializeLobby, type Member } from "./lobbyState";
-import { searchRestaurants } from "./googlePlaces"
-
-
+import { searchRestaurants, getPhotoUrl } from "./googlePlaces"
 
 
 /**
@@ -339,17 +337,28 @@ router.get("/api/lobbies/:id/restaurants", run(async (req, res) => {
       `restaurants in ${location}`,
       10
     );
+
+    const restaurants = await Promise.all(
+      places.map(async place => {
+        const photo = place.photos?.[0];
+        const photoUrl = await getPhotoUrl(photo);
+        return {
+          id: place.id,
+          name: place.displayName?.text ?? "Unnamed restaurant",
+          address: place.formattedAddress ?? null,
+          category: place.primaryType ?? null,
+          googleMapsUri: place.googleMapsUri ?? null,
+          photoUrl,
+          photoAuthors: photoUrl ? photo?.authorAttributions ?? [] : [],
+        };
+
+      }),
+    );
     res.json({
       lobbyId: String(lobby._id),
       attribution: "Google Maps",
-      count: places.length,
-      restaurants: places.map(place => ({
-        id: place.id,
-        name: place.displayName?.text ?? "Unnamed restaurant",
-        address: place.formattedAddress ?? null,
-        category: place.primaryType ?? null,
-        googleMapsUri: place.googleMapsUri ?? null,
-      })),
+      count: restaurants.length,
+      restaurants,
     });
   }
   catch (error) {
