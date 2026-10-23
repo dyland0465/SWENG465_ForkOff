@@ -13,7 +13,7 @@ export function AppHeader({ onHowItWorks, onJoinLobby }: AppHeaderProps) {
   const isHome = useMatch({ path: paths.home, end: true }) !== null
 
   return (
-    <header className="app-header">
+    <header className={`app-header${isHome ? ' app-header--home' : ''}`}>
       <a className="skip-link" href="#main-content">Skip to main content</a>
       <div className="app-header__inner">
         <Link className="app-header__brand" to={paths.home} aria-label="Fork Off home">
@@ -23,6 +23,7 @@ export function AppHeader({ onHowItWorks, onJoinLobby }: AppHeaderProps) {
           <TextAction to={paths.home} tone="nav" current={isHome}>Home</TextAction>
           <TextAction tone="nav" onClick={onHowItWorks}>How it works</TextAction>
           <TextAction tone="nav" onClick={onJoinLobby}>Enter lobby code</TextAction>
+          {isHome && <TextAction to={paths.partnerAccess} tone="nav">For Restaurants</TextAction>}
         </nav>
       </div>
       <div className="app-header__divider" />

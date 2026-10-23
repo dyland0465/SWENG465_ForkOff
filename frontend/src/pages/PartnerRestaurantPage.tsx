@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link, generatePath, useParams } from 'react-router'
+import { Link, generatePath, useNavigate, useParams } from 'react-router'
 import { Button } from '../components/ui/Button'
 import { SelectField } from '../components/ui/FormField'
 import { TextAction } from '../components/ui/TextAction'
 import { paths } from '../routes/paths'
 import { formatCount, formatRate, formatSampleRange, getDemoPartnerReport, partnerReportCsv, percentage, reportingPeriods, voteCount } from '../features/partner/demoPartnerAnalytics'
 import type { PartnerReport } from '../features/partner/demoPartnerAnalytics'
+import { usePartnerDemoPreview } from '../features/partner/partnerDemoPreviewState'
 import './PartnerRestaurantPage.css'
 
 function trend(current: number | null, previous: number | null, points = false) {
@@ -65,6 +66,8 @@ function VoteMix({ report }: { report: PartnerReport }) {
 }
 
 function PartnerDashboard({ restaurantId }: { restaurantId: string | undefined }) {
+  const preview = usePartnerDemoPreview()
+  const navigate = useNavigate()
   const [periodId, setPeriodId] = useState(reportingPeriods[0].id)
   const [showSupport, setShowSupport] = useState(false)
   const [exportMessage, setExportMessage] = useState('')
@@ -104,6 +107,7 @@ function PartnerDashboard({ restaurantId }: { restaurantId: string | undefined }
           <TextAction tone="nav" current href="#main-content" onClick={() => document.getElementById('main-content')?.focus()}>Overview</TextAction>
           <TextAction tone="nav" href="#partner-promotions-title" onClick={() => document.getElementById('partner-promotions-title')?.focus()}>Promotions</TextAction>
           <TextAction tone="nav" aria-expanded={showSupport} aria-controls="partner-support" onClick={() => setShowSupport(value => !value)}>Support</TextAction>
+          <TextAction tone="nav" onClick={() => { preview.exit(); navigate(paths.partnerAccess, { replace: true }) }}>Exit demo preview</TextAction>
         </nav>
       </div>
     </header>
@@ -117,12 +121,12 @@ function PartnerDashboard({ restaurantId }: { restaurantId: string | undefined }
           <Button onClick={exportCsv} disabled={!hasData} className="partner-export">Export CSV</Button>
         </div>
       </div>
-      <p className="partner-demo-notice"><strong>Demonstration data</strong> · {formatSampleRange(period)} · Public preview, no authenticated partner access. {hasFixture ? 'All figures are synthetic.' : <Link to={generatePath(paths.partnerRestaurant, { restaurantId: 'harbor' })}>Open Harbor &amp; Hearth demo</Link>}</p>
+      <p className="partner-demo-notice"><strong>Demonstration data</strong> · {formatSampleRange(period)} · Development preview, no authenticated partner access. All figures are synthetic. {!hasFixture && <Link to={generatePath(paths.partnerRestaurant, { restaurantId: 'harbor' })}>Open Harbor &amp; Hearth demo</Link>}</p>
       <p role="status" className="partner-sr-only">{exportMessage || `${hasData ? 'Sample report updated' : 'No sample data'}: ${formatSampleRange(period)}. ${formatCount(voteCount(totals))} votes; ${formatCount(totals.impressions)} impressions. Charts, metrics, and promotions use this period.`}</p>
       {showSupport && <section id="partner-support" className="partner-panel partner-support" aria-labelledby="partner-support-title">
         <h2 id="partner-support-title" tabIndex={-1} ref={supportHeading}>Partner preview support</h2>
         <p>Explore sample reporting periods, view exact vote counts, or export the displayed demo figures. Click-through rate (CTR) is clicks ÷ views; veto rate is Veto ÷ all Yes, No, and Veto votes. Impressions count sample restaurant appearances; lobby wins count sample selections. Trends compare the preceding period of equal length.</p>
-        <p>This public demo has no partner account, live reporting, promotion editing, or customer records.</p>
+        <p>This development preview has no partner account, live reporting, promotion editing, or customer records.</p>
         <Button variant="secondary" onClick={() => { setShowSupport(false); document.querySelector<HTMLButtonElement>('[aria-controls="partner-support"]')?.focus() }}>Close support</Button>
       </section>}
       <dl className="partner-metrics" aria-label="Sample analytics metrics">

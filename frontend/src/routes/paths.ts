@@ -9,5 +9,7 @@ export const paths = {
   restaurantDetails: '/lobbies/:lobbyId/restaurants/:restaurantId',
   groupChat: '/lobbies/:lobbyId/chat',
   results: '/lobbies/:lobbyId/results',
+  partnerAccess: '/partners',
+  // Development-only synthetic preview. Future private analytics need a verified-session guard.
   partnerRestaurant: '/partners/:restaurantId',
 } as const

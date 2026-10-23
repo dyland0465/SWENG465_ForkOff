@@ -2,10 +2,57 @@
 
 React + TypeScript + Vite, with plain CSS and the Fork Off Figma design system.
 
+## Partner Access navigation
+
+From Home, choose **For Restaurants** in the header to open `/partners`.
+The sign-in card validates required email/password fields and email format,
+supports password show/hide, and has accessible errors and request states.
+Valid submission explains that live authentication is not connected; it never
+signs anyone in. **Back to Home** and the shared Home/brand links return to `/`.
+
+Demo access is off by default. To opt in locally, copy `.env.example` to
+`.env.local` and restart Vite, or run from `frontend`:
+
+```powershell
+$env:VITE_ENABLE_PARTNER_DEMO='true'
+npm.cmd run dev
+```
+
+Open `/partners` on the printed Vite URL and choose **Preview Demo Dashboard**.
+No password is needed. A separate tab-scoped preview marker preserves access
+across navigation/refresh. Direct dashboard entry without it redirects to
+`/partners`. **Exit demo preview** clears access and returns there. Production
+builds always disable preview, even with the flag set and a stored marker.
+
+`src/features/partner/PartnerAccountAccess.tsx` is the future authentication
+integration boundary. The form, request/account state, authentication adapter,
+demo-preview state/guard, and analytics presentation are separate. Credentials
+remain only in the mounted form/request, never browser storage or logs. The
+dashboard continues to use only `demoPartnerAnalytics.ts` synthetic fixtures.
+See [Partner authentication handoff](docs/partner-authentication.md) for the
+service contracts, session lifecycle requirements, route behavior, and tests.
+
+Backend integration requirements:
+
+- Replace the placeholder adapter with real Express sign-in, secure server-validated
+  session verification, sign-out, and expiration handling. Associate partners with
+  authorized restaurant records; the handoff describes the integration points.
+- Enforce partner role and restaurant ownership/authorization on the backend for
+  every private analytics request. A frontend guard/restaurant ID is not security.
+  Prevent cross-restaurant access, including modified URLs and request IDs.
+- Disable/remove demo access before deployment. Never bundle actual private
+  analytics into public frontend assets or replace synthetic fixtures with them.
+
+`node tests/partnerAnalytics.browser.mjs` checks sign-in, demo guards, production
+restrictions, history/refresh, keyboard focus, 320–1920px layouts, analytics/CSVs,
+and all nine consumer routes. It uses installed Chrome and Node 24 and prints
+a temporary artifact directory. It requires enabled/disabled development servers
+and a production preview server; setup and URL overrides are in the handoff.
+
 ## Partner Analytics
 
-Start Vite from `frontend` with `npm.cmd run dev`, then open
-`http://localhost:5173/partners/harbor` (use the port printed by Vite).
+Enable development preview as described above, start Vite, then enter via
+**Preview Demo Dashboard** on `/partners`.
 The established `/partners/:restaurantId` route now implements
 [Figma Partner Analytics, 33:119](https://www.figma.com/design/NGidWJoB9QBFCdTd7U4BlQ/FORKOFF-?node-id=33-119).
 It has a separate partner header, four metric cards, a vote distribution chart,
@@ -13,7 +60,7 @@ an expandable accessible data table, promotion engagement, and a privacy panel.
 It reuses Button, SelectField, TextAction, the foundation tokens, and self-hosted
 Atkinson Hyperlegible. The partner design contains no image or SVG assets.
 
-**Public demonstration only; no authenticated partner access.** Harbor & Hearth
+**Development preview only; no authenticated partner access.** Harbor & Hearth
 is the only analytics fixture. Other restaurant IDs show an empty report and an
 explicit link to this demo. No consumer vote/preference state is used or changed.
 Reporting controls select 30 or 7 sample days ending **September 8, 2026**, or an
@@ -36,7 +83,8 @@ Export CSV downloads only the displayed sample period: summary metrics, exact
 vote bucket ranges/counts, and promotion views/clicks/CTR. Every row labels the
 synthetic source, restaurant, and report dates. Prior comparison rows are not
 exported. Empty reports show unavailable metrics and disable export. Controls
-reset on refresh; nothing is persisted. Desktop geometry follows the 1440px
+reset on refresh; only the separate preview marker persists in this tab.
+Desktop geometry follows the 1440px
 Figma layout, with responsive adaptations through 320–1920px.
 
 Future backend work must supply authenticated partner sessions, server-side
@@ -44,12 +92,13 @@ restaurant authorization, privacy-safe aggregate APIs, reporting-period and
 comparison semantics, and persistence. This frontend does not authenticate,
 query MongoDB, manage restaurants/promotions, or call external services.
 
-Validation (browser checks require Vite on port 5175 and installed Chrome):
+Validation (browser checks require the three servers described in the handoff
+and installed Chrome):
 
 ```powershell
 npm.cmd run build
 npm.cmd run lint
-node --test tests/partnerAnalytics.test.mjs tests/votingSession.test.mjs tests/votingResults.test.mjs tests/restaurantPreferences.test.mjs
+node --test tests/partnerAuthentication.test.mjs tests/partnerAnalytics.test.mjs tests/votingSession.test.mjs tests/votingResults.test.mjs tests/restaurantPreferences.test.mjs
 node tests/partnerAnalytics.browser.mjs
 ```
 
@@ -212,7 +261,7 @@ verified service data and integrations are unavailable. The map is static.
 Voting choices survive client-side navigation and browser Back/Forward in the
 existing provider. Refresh clears these memory-only demo choices. Live restaurant
 data, menus, verified contact links, routing, and server persistence remain
-backend dependencies. Partner Analytics is available as the public demo above.
+backend dependencies. Partner Analytics is available as the development preview above.
 
 Validation:
 
@@ -253,7 +302,8 @@ npm.cmd run build
 npm.cmd run lint
 ```
 
-The build includes TypeScript checking. No automated test suite is configured.
+The build includes TypeScript checking. Focused Node and Chrome suites are
+documented above and in the partner authentication handoff.
 
 ## Current scope
 
@@ -304,7 +354,8 @@ use the current URL's `lobbyId`; Restaurant Details retains both lobby
 and restaurant context. Use `useParams` to access IDs and `generatePath` with
 the patterns in `paths.ts` when adding future navigation. IDs must come from
 real application data; Create/Join do not generate IDs, create sessions, or
-pretend a backend operation succeeded. No API calls or access checks exist yet.
+pretend a backend operation succeeded. No API calls or server authorization exist
+yet; the partner preview guard only controls demonstration navigation.
 `create` and `join` are reserved lobby URL segments.
 
 The production frontend host must serve `index.html` for application URLs so

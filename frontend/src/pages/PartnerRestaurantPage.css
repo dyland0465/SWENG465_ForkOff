@@ -28,7 +28,7 @@
   text-decoration: none;
 }
 
-.partner-header nav { display: flex; gap: var(--spacing-3); }
+.partner-header nav { display: flex; flex-wrap: wrap; gap: var(--spacing-3); }
 .partner-page { padding-block: var(--spacing-8) var(--spacing-12); }
 .partner-page__intro { display: flex; justify-content: space-between; gap: var(--spacing-6); align-items: start; }
 .partner-page__title { padding-block-start: 0; }
