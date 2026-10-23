@@ -5,6 +5,10 @@ import { Lobby } from "../models/lobby";
 import { GroupchatMessage } from "../models/groupchat";
 import { establishSession, publicUser, revokeSession } from "./session";
 import { changeLobby, findLobby, HttpError, lobbyEvents, memberFor, nextOnline, requireHost, serializeLobby, type Member } from "./lobbyState";
+import { searchRestaurants } from "./googlePlaces"
+
+
+
 
 /**
  * @swagger
@@ -320,6 +324,45 @@ router.post("/api/lobbies/:id/messages", run(async (req, res) => {
   lobbyEvents.emit("message", String(lobby._id), value);
   res.status(201).json({ message: value });
 }));
+
+router.get("/api/lobbies/:id/restaurants", run(async (req, res) => {
+  const lobby = await findLobby(String(req.params.id));
+  memberFor(lobby, req.identity);
+
+  const location = lobby.filters.location?.trim();
+
+  if (!location) {
+    throw new HttpError(400, "Set a lobby location before searching");
+  }
+  try {
+    const places = await searchRestaurants(
+      `restaurants in ${location}`,
+      10
+    );
+    res.json({
+      lobbyId: String(lobby._id),
+      attribution: "Google Maps",
+      count: places.length,
+      restaurants: places.map(place => ({
+        id: place.id,
+        name: place.displayName?.text ?? "Unnamed restaurant",
+        address: place.formattedAddress ?? null,
+        category: place.primaryType ?? null,
+        googleMapsUri: place.googleMapsUri ?? null,
+      })),
+    });
+  }
+  catch (error) {
+    console.error("Lobby restaurant search failed: ", error);
+    throw new HttpError(502, "could not load restaurants. Please try again",);
+  }
+
+
+
+
+}));
+
+
 
 // These remain demo responses, but are still private to lobby members.
 router.use("/api/lobbies/:id", (req, _res, next) => {
