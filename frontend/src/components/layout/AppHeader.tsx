@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Link, useLocation, useMatch, useNavigate } from 'react-router'
 import wordmark from '../../assets/figma/wordmark.png'
 import { TextAction } from '../ui/TextAction'
@@ -13,11 +14,13 @@ type AppHeaderProps = {
 export function AppHeader({ onHowItWorks, onJoinLobby }: AppHeaderProps) {
   const isHome = useMatch({ path: paths.home, end: true }) !== null
   const isLogin = useMatch(paths.login) !== null
+  const isJoinLobby = useMatch(paths.joinLobby) !== null
   const { pathname } = useLocation()
   const navigate = useNavigate()
+  const [logoutError, setLogoutError] = useState('')
   const { user, signOut } = useAuth()
   return (
-    <header className="app-header">
+    <header className={`app-header${isHome ? ' app-header--home' : ''}`}>
       <a className="skip-link" href="#main-content">Skip to main content</a>
       <div className="app-header__inner">
         <Link className="app-header__brand" to={paths.home} aria-label="Fork Off home">
@@ -26,11 +29,11 @@ export function AppHeader({ onHowItWorks, onJoinLobby }: AppHeaderProps) {
         <nav className="app-header__nav" aria-label="Main navigation">
           <TextAction to={paths.home} tone="nav" current={isHome}>Home</TextAction>
           <TextAction tone="nav" onClick={onHowItWorks}>How it works</TextAction>
-          <TextAction tone="nav" onClick={onJoinLobby}>Enter lobby code</TextAction>
+          <TextAction tone="nav" current={isJoinLobby} onClick={onJoinLobby}>Enter lobby code</TextAction>
           {user ? (
             <span className="app-header__account">
               <span className="app-header__user">Hi, {user.username}</span>
-              <TextAction tone="nav" onClick={() => { signOut(); navigate(paths.home) }}>Log out</TextAction>
+              <TextAction tone="nav" onClick={() => { void signOut().then(() => navigate(paths.home)).catch(error => setLogoutError(error.message)) }}>Log out</TextAction>
             </span>
           ) : (
             <TextAction to={paths.login} state={isLogin ? undefined : { from: pathname }} tone="nav" current={isLogin}>Log in</TextAction>
@@ -38,6 +41,7 @@ export function AppHeader({ onHowItWorks, onJoinLobby }: AppHeaderProps) {
         </nav>
       </div>
       <div className="app-header__divider" />
+      {logoutError && <p role="alert">{logoutError}</p>}
     </header>
   )
 }

@@ -8,13 +8,14 @@ export default defineConfig({
     port: 5000,
     strictPort: true,
     proxy: {
+      "/socket.io": { target: "http://localhost:3000", ws: true, changeOrigin: false },
       "/api": {
         target: "http://localhost:3000",
-        changeOrigin: true,
+        changeOrigin: false,
       },
       "/api-docs": {
         target: "http://localhost:3000",
-        changeOrigin: true,
+        changeOrigin: false,
       },
     },
   }

@@ -12,6 +12,11 @@
   padding-block-start: 3px;
 }
 
+/* Let the landing artwork span the viewport while keeping the header centered. */
+.home-screen:has(.home-hero) {
+  max-inline-size: none;
+}
+
 .home-hero__copy {
   position: relative;
   z-index: 1;
@@ -61,13 +66,12 @@
   min-inline-size: 176px;
 }
 
-/* Figma's 1482 × 494 collage extends beyond the 1440px desktop canvas. */
 .home-hero__illustration {
   position: absolute;
   z-index: 0;
   inset-block-end: -18px;
-  inset-inline-start: -28px;
-  inline-size: calc(100% + 42px);
+  inset-inline-start: 0;
+  inline-size: 100%;
   block-size: auto;
   pointer-events: none;
   user-select: none;

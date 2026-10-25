@@ -37,8 +37,10 @@ async function seedExamples(): Promise<void> {
         $setOnInsert: {
           name: "Example Lobby",
           lobbyCode: "EXAMPL",
-          hostID: user._id,
-          members: [user._id],
+          hostMemberId: "example-host",
+          members: [{ memberId: "example-host", identityKey: `user:${user._id}`, userId: user._id, type: "user", displayName: user.username, joinOrder: 0, joinedAt: new Date() }],
+          nextJoinOrder: 1,
+          revision: 0,
         },
       },
       { upsert: true, returnDocument: "after", setDefaultsOnInsert: true },
@@ -49,8 +51,11 @@ async function seedExamples(): Promise<void> {
       { _id: messageId },
       {
         $setOnInsert: {
-          userId: user._id,
-          message: "Example group chat message",
+          lobbyId: lobby._id,
+          memberId: "example-host",
+          senderName: user.username,
+          requestId: "example-message",
+          text: "Example group chat message",
         },
       },
       { upsert: true, returnDocument: "after", setDefaultsOnInsert: true },

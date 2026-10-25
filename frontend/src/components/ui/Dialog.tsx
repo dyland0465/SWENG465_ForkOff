@@ -23,7 +23,7 @@ export function Dialog({ title, children, onClose }: DialogProps) {
     <dialog ref={dialogRef} className="ui-dialog" aria-labelledby={titleId} onClose={onClose}>
       <h2 id={titleId} className="text-heading-h2">{title}</h2>
       <div className="ui-dialog__body text-body-large">{children}</div>
-      <Button onClick={() => dialogRef.current?.close()}>Back to home</Button>
+      <Button onClick={() => dialogRef.current?.close()}>Back</Button>
     </dialog>
   )
 }

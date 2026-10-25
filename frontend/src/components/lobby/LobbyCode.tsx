@@ -22,14 +22,14 @@ export function LobbyCode({ code }: { code: string }) {
   return (
     <section className="lobby-code" aria-labelledby="lobby-code-heading">
       <div>
-        <h2 id="lobby-code-heading">DEMO INVITE CODE</h2>
+        <h2 id="lobby-code-heading">INVITE CODE</h2>
         <p className="lobby-code__value">{code}</p>
       </div>
       <TextAction tone="on-dark" onClick={copyCode} disabled={copyState === 'copying'}>
         {copyState === 'copied' ? 'Copied!' : copyState === 'copying' ? 'Copying…' : 'Copy Code'}
       </TextAction>
       <p className={`lobby-code__feedback${copyState === 'error' ? ' is-error' : ''}`} role="status">
-        {copyState === 'copied' ? 'Demo code copied.' : copyState === 'error' ? `Clipboard unavailable. Select and copy ${code} manually.` : ''}
+        {copyState === 'copied' ? 'Invite code copied.' : copyState === 'error' ? `Clipboard unavailable. Select and copy ${code} manually.` : ''}
       </p>
     </section>
   )

@@ -15,36 +15,19 @@ const lobbySchema = new Schema(
       maxlength: 120,
     },
 
-    hostID: {
-      type: Schema.Types.ObjectId,
-      ref: "User",
-    },
-
-    members: [
-      {
-        type: Schema.Types.ObjectId,
-        ref: "User"
-      }
-    ],
-
-    guestMembers: [
-      {
-        guestId: {
-          type: String,
-          required: true,
-        },
-        displayName: {
-          type: String,
-          required: true,
-          trim: true,
-          maxlength: 40,
-        },
-        joinedAt: {
-          type: Date,
-          default: Date.now,
-        },
-      },
-    ],
+    hostMemberId: { type: String, default: null },
+    nextJoinOrder: { type: Number, default: 1 },
+    revision: { type: Number, default: 0 },
+    members: [{
+      _id: false,
+      memberId: { type: String, required: true },
+      identityKey: { type: String, required: true },
+      userId: { type: Schema.Types.ObjectId, ref: "User" },
+      type: { type: String, enum: ["user", "guest"], required: true },
+      displayName: { type: String, required: true, maxlength: 40 },
+      joinOrder: { type: Number, required: true },
+      joinedAt: { type: Date, default: Date.now },
+    }],
 
     status: {
       type: String,

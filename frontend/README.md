@@ -2,6 +2,187 @@
 
 React + TypeScript + Vite, with plain CSS and the Fork Off Figma design system.
 
+## Partner Access navigation
+
+From Home, choose **For Restaurants** in the header to open `/partners`.
+The sign-in card validates required email/password fields and email format,
+supports password show/hide, and has accessible errors and request states.
+Valid submission explains that live authentication is not connected; it never
+signs anyone in. **Back to Home** and the shared Home/brand links return to `/`.
+
+Demo access is off by default. To opt in locally, copy `.env.example` to
+`.env.local` and restart Vite, or run from `frontend`:
+
+```powershell
+$env:VITE_ENABLE_PARTNER_DEMO='true'
+npm.cmd run dev
+```
+
+Open `/partners` on the printed Vite URL and choose **Preview Demo Dashboard**.
+No password is needed. A separate tab-scoped preview marker preserves access
+across navigation/refresh. Direct dashboard entry without it redirects to
+`/partners`. **Exit demo preview** clears access and returns there. Production
+builds always disable preview, even with the flag set and a stored marker.
+
+`src/features/partner/PartnerAccountAccess.tsx` is the future authentication
+integration boundary. The form, request/account state, authentication adapter,
+demo-preview state/guard, and analytics presentation are separate. Credentials
+remain only in the mounted form/request, never browser storage or logs. The
+dashboard continues to use only `demoPartnerAnalytics.ts` synthetic fixtures.
+See [Partner authentication handoff](docs/partner-authentication.md) for the
+service contracts, session lifecycle requirements, route behavior, and tests.
+
+Backend integration requirements:
+
+- Replace the placeholder adapter with real Express sign-in, secure server-validated
+  session verification, sign-out, and expiration handling. Associate partners with
+  authorized restaurant records; the handoff describes the integration points.
+- Enforce partner role and restaurant ownership/authorization on the backend for
+  every private analytics request. A frontend guard/restaurant ID is not security.
+  Prevent cross-restaurant access, including modified URLs and request IDs.
+- Disable/remove demo access before deployment. Never bundle actual private
+  analytics into public frontend assets or replace synthetic fixtures with them.
+
+`node tests/partnerAnalytics.browser.mjs` checks sign-in, demo guards, production
+restrictions, history/refresh, keyboard focus, 320–1920px layouts, analytics/CSVs,
+and all nine consumer routes. It uses installed Chrome and Node 24 and prints
+a temporary artifact directory. It requires enabled/disabled development servers
+and a production preview server; setup and URL overrides are in the handoff.
+
+## Partner Analytics
+
+Enable development preview as described above, start Vite, then enter via
+**Preview Demo Dashboard** on `/partners`.
+The established `/partners/:restaurantId` route now implements
+[Figma Partner Analytics, 33:119](https://www.figma.com/design/NGidWJoB9QBFCdTd7U4BlQ/FORKOFF-?node-id=33-119).
+It has a separate partner header, four metric cards, a vote distribution chart,
+an expandable accessible data table, promotion engagement, and a privacy panel.
+It reuses Button, SelectField, TextAction, the foundation tokens, and self-hosted
+Atkinson Hyperlegible. The partner design contains no image or SVG assets.
+
+**Development preview only; no authenticated partner access.** Harbor & Hearth
+is the only analytics fixture. Other restaurant IDs show an empty report and an
+explicit link to this demo. No consumer vote/preference state is used or changed.
+Reporting controls select 30 or 7 sample days ending **September 8, 2026**, or an
+empty June period. Dates stay fixed and do not imply live or current reporting.
+Changing periods updates all metrics, chart values, promotion figures, and the
+screen-reader status. Overview and Promotions focus their sections; Support
+opens local guidance and restores focus when closed.
+
+`src/features/partner/demoPartnerAnalytics.ts` owns synthetic daily aggregates,
+report projection, rates, previous-period comparisons, and CSV serialization.
+Weekly buckets follow the Figma chart (135/170/188/219 Yes votes); the last
+bucket covers nine days, with precise dates in the table and CSV. Headline Yes
+votes and veto rate are derived from those same rows (712 and 10.1%) because the
+mockup's 3,842 and 3.2% disagree with its chart. Veto rate divides Veto by all
+Yes/No/Veto votes; promotion CTR divides clicks by views. Trends compare the
+preceding period of equal length. The chart states its scale, which adapts to
+daily or weekly counts while staying common across all series in a report.
+
+Export CSV downloads only the displayed sample period: summary metrics, exact
+vote bucket ranges/counts, and promotion views/clicks/CTR. Every row labels the
+synthetic source, restaurant, and report dates. Prior comparison rows are not
+exported. Empty reports show unavailable metrics and disable export. Controls
+reset on refresh; only the separate preview marker persists in this tab.
+Desktop geometry follows the 1440px
+Figma layout, with responsive adaptations through 320–1920px.
+
+Future backend work must supply authenticated partner sessions, server-side
+restaurant authorization, privacy-safe aggregate APIs, reporting-period and
+comparison semantics, and persistence. This frontend does not authenticate,
+query MongoDB, manage restaurants/promotions, or call external services.
+
+Validation (browser checks require the three servers described in the handoff
+and installed Chrome):
+
+```powershell
+npm.cmd run build
+npm.cmd run lint
+node --test tests/partnerAuthentication.test.mjs tests/partnerAnalytics.test.mjs tests/votingSession.test.mjs tests/votingResults.test.mjs tests/restaurantPreferences.test.mjs
+node tests/partnerAnalytics.browser.mjs
+```
+
+The Partner browser suite checks actual CSV downloads, chart/metric consistency,
+keyboard controls, empty/unknown scopes, route focus and history, all nine
+consumer routes, and both populated periods at eight widths from 320 to 1920px.
+It writes screenshots and downloaded CSVs to a printed system temporary directory.
+Existing Lobby, navigation, Results, Details, and shared-preferences browser
+suites remain separate regression checks. No dependencies or backend changes.
+
+## Shared restaurant preferences
+
+Lobby, Discovery Preview, and Voting read `useRestaurantPreferences(lobbyId)`.
+`RestaurantPreferencesProvider` lives in `AppLayout`, alongside the independent
+voting provider. Its reducer stores immutable snapshots in nested maps by the exact
+router-decoded lobby ID and optional round ID (`null` for current local settings).
+Client-side links and browser Back/Forward read the latest selections; history
+does not restore old filter snapshots. Refresh clears this memory-only state.
+There is no storage, group synchronization, restaurant search, or API integration.
+
+`src/features/preferences/restaurantPreferences.ts` owns the shared model,
+options, defaults, validation, formatting, and pure reducer. Both screens use
+`RestaurantFilterEditor`, the existing form hook, FormField, and FilterChip.
+Apply validates and saves the whole draft; Cancel discards only the draft.
+Prices and cuisines remain multi-select arrays, and dining needs are preserved.
+Availability distinguishes **Any availability**, **Open now**, and **Open at
+dining time** instead of relabeling scheduled availability as open now.
+Dates use `YYYY-MM-DD` and times use `HH:mm` as local calendar values without
+timezone conversion. A blank date/time means any date/time; scheduled availability
+does not invent a missing date or time. These demo preferences do not reject past
+dates or change themselves when the clock advances. Create/Join retain their
+existing independent form behavior and backend boundaries.
+
+Reset on either screen restores **all** defaults for that lobby: Erie, PA;
+any date; 7:30 PM; within 5 miles; rating 4.0+; Italian and Ramen; $$;
+Mocktails; open at dining time. Empty selections mean any cuisine/price or no
+dining needs. Voting displays the current preferences, including after completion,
+without claiming sample restaurants meet them. Cards, votes, Undo, Restart, and
+Results remain independent of filter edits and Reset.
+
+A future backend adapter can validate hydrated settings at `preferencesFromFields`
+and apply them within the same lobby/round scope. Before real rounds are supported,
+the product/backend must define whether filters lock once voting begins or changes
+create a new versioned round, and how existing votes are retained or invalidated.
+This implementation does not select that policy, start rounds, or clear votes on edits.
+
+Focused checks (with Vite running on port 5175 for the browser check):
+
+```powershell
+node --test tests/restaurantPreferences.test.mjs
+node tests/restaurantPreferences.browser.mjs
+```
+
+The full preference summary uses normal text flow: the default Voting card grows
+from 583px to 602px tall while retaining its desktop columns and 620px by 520px
+photo. Older temporary scripts that assert the original fixed card height need
+that expectation updated; longer selections can grow the card further.
+
+Files created for this change:
+
+- `src/features/preferences/restaurantPreferences.ts`
+- `src/features/preferences/RestaurantPreferencesProvider.tsx`
+- `src/features/preferences/useRestaurantPreferences.ts`
+- `src/features/preferences/RestaurantFilterEditor.tsx`
+- `tests/restaurantPreferences.test.mjs`
+- `tests/restaurantPreferences.browser.mjs`
+
+Files modified: `src/components/layout/AppLayout.tsx`,
+`src/components/lobby/lobbyForm.ts`, `src/pages/LobbyPage.tsx`,
+`src/pages/DiscoveryPreviewPage.tsx`, `src/pages/VotingPage.tsx`, the three
+corresponding page CSS files, `tests/lobby.browser.mjs` (native date focus
+expectations), and this README. Backend files and dependencies are unchanged.
+
+Validation: TypeScript/Vite build and lint passed; all 15 unit tests passed;
+the four existing repository browser suites passed (94 Lobby accessibility,
+49 navigation/focus, 56 Results, 54 Restaurant Details checks). The focused
+shared-preferences browser suite passed 46 checks, including empty selections,
+multiple prices, dates/times, Apply/Cancel, both Resets, Back/Forward, encoded
+IDs, independent lobbies, retained votes, Undo, Restart, Results, keyboard
+focus, refresh, and responsive layouts at 320/375/768/1440px. The existing
+temporary consumer/chat regression suite also passed 58 checks. The older
+temporary Voting suite stops at its fixed 583px card-height assertion described
+above; its remaining assertions were not reached.
+
 ## Results and Final Choice
 
 Start Vite with `npm.cmd run dev` from `frontend`, open
@@ -80,7 +261,7 @@ verified service data and integrations are unavailable. The map is static.
 Voting choices survive client-side navigation and browser Back/Forward in the
 existing provider. Refresh clears these memory-only demo choices. Live restaurant
 data, menus, verified contact links, routing, and server persistence remain
-backend dependencies. Partner Restaurant remains a placeholder.
+backend dependencies. Partner Analytics is available as the development preview above.
 
 Validation:
 
@@ -121,7 +302,8 @@ npm.cmd run build
 npm.cmd run lint
 ```
 
-The build includes TypeScript checking. No automated test suite is configured.
+The build includes TypeScript checking. Focused Node and Chrome suites are
+documented above and in the partner authentication handoff.
 
 ## Current scope
 
@@ -150,8 +332,8 @@ replaced by navigation; “How it works” retains its content and native dialog
 behavior. The wordmark and Home link navigate to `/`, and Enter lobby code
 navigates to `/lobbies/join`. Home is marked current only on the Home route.
 
-The linked Figma file contains nine consumer screen frames. The tenth destination
-is the Partner Restaurant screen, confirmed separately and awaiting its design.
+The linked Figma file contains nine consumer screen frames and the tenth
+Partner Analytics screen on the separate Partner page.
 
 | Screen | Route | Figma node |
 | --- | --- | --- |
@@ -164,15 +346,16 @@ is the Partner Restaurant screen, confirmed separately and awaiting its design.
 | Restaurant Details | `/lobbies/:lobbyId/restaurants/:restaurantId` | `33:80` |
 | Group Chat | `/lobbies/:lobbyId/chat` | `33:93` |
 | Results and Final Choice | `/lobbies/:lobbyId/results` | `33:106` |
-| Partner Restaurant | `/partners/:restaurantId` | Design pending |
+| Partner Restaurant / Analytics | `/partners/:restaurantId` | `33:119` |
 
 Unknown URLs show a Page not found screen with a Home link. Consumer screens
-use local demonstrations; Partner Restaurant remains a placeholder. Lobby links
+use local demonstrations; Partner Analytics uses separate synthetic fixtures. Lobby links
 use the current URL's `lobbyId`; Restaurant Details retains both lobby
 and restaurant context. Use `useParams` to access IDs and `generatePath` with
 the patterns in `paths.ts` when adding future navigation. IDs must come from
 real application data; Create/Join do not generate IDs, create sessions, or
-pretend a backend operation succeeded. No API calls or access checks exist yet.
+pretend a backend operation succeeded. No API calls or server authorization exist
+yet; the partner preview guard only controls demonstration navigation.
 `create` and `join` are reserved lobby URL segments.
 
 The production frontend host must serve `index.html` for application URLs so

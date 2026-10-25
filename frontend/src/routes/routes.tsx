@@ -10,13 +10,15 @@ import { DiscoveryPreviewPage } from '../pages/DiscoveryPreviewPage'
 import { VotingPage } from '../pages/VotingPage'
 import { RestaurantDetailsPage } from '../pages/RestaurantDetailsPage'
 import { ResultsPage } from '../pages/ResultsPage'
+import { PartnerRestaurantPage } from '../pages/PartnerRestaurantPage'
+import { PartnerAccessPage } from '../pages/PartnerAccessPage'
+import { PartnerDemoPreviewProvider, RequirePartnerDemoPreview } from '../features/partner/PartnerDemoPreview'
 import {
-  PartnerRestaurantPage,
   NotFoundPage,
 } from '../pages/PlaceholderPages'
 import { paths } from './paths'
 
-/** One shared shell and ten screen destinations, plus an unmatched-URL fallback. */
+/** Shared shell, consumer screens, partner access and development preview, and a fallback. */
 export const appRoutes: RouteObject[] = [
   {
     element: <AppLayout />,
@@ -32,7 +34,16 @@ export const appRoutes: RouteObject[] = [
       { path: `${paths.lobby}/restaurants`, element: <RestaurantDetailsPage /> },
       { path: paths.groupChat, element: <GroupChatPage /> },
       { path: paths.results, element: <ResultsPage /> },
-      { path: paths.partnerRestaurant, element: <PartnerRestaurantPage /> },
+      {
+        element: <PartnerDemoPreviewProvider />,
+        children: [
+          { path: paths.partnerAccess, element: <PartnerAccessPage /> },
+          {
+            element: <RequirePartnerDemoPreview />,
+            children: [{ path: paths.partnerRestaurant, element: <PartnerRestaurantPage /> }],
+          },
+        ],
+      },
       { path: '*', element: <NotFoundPage /> },
     ],
   },

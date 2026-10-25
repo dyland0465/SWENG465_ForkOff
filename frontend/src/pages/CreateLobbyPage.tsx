@@ -1,3 +1,4 @@
+import { useAuth } from '../features/auth/useAuth'
 import { generatePath, useNavigate } from 'react-router'
 import { useState } from 'react'
 import type { FormEvent } from 'react'
@@ -9,16 +10,18 @@ import { ForkEmblem } from '../components/lobby/ForkEmblem'
 import { useLobbyForm } from '../components/lobby/useLobbyForm'
 import {
   cuisineOptions, priceOptions, diningOptions, distanceOptions, ratingOptions,
-  validateLocation, validateDateTime, initialDinnerTime, formatDinnerTime, toggleOption,
+  validateLocation, validateDateTime, validateDisplayName, initialDinnerTime, formatDinnerTime, toggleOption,
 } from '../components/lobby/lobbyForm'
 import { paths } from '../routes/paths'
 import './LobbyForms.css'
 
 export function CreateLobbyPage() {
   const navigate = useNavigate()
+  const { user, loading } = useAuth()
   const { values, errors, setValue, onBlur, validate } = useLobbyForm(
-    { location: 'Erie, PA', dateTime: initialDinnerTime(), distance: '5', rating: '4.0' },
+    { displayName: '', location: 'Erie, PA', dateTime: initialDinnerTime(), distance: '5', rating: '4.0' },
     {
+      displayName: value => user ? undefined : validateDisplayName(value),
       location: validateLocation,
       dateTime: validateDateTime,
       distance: value => distanceOptions.some(option => option === value) ? undefined : 'Choose a distance.',
@@ -58,6 +61,7 @@ export function CreateLobbyPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          ...(!user ? { displayName: values.displayName.trim() } : {}),
           location: values.location.trim(),
           dinnerAt: new Date(values.dateTime).toISOString(),
           maxDistance: Number(values.distance),
@@ -101,6 +105,9 @@ export function CreateLobbyPage() {
       <form className="create-lobby" noValidate onSubmit={submit} onChange={() => setStatus('')}>
         <div className="create-lobby__filters lobby-panel">
           <div className="create-lobby__fields">
+            {!user && <div className="create-lobby__identity">
+              <TextInput label="Display name" name="displayName" required autoComplete="nickname" maxLength={40} placeholder="Your name" hint="The name your dinner crew will see." value={values.displayName} error={errors.displayName} onChange={event => setValue('displayName', event.target.value)} onBlur={() => onBlur('displayName')} />
+            </div>}
             <TextInput label="Location" name="location" required autoComplete="street-address" value={values.location} error={errors.location} onChange={event => setValue('location', event.target.value)} onBlur={() => onBlur('location')} />
             <SelectField label="Distance" name="distance" value={values.distance} error={errors.distance} onChange={event => setValue('distance', event.target.value)} onBlur={() => onBlur('distance')}>
               {distanceOptions.map(distance => <option key={distance} value={distance}>Within {distance} {distance === '1' ? 'mile' : 'miles'}</option>)}
@@ -129,7 +136,7 @@ export function CreateLobbyPage() {
             <ForkEmblem />
             <div className="create-lobby__match-note">
               <strong>Restaurant matches pending</strong>
-              <p>Match counts will appear when restaurant search is connected.</p>
+              <p>Match counts will appear when restaurant search is connected. TODO</p>
             </div>
           </div>
         </div>
@@ -139,11 +146,10 @@ export function CreateLobbyPage() {
             <ul>{summary.map((line, index) => <li key={index}><span aria-hidden="true">✓</span><span>{line}</span></li>)}</ul>
           </aside>
           <div className="create-lobby__submit">
-            <Button type="submit" disabled={isSubmitting} aria-describedby="create-backend-note">
+            <Button type="submit" disabled={loading || isSubmitting}>
               {isSubmitting ? 'Creating lobby…' : 'Create lobby'}
             </Button>
             <p className="lobby-form-note">You can edit these filters before voting starts.</p>
-            <p id="create-backend-note" className="lobby-form-note">Your lobby and selected preferences will be saved in the database.</p>
             <p className="lobby-form-status" role="status">{status}</p>
           </div>
         </div>

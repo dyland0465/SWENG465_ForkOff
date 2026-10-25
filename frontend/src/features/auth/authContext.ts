@@ -19,9 +19,10 @@ export type AuthUser = {
 }
 
 export type AuthContextValue = {
+  loading: boolean
   user: AuthUser | null
   signIn: (user: AuthUser) => void
-  signOut: () => void
+  signOut: () => Promise<void>
 }
 
 export const AuthContext = createContext<AuthContextValue | null>(null)

@@ -1,3 +1,5 @@
+import { createServer } from "node:http";
+import { attachRealtime } from "./services/realtime";
 import dotenv from "dotenv";
 import { connectDB } from "./Config/db";
 import app from "./app";
@@ -10,7 +12,9 @@ const PORT = Number(process.env.PORT) || 3000;
 async function startServer() {
   try {
     await connectDB();
-    app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+    const server = createServer(app);
+    attachRealtime(server);
+    server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
   } catch (error) {
     console.error("Failed to start server:", error);
     process.exit(1);
