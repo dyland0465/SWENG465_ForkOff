@@ -150,6 +150,11 @@ export function LoginScreen({ initialMode = 'login', onLogin, onRegister }: Logi
         <p className="login-card__guest">
           Just joining a friend’s lobby? <TextAction to={paths.joinLobby}>Continue as a guest</TextAction>
         </p>
+        {/* Partner link: sends restaurant owners to the separate Partner access
+            page (/partners), since partner accounts sign in there, not here. */}
+        <p className="login-card__partner">
+          Own a restaurant? <TextAction to={paths.partnerAccess}>Partner sign in</TextAction>
+        </p>
       </div>
       <TextAction className="lobby-form-page__back" to={paths.home}>Back to home</TextAction>
     </main>
