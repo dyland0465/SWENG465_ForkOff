@@ -1,0 +1,76 @@
+/*
+ * AdminPage.css
+ *
+ * Styles for the admin partner-review screen (/admin). Uses the app's design
+ * tokens so it matches the rest of the site.
+ *  - .admin-page: page width and spacing
+ *  - .admin-page__filters: the Pending / Approved / Rejected / All chips
+ *  - .admin-card: one partner request, with a colored status badge
+ *  - .admin-card__results: the Google search results to pick from
+ */
+.admin-page {
+  display: grid;
+  gap: var(--spacing-6);
+  inline-size: min(100%, 960px);
+  margin-inline: auto;
+  padding: var(--spacing-12) var(--spacing-6);
+}
+.admin-page__intro { display: grid; gap: var(--spacing-2); }
+.admin-page__intro p { color: var(--color-text-secondary); }
+.admin-page__intro > .text-label-default { color: var(--color-text-primary); }
+.admin-page__filters { display: flex; flex-wrap: wrap; align-items: center; gap: var(--spacing-2); }
+.admin-page__filters .ui-button { margin-inline-start: auto; }
+.admin-page__status p { color: var(--color-text-secondary); }
+.admin-page__error, .admin-page .admin-card__message { color: var(--color-status-error); }
+.admin-page__list { display: grid; gap: var(--spacing-6); margin: 0; padding: 0; list-style: none; }
+
+.admin-card {
+  display: grid;
+  gap: var(--spacing-4);
+  padding: var(--spacing-6);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-lg);
+  background: var(--color-bg-surface);
+  box-shadow: var(--shadow-card);
+}
+.admin-card__header { display: flex; justify-content: space-between; align-items: start; gap: var(--spacing-4); }
+.admin-card__header p { color: var(--color-text-secondary); overflow-wrap: anywhere; }
+.admin-card__badge {
+  padding: var(--spacing-1) var(--spacing-3);
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-caption-default);
+  font-weight: var(--font-weight-bold);
+  text-transform: capitalize;
+  white-space: nowrap;
+}
+.admin-card__badge--pending { background: var(--color-bg-canvas); color: var(--color-status-warning); border: 1px solid currentColor; }
+.admin-card__badge--approved { background: var(--color-bg-canvas); color: var(--color-status-success); border: 1px solid currentColor; }
+.admin-card__badge--rejected { background: var(--color-bg-canvas); color: var(--color-status-error); border: 1px solid currentColor; }
+
+.admin-card__details { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--spacing-4); margin: 0; }
+.admin-card__details dt { font-size: var(--font-size-caption-default); color: var(--color-text-secondary); }
+.admin-card__details dd { margin: 0; overflow-wrap: anywhere; }
+
+.admin-card__approve { display: grid; gap: var(--spacing-4); padding-block-start: var(--spacing-4); border-block-start: 1px solid var(--color-border-default); }
+.admin-card__search { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: var(--spacing-2); }
+.admin-card__results { display: grid; gap: var(--spacing-2); margin: 0; padding: 0; border: 0; }
+.admin-card__result {
+  display: flex;
+  gap: var(--spacing-3);
+  align-items: start;
+  padding: var(--spacing-3);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+.admin-card__result:has(input:checked) { border-color: var(--color-action-primary); }
+.admin-card__result input { margin-block-start: var(--spacing-1); accent-color: var(--color-action-primary); }
+.admin-card__actions { display: flex; flex-wrap: wrap; gap: var(--spacing-2); }
+.admin-card__message:empty { display: none; }
+
+@media (max-width: 768px) {
+  .admin-page { padding: var(--spacing-8) var(--spacing-4); }
+  .admin-card__details { grid-template-columns: minmax(0, 1fr); }
+  .admin-card__search { grid-template-columns: minmax(0, 1fr); }
+  .admin-page__filters .ui-button { margin-inline-start: 0; }
+}

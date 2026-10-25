@@ -28,17 +28,19 @@ export function LoginPage() {
   const navigate = useNavigate()
   const { user, loading, signIn } = useAuth()
   const state = useLocation().state as LoginLocationState
-  const redirectTo = state?.from ?? paths.home
+    const redirectTo = state?.from ?? paths.home
+  const destinationFor = (account: { role?: string }) => !state?.from && account.role === 'admin' ? paths.admin : redirectTo
 
   if (loading) return <main id="main-content"><p role="status">Checking session…</p></main>
-  if (user) return <Navigate to={redirectTo} replace />
+  if (user) return <Navigate to={destinationFor(user)} replace />
 
   return (
     <LoginScreen
       initialMode={state?.mode}
       onLogin={async (identifier, password) => {
-        signIn(await login(identifier, password))
-        navigate(redirectTo, { replace: true })
+        const loggedIn = await login(identifier, password)
+        signIn(loggedIn)
+        navigate(destinationFor(loggedIn), { replace: true })
       }}
       onRegister={async (username, email, password) => {
         signIn(await register(username, email, password))

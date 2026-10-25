@@ -101,3 +101,39 @@
     inline-size: 100%;
   }
 }
+/* Partner accounts: "Sign in / Create account" tab switcher, matching the
+   pill-shaped tabs on the regular login screen. */
+.partner-access__tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-1);
+  padding: var(--spacing-1);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-full);
+  background: var(--color-bg-canvas);
+}
+.partner-access__tab {
+  min-block-size: var(--target-size-min);
+  border: 0;
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font: inherit;
+  font-weight: var(--font-weight-bold);
+  cursor: pointer;
+}
+.partner-access__tab:hover:not(:disabled) { color: var(--color-text-primary); }
+.partner-access__tab.is-active { background: var(--color-action-primary); color: var(--color-action-primary-text); }
+.partner-access__tab:disabled { cursor: default; }
+.partner-access__tab:focus-visible { outline: var(--focus-ring-width) solid var(--color-border-focus); outline-offset: var(--focus-ring-offset); }
+
+/* Partner accounts: the status box shown after signing in (pending / approved / rejected). */
+.partner-access__status {
+  display: grid;
+  justify-items: start;
+  gap: var(--spacing-4);
+  padding: var(--spacing-6);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-canvas);
+}
+.partner-access__status > .text-label-default { color: var(--color-text-primary); }
