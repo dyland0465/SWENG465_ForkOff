@@ -3,9 +3,10 @@ import { randomInt, randomUUID } from "node:crypto";
 import mongoose from "mongoose";
 import { Lobby } from "../models/lobby";
 import { GroupchatMessage } from "../models/groupchat";
-import { establishSession, publicUser, revokeSession } from "./session";
-import { changeLobby, findLobby, HttpError, lobbyEvents, memberFor, nextOnline, requireHost, serializeLobby, type Member } from "./lobbyState";
-import { searchRestaurants, getPhotoUrl } from "./googlePlaces"
+import { establishSession, publicUser, revokeSession } from "../services/session";
+import { HttpError } from "../utils/errors";
+import { changeLobby, findLobby, lobbyEvents, memberFor, nextOnline, requireHost, serializeLobby, type Member } from "../services/lobbyState";
+import { searchRestaurants, getPhotoUrl } from "../services/googlePlaces"
 
 
 /**

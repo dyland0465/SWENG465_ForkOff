@@ -5,9 +5,9 @@ import { GroupchatMessage } from "../models/groupchat";
 import { Vote } from "../models/vote";
 import type { Identity } from "./session";
 
-export class HttpError extends Error {
-  constructor(public status: number, message: string) { super(message); }
-}
+// HttpError now lives in utils/errors.ts; re-exported here so existing imports keep working.
+import { HttpError } from "../utils/errors";
+export { HttpError };
 export type Member = { memberId: string; identityKey: string; userId?: mongoose.Types.ObjectId; type: "user" | "guest"; displayName: string; joinOrder: number; joinedAt: Date };
 export type LobbyDocument = mongoose.HydratedDocument<{
   lobbyCode: string; name: string; hostMemberId: string | null; nextJoinOrder: number; revision: number;

@@ -98,7 +98,14 @@
   font-size: var(--font-size-caption-default);
   text-align: center;
 }
-
+/* Partner link: sits right under the guest line, same small gray text,
+   without the divider line so the two read as one footer. */
+.login-card__partner {
+  margin-block-start: var(--spacing-2);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-caption-default);
+  text-align: center;
+}
 @media (max-width: 768px) {
   .login-page { grid-template-columns: minmax(0, 1fr); }
   .login-page__welcome { padding-inline-end: 0; }

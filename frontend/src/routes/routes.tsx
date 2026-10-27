@@ -13,6 +13,7 @@ import { ResultsPage } from '../pages/ResultsPage'
 import { PartnerRestaurantPage } from '../pages/PartnerRestaurantPage'
 import { PartnerAccessPage } from '../pages/PartnerAccessPage'
 import { PartnerDemoPreviewProvider, RequirePartnerDemoPreview } from '../features/partner/PartnerDemoPreview'
+import { AdminPage } from '../pages/AdminPage'
 import {
   NotFoundPage,
 } from '../pages/PlaceholderPages'
@@ -45,6 +46,7 @@ export const appRoutes: RouteObject[] = [
         ],
       },
       { path: '*', element: <NotFoundPage /> },
+      { path: paths.admin, element: <AdminPage /> },
     ],
   },
 ]
