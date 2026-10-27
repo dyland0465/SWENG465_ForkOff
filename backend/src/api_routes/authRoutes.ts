@@ -6,7 +6,7 @@
  * live in lobbyRoutes.ts because guests in lobbies use them too.
  */
 import { Router } from "express";
-import { User } from "../db models/user";
+import { User } from "../db_models/user";
 import { validatePassword } from "../services/passwordHashing";
 import { establishSession } from "../services/session";
 

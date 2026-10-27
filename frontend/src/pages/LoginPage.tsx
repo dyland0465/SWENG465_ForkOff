@@ -28,9 +28,12 @@ export function LoginPage() {
   const navigate = useNavigate()
   const { user, loading, signIn } = useAuth()
   const state = useLocation().state as LoginLocationState
-    const redirectTo = state?.from ?? paths.home
-  const destinationFor = (account: { role?: string }) => !state?.from && account.role === 'admin' ? paths.admin : redirectTo
+     const redirectTo = state?.from ?? paths.home
+  const cameFrom = state?.from && state.from !== paths.home ? state.from : undefined
+  const destinationFor = (account: { role?: string }) =>
+    cameFrom ?? (account.role === 'admin' ? paths.admin : account.role === 'partner' ? paths.partnerAccess : paths.home)
 
+  
   if (loading) return <main id="main-content"><p role="status">Checking session…</p></main>
   if (user) return <Navigate to={destinationFor(user)} replace />
 
@@ -49,3 +52,5 @@ export function LoginPage() {
     />
   )
 }
+
+ 

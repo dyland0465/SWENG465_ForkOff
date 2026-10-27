@@ -16,6 +16,7 @@ export function AppHeader({ onHowItWorks, onJoinLobby }: AppHeaderProps) {
   const isLogin = useMatch(paths.login) !== null
   const isJoinLobby = useMatch(paths.joinLobby) !== null
   const isAdmin = useMatch(paths.admin) !== null
+  const isPartnerAccess = useMatch({ path: paths.partnerAccess, end: true }) !== null
   const { pathname } = useLocation()
   const navigate = useNavigate()
   const [logoutError, setLogoutError] = useState('')
@@ -33,6 +34,7 @@ export function AppHeader({ onHowItWorks, onJoinLobby }: AppHeaderProps) {
           <TextAction tone="nav" current={isJoinLobby} onClick={onJoinLobby}>Enter lobby code</TextAction>
                     {/* Admin screen: only admin accounts see this tab. */}
           {user?.role === 'admin' && <TextAction to={paths.admin} tone="nav" current={isAdmin}>Admin</TextAction>}
+          {user?.role === 'partner' && <TextAction to={paths.partnerAccess} tone="nav" current={isPartnerAccess}>Partner</TextAction>}
           {user ? (
             <span className="app-header__account">
               <span className="app-header__user">Hi, {user.username}</span>

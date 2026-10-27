@@ -19,8 +19,8 @@
  */
 import { Router } from "express";
 import mongoose from "mongoose";
-import { User } from "../db models/user";
-import { Restaurant } from "../db models/restaurant";
+import { User } from "../db_models/user";
+import { Restaurant } from "../db_models/restaurant";
 import { requireRole } from "../middleware/requireRole";
 import { GooglePlacesError, searchRestaurants } from "../services/googlePlaces";
 

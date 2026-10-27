@@ -3,8 +3,8 @@ import { hashPassword } from "../services/passwordHashing";
 import dotenv from "dotenv";
 import mongoose from "mongoose";
 
-import { User } from "../db models/user";
-import { Lobby } from "../db models/lobby";
+import { User } from "../db_models/user";
+import { Lobby } from "../db_models/lobby";
 
 
 dotenv.config();
