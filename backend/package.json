@@ -1,14 +1,13 @@
 {
-  "name": "lab2",
+  "name": "forkoff-backend",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
-  "scripts": {
+    "scripts": {
     "test": "node --import tsx --test tests/*.test.ts",
     "dev": "tsx watch src/server.ts",
-    "start": "node server.js",
-    "db:init": "tsx src/init-collections.ts",
-    "db:seed:examples": "tsx src/seed-examples.ts",
+    "start": "tsx src/server.ts",
+    "db:init": "tsx src/scripts/initCollections.ts",
+    "db:seed:examples": "tsx src/scripts/seedExamples.ts",
     "seed": "tsx src/scripts/seed.ts"
   },
   "keywords": [],

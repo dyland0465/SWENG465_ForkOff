@@ -21,8 +21,8 @@ import { Router } from "express";
 import mongoose from "mongoose";
 import { User } from "../models/user";
 import { Restaurant } from "../models/restaurant";
-import { requireRole } from "./requireRole";
-import { GooglePlacesError, searchRestaurants } from "./googlePlaces";
+import { requireRole } from "../middleware/requireRole";
+import { GooglePlacesError, searchRestaurants } from "../services/googlePlaces";
 
 const router = Router();
 

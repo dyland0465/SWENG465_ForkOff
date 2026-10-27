@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { hashPassword } from "../services/auth";
+import { hashPassword } from "../services/password";
 import dotenv from "dotenv";
 import mongoose from "mongoose";
 

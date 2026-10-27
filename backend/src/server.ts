@@ -1,7 +1,7 @@
 import { createServer } from "node:http";
 import { attachRealtime } from "./services/realtime";
 import dotenv from "dotenv";
-import { connectDB } from "./Config/db";
+import { connectDB } from "./config/db";
 import app from "./app";
 
 dotenv.config();

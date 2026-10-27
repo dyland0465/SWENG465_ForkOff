@@ -2,13 +2,12 @@ import express from "express";
 import { existsSync } from "node:fs";
 import path from "node:path";
 import swaggerUi from "swagger-ui-express";
-import swaggerSpec from "./Config/swagger";
-import lobbyApi from "./services/lobbyApi";
+import swaggerSpec from "./config/swagger";
 import { originGuard, sessionMiddleware } from "./services/session";
-import { HttpError } from "./services/lobbyState";
+import { HttpError } from "./utils/errors";
 import type { Request, Response, NextFunction } from "express";
-import apiClients from "./services/api";
-import adminApi from "./services/adminApi";
+// All API routes, one file per area (see routes/index.ts).
+import routes from "./routes";
 
 //creates the application instance and sets up the middleware for JSON parsing, Swagger UI documentation, and API clients routing.
 const app = express();
@@ -18,9 +17,7 @@ app.use(originGuard);
 app.use(sessionMiddleware);
 app.use("/api", (_req, res, next) => { res.set("Cache-Control", "no-store"); next(); });
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
-app.use(lobbyApi);
-app.use(adminApi);
-app.use(apiClients);
+app.use(routes);
 app.use((error: unknown, _req: Request, res: Response, _next: NextFunction) => {
   const status = error instanceof HttpError ? error.status : (error as { status?: number })?.status === 400 ? 400 : 500;
   if (status === 500) console.error("API request failed:", error);

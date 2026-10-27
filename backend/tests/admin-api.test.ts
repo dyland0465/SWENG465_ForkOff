@@ -12,7 +12,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import express from "express";
-import router from "../src/services/adminApi";
+import router from "../src/routes/adminRoutes";
 import { User } from "../src/models/user";
 import { Restaurant } from "../src/models/restaurant";
 

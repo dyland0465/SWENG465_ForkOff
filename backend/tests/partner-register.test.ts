@@ -12,7 +12,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import express from "express";
-import router from "../src/services/api";
+import router from "../src/routes";
 import { User } from "../src/models/user";
 import { Session } from "../src/models/session";
 
