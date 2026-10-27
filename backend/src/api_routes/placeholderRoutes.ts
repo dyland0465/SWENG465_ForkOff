@@ -18,7 +18,7 @@
  * When one of these is built for real, move it into the matching routes file.
  */
 import { Router } from "express";
-import { Restaurant } from "../models/restaurant";
+import { Restaurant } from "../db models/restaurant";
 
 const router = Router();
 

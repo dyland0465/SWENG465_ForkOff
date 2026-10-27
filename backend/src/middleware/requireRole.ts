@@ -25,3 +25,6 @@ export function requireRole(...roles: string[]) {
     next();
   };
 }
+
+//basically this checks if the user is logged in and has the required role to access a specific route. If the user is not logged in, it returns a 401 status code with a message indicating that login is required. If the user is logged in but does not have the required role, it returns a 403 status code with a message indicating that they do not have permission to access the resource. If the user is logged in and has the required role, it calls the next middleware or route handler.
+//so like only admins can access certain endpoints. 

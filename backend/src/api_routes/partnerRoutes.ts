@@ -6,8 +6,8 @@
  * (see adminRoutes.ts).
  */
 import { Router } from "express";
-import { User } from "../models/user";
-import { hashPassword } from "../services/password";
+import { User } from "../db models/user";
+import { hashPassword } from "../services/passwordHashing";
 import { establishSession } from "../services/session";
 import { isDuplicateKeyError } from "../utils/errors";
 

@@ -10,8 +10,8 @@
  */
 import { Router, type Request } from "express";
 import mongoose from "mongoose";
-import { User } from "../models/user";
-import { hashPassword } from "../services/password";
+import { User } from "../db models/user";
+import { hashPassword } from "../services/passwordHashing";
 import { establishSession, revokeUserSessions } from "../services/session";
 import { HttpError, isDuplicateKeyError } from "../utils/errors";
 

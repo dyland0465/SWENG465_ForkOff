@@ -1,10 +1,10 @@
 import { randomUUID } from "node:crypto";
-import { hashPassword } from "../services/password";
+import { hashPassword } from "../services/passwordHashing";
 import dotenv from "dotenv";
 import mongoose from "mongoose";
 
-import { User } from "../models/user";
-import { Lobby } from "../models/lobby";
+import { User } from "../db models/user";
+import { Lobby } from "../db models/lobby";
 
 
 dotenv.config();

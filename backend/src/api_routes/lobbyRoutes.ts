@@ -1,8 +1,8 @@
 import { Router, type Request, type Response, type NextFunction } from "express";
 import { randomInt, randomUUID } from "node:crypto";
 import mongoose from "mongoose";
-import { Lobby } from "../models/lobby";
-import { GroupchatMessage } from "../models/groupchat";
+import { Lobby } from "../db models/lobby";
+import { GroupchatMessage } from "../db models/groupchat";
 import { establishSession, publicUser, revokeSession } from "../services/session";
 import { HttpError } from "../utils/errors";
 import { changeLobby, findLobby, lobbyEvents, memberFor, nextOnline, requireHost, serializeLobby, type Member } from "../services/lobbyState";

@@ -1,7 +1,7 @@
 import { Server as HttpServer } from "node:http";
 import { Server } from "socket.io";
 import { allowedOrigin, cookieToken, resolveIdentity, sessionEvents } from "./session";
-import { Lobby } from "../models/lobby";
+import { Lobby } from "../db models/lobby";
 import { changeLobby, findLobby, isOnline, lobbyEvents, memberFor, nextOnline, presence } from "./lobbyState";
 
 export function attachRealtime(server: HttpServer, options: { graceMs?: number; tickMs?: number } = {}) {

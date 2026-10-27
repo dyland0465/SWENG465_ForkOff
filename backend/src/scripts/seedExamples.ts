@@ -2,11 +2,11 @@ import { randomBytes } from "node:crypto";
 import dotenv from "dotenv";
 import mongoose from "mongoose";
 import { connectDB } from "../config/db";
-import { GroupchatMessage } from "../models/groupchat";
-import { Lobby } from "../models/lobby";
-import { User } from "../models/user";
-import { Vote } from "../models/vote";
-import { hashPassword } from "../services/password";
+import { GroupchatMessage } from "../db models/groupchat";
+import { Lobby } from "../db models/lobby";
+import { User } from "../db models/user";
+import { Vote } from "../db models/vote";
+import { hashPassword } from "../services/passwordHashing";
 
 dotenv.config();
 
