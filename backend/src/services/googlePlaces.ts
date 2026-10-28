@@ -5,6 +5,8 @@ const DETAILS_FIELD_MASK =
   "id,displayName,formattedAddress,location,primaryType,googleMapsUri,websiteUri,nationalPhoneNumber";
 
 import 'dotenv/config';
+import { createHash } from 'node:crypto';
+import { Restaurant } from '../db_models/restaurant';
 
 export interface GooglePhoto {
   name: string;
@@ -26,6 +28,8 @@ export interface GooglePlace {
   websiteUri?: string;
   nationalPhoneNumber?: string;
   photos?: GooglePhoto[];
+  cachedPhoto?: boolean;
+  photoAuthors?: GooglePhoto['authorAttributions'];
 }
 
 interface TextSearchResponse {
@@ -90,6 +94,13 @@ async function requestPlaces<T>(url: string, fieldMask: string, body?: object): 
 }
 
 export async function searchRestaurants(query: string, limit: number): Promise<GooglePlace[]> {
+  const key = createHash('sha256').update(`${query.trim().toLowerCase()}\0${limit}`).digest('hex');
+  const field = `searchCache.${key}`;
+  const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  const cached = await Restaurant.find({ [`${field}.fetchedAt`]: { $gt: cutoff }, cachedPlace: { $exists: true } }).lean();
+  if (cached.length && cached.every(item => typeof (item.cachedPlace as GooglePlace).cachedPhoto === 'boolean')) {
+    return cached.sort((a, b) => a.searchCache[key].rank - b.searchCache[key].rank).map(item => item.cachedPlace as GooglePlace);
+  }
   const result = await requestPlaces<TextSearchResponse>(
     `${PLACES_API_BASE}/places:searchText`,
     SEARCH_FIELD_MASK,
@@ -103,7 +114,34 @@ export async function searchRestaurants(query: string, limit: number): Promise<G
     },
   );
 
-  return (result.places ?? []).filter((place) => Boolean(place.id));
+  const places = (result.places ?? []).filter((place) => Boolean(place.id));
+  if (places.length) {
+    const fetchedAt = new Date();
+    const photos = await Promise.all(places.map(async place => {
+      const uri = await getPhotoUrl(place.photos?.[0]);
+      if (!uri) return null;
+      try {
+        const response = await fetch(uri, { signal: AbortSignal.timeout(10000) });
+        const type = response.headers.get('content-type')?.split(';')[0] ?? '';
+        if (!response.ok || !['image/jpeg', 'image/png', 'image/webp'].includes(type)) return null;
+        const bytes = Buffer.from(await response.arrayBuffer());
+        return bytes.length && bytes.length <= 2 * 1024 * 1024 ? { bytes, type } : null;
+      } catch { return null; }
+    }));
+    await Restaurant.bulkWrite(places.map((place, rank) => {
+      const { photos: _photos, ...cachedPlace } = place;
+      const photo = photos[rank];
+      const storedPlace = { ...cachedPlace, cachedPhoto: Boolean(photo), photoAuthors: photo ? place.photos?.[0]?.authorAttributions ?? [] : [] };
+      return { updateOne: { filter: { placeId: place.id }, update: { $set: { cachedPlace: storedPlace, cachedAt: fetchedAt, [field]: { fetchedAt, rank }, ...(photo ? { cachedPhoto: photo.bytes, cachedPhotoType: photo.type } : {}) }, ...(!photo ? { $unset: { cachedPhoto: 1, cachedPhotoType: 1 } } : {}), $setOnInsert: { placeId: place.id } }, upsert: true } };
+    }), { ordered: false });
+    return places.map((place, index) => ({ ...place, cachedPhoto: Boolean(photos[index]), photoAuthors: photos[index] ? place.photos?.[0]?.authorAttributions ?? [] : [] }));
+  }
+  return places;
+}
+
+export async function clearExpiredRestaurantCache() {
+  const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  await Restaurant.updateMany({ cachedAt: { $lte: cutoff } }, { $unset: { cachedPlace: 1, cachedAt: 1, searchCache: 1, cachedPhoto: 1, cachedPhotoType: 1 } });
 }
 
 export async function getGooglePlace(placeId: string): Promise<GooglePlace> {

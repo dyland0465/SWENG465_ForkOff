@@ -1,3 +1,4 @@
+import { GoogleMapsLink } from '../components/ui/GoogleMapsLink'
 import { useState } from 'react'
 import { generatePath, useNavigate, useParams } from 'react-router'
 import { Button } from '../components/ui/Button'
@@ -36,7 +37,7 @@ function ResultDetails({ row }: { row: Result }) {
     <h3>{restaurant.name}</h3>
     <p>{restaurant.category?.replace(/_/g, ' ') ?? 'Restaurant'} · {restaurant.address ?? 'Address unavailable'}</p>
     <p>{yes} yes · {no} no · {veto} veto · {skip} skipped {veto > 0 && '· Vetoed'}</p>
-    {restaurant.googleMapsUri && <a href={restaurant.googleMapsUri} target="_blank" rel="noreferrer">View on Google Maps</a>}
+    {restaurant.googleMapsUri && <GoogleMapsLink href={restaurant.googleMapsUri} />}
     {restaurant.photoAuthors.map((author, i) => <small key={i}> Photo: {author.uri ? <a href={author.uri} target="_blank" rel="noreferrer">{author.displayName}</a> : author.displayName}</small>)}
   </>
 }

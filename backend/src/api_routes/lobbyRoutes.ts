@@ -6,7 +6,7 @@ import { GroupchatMessage } from "../db_models/groupchat";
 import { establishSession, publicUser, revokeSession } from "../services/session";
 import { HttpError } from "../utils/errors";
 import { changeLobby, findLobby, lobbyEvents, memberFor, nextOnline, requireHost, serializeLobby, type LobbyDocument, type Member } from "../services/lobbyState";
-import { searchRestaurants, getPhotoUrl } from "../services/googlePlaces"
+import { searchRestaurants } from "../services/googlePlaces"
 
 
 /**
@@ -341,8 +341,7 @@ router.get("/api/lobbies/:id/restaurants", run(async (req, res) => {
 
     const restaurants = await Promise.all(
       places.map(async place => {
-        const photo = place.photos?.[0];
-        const photoUrl = await getPhotoUrl(photo);
+        const photoUrl = place.cachedPhoto ? `/api/restaurant-photos/${encodeURIComponent(place.id)}` : null;
         return {
           id: place.id,
           name: place.displayName?.text ?? "Unnamed restaurant",
@@ -350,7 +349,7 @@ router.get("/api/lobbies/:id/restaurants", run(async (req, res) => {
           category: place.primaryType ?? null,
           googleMapsUri: place.googleMapsUri ?? null,
           photoUrl,
-          photoAuthors: photoUrl ? photo?.authorAttributions ?? [] : [],
+          photoAuthors: photoUrl ? place.photoAuthors ?? [] : [],
         };
 
       }),
@@ -385,11 +384,10 @@ router.post("/api/lobbies/:id/round", run(async (req, res) => {
   try {
     const places = await searchRestaurants(`restaurants in ${location}`, 10);
     restaurants = await Promise.all(places.map(async place => {
-      const photo = place.photos?.[0];
-      const photoUrl = await getPhotoUrl(photo);
+      const photoUrl = place.cachedPhoto ? `/api/restaurant-photos/${encodeURIComponent(place.id)}` : null;
       return { id: place.id, name: place.displayName?.text ?? "Unnamed restaurant", address: place.formattedAddress ?? null,
         category: place.primaryType ?? null, googleMapsUri: place.googleMapsUri ?? null,
-        photoUrl, photoAuthors: photoUrl ? photo?.authorAttributions ?? [] : [] };
+        photoUrl, photoAuthors: photoUrl ? place.photoAuthors ?? [] : [] };
     }));
   } catch { throw new HttpError(502, "Could not load restaurants. Please try again."); }
   if (!restaurants.length) throw new HttpError(400, "No restaurants found. Change the lobby location and try again.");

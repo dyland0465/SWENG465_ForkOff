@@ -1,3 +1,4 @@
+import { GoogleMapsLink } from '../components/ui/GoogleMapsLink'
 import { useEffect, useState } from 'react'
 import { generatePath, useParams } from 'react-router'
 import { TextAction } from '../components/ui/TextAction'
@@ -199,13 +200,7 @@ function DiscoveryPreviewScreen({ lobbyId }: { lobbyId: string }) {
                   <p>{restaurant.address ?? 'Address unavailable'}</p>
 
                   {restaurant.googleMapsUri && (
-                    <a
-                      href={restaurant.googleMapsUri}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      View on Google Maps
-                    </a>
+                    <GoogleMapsLink href={restaurant.googleMapsUri} />
                   )}
 
                 </div>

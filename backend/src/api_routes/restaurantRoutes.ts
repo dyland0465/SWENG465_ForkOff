@@ -1,8 +1,7 @@
 /**
  * restaurantRoutes.ts
  *
- * Restaurants saved in MongoDB (only their Google Place IDs are stored; details
- * are fetched live from Google Places):
+ * Restaurants saved in MongoDB, including a seven-day search cache:
  *  - GET    /api/restaurants         list saved restaurants
  *  - GET    /api/restaurants/:id     one restaurant
  *  - POST   /api/restaurants/import  search Google and save the results
@@ -16,6 +15,15 @@ import { getGooglePlace, searchRestaurants } from "../services/googlePlaces";
 import { handlePlacesError } from "../utils/errors";
 
 const router = Router();
+
+router.get('/api/restaurant-photos/:placeId', async (req, res, next) => {
+  try {
+    const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const restaurant = await Restaurant.findOne({ placeId: req.params.placeId, cachedAt: { $gt: cutoff } }).select('+cachedPhoto cachedPhotoType');
+    if (!restaurant?.cachedPhoto || !restaurant.cachedPhotoType) return res.status(404).end();
+    res.type(restaurant.cachedPhotoType).send(restaurant.cachedPhoto);
+  } catch (error) { next(error); }
+});
 
 /** @swagger
  * /api/restaurants/{id}:
@@ -90,7 +98,7 @@ router.get("/api/restaurants", async (req, res) => {
  * /api/restaurants/import:
  *   post:
  *     summary: Search Google Places for restaurants and save their Place IDs.
- *     description: Only Place IDs are stored in MongoDB. Full restaurant details are returned from live Places requests.
+ *     description: Search results are cached in MongoDB for seven days.
  *     tags: [restaurant]
  *     requestBody:
  *       required: false
@@ -138,7 +146,7 @@ router.post("/api/restaurants/import", async (req, res) => {
       query,
       imported: places.length,
       attribution: "Google Maps",
-      persistence: "Only Google Place IDs are stored; details are fetched live.",
+      persistence: "Search results are cached for seven days.",
       places,
     });
   } catch (error) {
