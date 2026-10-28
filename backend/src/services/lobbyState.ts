@@ -49,7 +49,7 @@ export function serializeLobby(lobby: LobbyDocument, identity?: Identity) {
   const own = lobby.members.find(member => member.identityKey === identity?.key);
   return {
     id: String(lobby._id), lobbyCode: lobby.lobbyCode, name: lobby.name, status: lobby.status,
-    hostMemberId: lobby.hostMemberId, revision: lobby.revision, filters: lobby.filters,
+    hostMemberId: lobby.hostMemberId, revision: lobby.revision, filters: lobby.filters, roundId: lobby.round?.id ?? null,
     members: lobby.members.map(({ memberId, userId, type, displayName, joinOrder, joinedAt }) => ({
       memberId, userId, type, displayName, joinOrder, joinedAt, online: isOnline(String(lobby._id), memberId),
     })),

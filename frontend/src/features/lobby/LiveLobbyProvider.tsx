@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
-import { useMatch, useNavigate } from 'react-router'
+import { generatePath, useLocation, useMatch, useNavigate } from 'react-router'
+import { paths } from '../../routes/paths'
 import { io } from 'socket.io-client'
 import { useAuth } from '../auth/useAuth'
 import { LiveLobbyContext, lobbyRequest, mergeMessages } from './liveLobby'
@@ -14,6 +15,7 @@ export function LiveLobbyProvider({ children }: { children: ReactNode }) {
 }
 function LobbyConnection({ lobbyId, children }: { lobbyId: string | null; children: ReactNode }) {
   const navigate = useNavigate()
+  const location = useLocation()
   const { user, loading } = useAuth()
   const [lobby, setLobby] = useState<LiveLobby | null>(null)
   const [messages, setMessages] = useState<ChatMessage[]>([])
@@ -24,8 +26,16 @@ function LobbyConnection({ lobbyId, children }: { lobbyId: string | null; childr
   const refreshRef = useRef<() => void>(() => {})
   const previousHost = useRef<string | null | undefined>(undefined)
   const latestMessage = useRef<string | undefined>(undefined)
+  const seenRound = useRef<string | null | undefined>(undefined)
   const base = `/api/lobbies/${encodeURIComponent(lobbyId ?? '')}`
   useEffect(() => { latestMessage.current = messages.at(-1)?.id }, [messages])
+  useEffect(() => {
+    if (!lobby || !lobbyId) return
+    const previous = seenRound.current
+    seenRound.current = lobby.roundId
+    const inLobby = location.pathname === generatePath(paths.lobby, { lobbyId }) || location.pathname === generatePath(paths.groupChat, { lobbyId })
+    if (lobby.roundId && previous !== lobby.roundId && (previous !== undefined || inLobby)) navigate(generatePath(paths.voting, { lobbyId }))
+  }, [lobby, lobbyId, location.pathname, navigate])
   useEffect(() => {
     if (!lobbyId || loading) return
     let active = true

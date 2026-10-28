@@ -2,7 +2,7 @@ import { createContext, useContext } from 'react'
 
 export type LobbyMember = { memberId: string; type: 'user' | 'guest'; userId?: string; displayName: string; joinOrder: number; online: boolean }
 export type LobbyFilters = { location?: string; dinnerAt?: string; maxDistance?: number; minimumRating?: number; categories?: string[]; priceLevels?: string[]; diningNeeds?: string[]; openNow?: boolean }
-export type LiveLobby = { id: string; name: string; lobbyCode: string; status: string; revision: number; hostMemberId: string | null; selfMemberId: string; isHost: boolean; members: LobbyMember[]; filters: LobbyFilters }
+export type LiveLobby = { id: string; name: string; lobbyCode: string; status: string; revision: number; roundId: string | null; hostMemberId: string | null; selfMemberId: string; isHost: boolean; members: LobbyMember[]; filters: LobbyFilters }
 export type ChatMessage = { id: string; memberId: string; senderName: string; text: string; createdAt: string; requestId: string }
 export async function lobbyRequest<T>(url: string, method = 'GET', body?: unknown): Promise<T> {
   const response = await fetch(url, { method, ...(body === undefined ? {} : { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }) })

@@ -1,4 +1,4 @@
-import { useLiveLobby } from '../features/lobby/liveLobby'
+import { lobbyRequest, useLiveLobby } from '../features/lobby/liveLobby'
 import { useRef, useState } from 'react'
 import { generatePath, useNavigate, useParams } from 'react-router'
 import type { FormEvent } from 'react'
@@ -84,6 +84,16 @@ function LobbyScreen({ lobbyId }: { lobbyId: string }) {
     } finally {
       setBusy(false)
     }
+  }
+  async function startGame() {
+    setBusy(true)
+    setActionError('')
+    try {
+      await lobbyRequest(`/api/lobbies/${encodeURIComponent(lobbyId)}/round`, 'POST')
+      navigate(generatePath(paths.voting, { lobbyId }))
+    } catch (cause) {
+      setActionError(cause instanceof Error ? cause.message : 'Could not start the game.')
+    } finally { setBusy(false) }
   }
   function saveSettings(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -391,11 +401,10 @@ function LobbyScreen({ lobbyId }: { lobbyId: string }) {
             </section>
             <div className="lobby-actions lobby-page__navigation">
               <Button
-                onClick={() =>
-                  navigate(generatePath(paths.discoveryPreview, params))
-                }
+                disabled={busy || (!lobby.isHost && !lobby.roundId)}
+                onClick={() => lobby.roundId ? navigate(generatePath(paths.voting, params)) : void startGame()}
               >
-                Preview restaurants
+                {lobby.roundId ? 'Return to game' : 'Start Game'}
               </Button>
               <Button
                 variant="secondary"
@@ -431,7 +440,6 @@ function LobbyScreen({ lobbyId }: { lobbyId: string }) {
                       disabled={busy}
                       className="lobby-filter-editor__group"
                     >
-                      <legend>Lobby settings</legend>
                       <TextInput
                         label="Lobby name"
                         name="name"
@@ -454,20 +462,6 @@ function LobbyScreen({ lobbyId }: { lobbyId: string }) {
                 </details>
               )}
             </div>
-            <details className="lobby-demo-note">
-              <summary>Voting</summary>
-              <p>
-                Start or join a shared voting round using live restaurant results.
-              </p>
-              <div className="lobby-actions">
-                <TextAction to={generatePath(paths.voting, params)}>
-                  Open voting
-                </TextAction>
-                <TextAction to={generatePath(paths.results, params)}>
-                  Group results
-                </TextAction>
-              </div>
-            </details>
           </section>
         </div>
       )}
