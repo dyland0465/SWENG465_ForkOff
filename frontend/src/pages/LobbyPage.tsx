@@ -455,17 +455,16 @@ function LobbyScreen({ lobbyId }: { lobbyId: string }) {
               )}
             </div>
             <details className="lobby-demo-note">
-              <summary>Voting preview</summary>
+              <summary>Voting</summary>
               <p>
-                Restaurant previews and voting use sample data. Votes are saved
-                in this browser tab.
+                Start or join a shared voting round using live restaurant results.
               </p>
               <div className="lobby-actions">
                 <TextAction to={generatePath(paths.voting, params)}>
-                  Try voting
+                  Open voting
                 </TextAction>
                 <TextAction to={generatePath(paths.results, params)}>
-                  Your voting results
+                  Group results
                 </TextAction>
               </div>
             </details>

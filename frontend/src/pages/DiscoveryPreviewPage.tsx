@@ -226,6 +226,9 @@ function DiscoveryPreviewScreen({ lobbyId }: { lobbyId: string }) {
         <TextAction to={generatePath(paths.lobby, { lobbyId })}>
           Back to lobby
         </TextAction>
+        <TextAction to={generatePath(paths.voting, { lobbyId })}>
+          Open voting
+        </TextAction>
 
 
 
