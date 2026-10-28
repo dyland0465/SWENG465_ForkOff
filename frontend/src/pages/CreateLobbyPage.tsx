@@ -154,7 +154,6 @@ export function CreateLobbyPage() {
           </div>
         </div>
       </form>
-      <TextAction className="lobby-form-page__back" to={paths.home}>Back to home</TextAction>
     </main>
   )
 }
