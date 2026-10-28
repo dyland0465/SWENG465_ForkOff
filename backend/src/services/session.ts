@@ -1,8 +1,8 @@
 import { EventEmitter } from "node:events";
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import type { Request, Response, NextFunction } from "express";
-import { Session } from "../models/session";
-import { User } from "../models/user";
+import { Session } from "../db_models/session";
+import { User } from "../db_models/user";
 
 export type Identity = {
   key: string; userId?: string; username?: string; email?: string; role?: string; partnerStatus?: string; restaurantIds?: string[];};

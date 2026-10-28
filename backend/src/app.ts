@@ -7,7 +7,7 @@ import { originGuard, sessionMiddleware } from "./services/session";
 import { HttpError } from "./utils/errors";
 import type { Request, Response, NextFunction } from "express";
 // All API routes, one file per area (see routes/index.ts).
-import routes from "./routes";
+import routes from "./api_routes";
 
 //creates the application instance and sets up the middleware for JSON parsing, Swagger UI documentation, and API clients routing.
 const app = express();

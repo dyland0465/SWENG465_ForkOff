@@ -11,7 +11,7 @@
  */
 import { Router } from "express";
 import mongoose from "mongoose";
-import { Restaurant } from "../models/restaurant";
+import { Restaurant } from "../db_models/restaurant";
 import { getGooglePlace, searchRestaurants } from "../services/googlePlaces";
 import { handlePlacesError } from "../utils/errors";
 

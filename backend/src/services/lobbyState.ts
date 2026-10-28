@@ -1,8 +1,8 @@
 import { EventEmitter } from "node:events";
 import mongoose from "mongoose";
-import { Lobby } from "../models/lobby";
-import { GroupchatMessage } from "../models/groupchat";
-import { Vote } from "../models/vote";
+import { Lobby } from "../db_models/lobby";
+import { GroupchatMessage } from "../db_models/groupchat";
+import { Vote } from "../db_models/vote";
 import type { Identity } from "./session";
 
 // HttpError now lives in utils/errors.ts; re-exported here so existing imports keep working.

@@ -1,10 +1,10 @@
-import { Session } from "../models/session";
+import { Session } from "../db_models/session";
 import mongoose from "mongoose";
-import { GroupchatMessage } from "../models/groupchat";
-import { Lobby } from "../models/lobby";
-import { Restaurant } from "../models/restaurant";
-import { User } from "../models/user";
-import { Vote } from "../models/vote";
+import { GroupchatMessage } from "../db_models/groupchat";
+import { Lobby } from "../db_models/lobby";
+import { Restaurant } from "../db_models/restaurant";
+import { User } from "../db_models/user";
+import { Vote } from "../db_models/vote";
 
 export async function connectDB(): Promise<void> {
   const uri = process.env.MONGODB_URI;
