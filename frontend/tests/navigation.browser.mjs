@@ -124,7 +124,7 @@ try {
     const lobbyY = await scroll(300)
     await activate('.lobby-page__navigation button:first-child')
     await atRoute(discovery, 0, `${width}px Lobby to Discovery starts at top with main focused`)
-    await check("getComputedStyle(document.activeElement).outlineStyle === 'solid'", `${width}px Route focus keeps existing visible indicator`)
+    await check("getComputedStyle(document.activeElement).outlineStyle === 'none'", `${width}px Route focus does not outline the main content`)
     await key('Tab', 'Tab', 9)
     await check("document.querySelector('main').contains(document.activeElement) && document.activeElement.tagName === 'BUTTON'", `${width}px Tab continues into destination controls`)
     const discoveryY = await scroll(250)
