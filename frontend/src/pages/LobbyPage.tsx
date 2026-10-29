@@ -255,6 +255,8 @@ function LobbyScreen({ lobbyId }: { lobbyId: string }) {
                 </Button>
               </form>
             </section>
+            <div className="lobby-controls-cards">
+              
             <TextAction
               className="lobby-page__leave"
               disabled={busy}
@@ -263,7 +265,18 @@ function LobbyScreen({ lobbyId }: { lobbyId: string }) {
             >
               {busy ? 'Please wait…' : 'Leave lobby'}
             </TextAction>
+                      {lobby.isHost && (
+            <TextAction
+              tone="danger"
+              disabled={busy}
+              onClick={() => void deleteLobby()}
+            >
+              Close lobby for everyone
+            </TextAction>
+          )}
+          </div>
           </section>
+
           <section className="lobby-page__settings" aria-label="Round settings">
             <LobbyCode code={lobby.lobbyCode} />
             <section
@@ -415,19 +428,6 @@ function LobbyScreen({ lobbyId }: { lobbyId: string }) {
             </div>
             <div className="lobby-page__host-controls">
               {lobby.isHost && (
-                <TextAction
-                  tone="danger"
-                  disabled={busy}
-                  onClick={() => void deleteLobby()}
-                >
-                  Close lobby for everyone
-                </TextAction>
-              )}
-              <p>
-                Only the lobby leader can close the lobby or change the round
-                settings.
-              </p>
-              {lobby.isHost && (
                 <details className="lobby-settings-editor">
                   <summary>Edit lobby settings</summary>
 
@@ -465,9 +465,6 @@ function LobbyScreen({ lobbyId }: { lobbyId: string }) {
           </section>
         </div>
       )}
-      <TextAction className="lobby-page__back" to={paths.home}>
-        Back home
-      </TextAction>
     </main>
   )
 }

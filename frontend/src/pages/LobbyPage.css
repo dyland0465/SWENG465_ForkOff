@@ -145,7 +145,11 @@
 .lobby-chat-preview__draft::placeholder { color: var(--color-text-secondary); opacity: 1; }
 .lobby-chat-preview__draft-status { font-size: var(--font-size-caption-default); color: var(--color-text-secondary); }
 .lobby-chat-preview__draft-status:empty { display: none; }
-.lobby-page__leave { margin-block-start: 19px; margin-inline-start: -6px; }
+.lobby-page__leave { margin-block-start: 19px; margin-inline-start: -6px;}
+.lobby-page__delete { display: grid;}
+.lobby-control-cards{
+  display: grid;
+}
 .lobby-code {
   position: relative;
   display: flex;
