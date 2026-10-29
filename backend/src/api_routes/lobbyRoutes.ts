@@ -6,7 +6,7 @@ import { GroupchatMessage } from "../db_models/groupchat";
 import { establishSession, publicUser, revokeSession } from "../services/session";
 import { HttpError } from "../utils/errors";
 import { changeLobby, findLobby, lobbyEvents, memberFor, nextOnline, requireHost, serializeLobby, type LobbyDocument, type Member } from "../services/lobbyState";
-import { searchRestaurants } from "../services/googlePlaces"
+import { findLobbyRestaurants } from "../services/lobbyRestaurants";
 
 
 /**
@@ -215,7 +215,6 @@ router.post("/api/lobbies", run(async (req, res) => {
   const filterBody = Object.fromEntries(filterKeys.filter(key => key in body).map(key => [key, body[key]]));
   const filters = filtersFrom(filterBody);
   if (!filters.location || !filters.dinnerAt) reject("Location and dinner time are required.");
-  if (filters.openNow === undefined && Array.isArray(filters.diningNeeds)) filters.openNow = filters.diningNeeds.includes("Open at dining time");
   const name = body.name === undefined ? `Dinner in ${filters.location}` : shortString(body.name, "name", 120);
   const member = await newMember(req, res, body);
   for (let attempt = 0; attempt < 5; attempt++) {
@@ -334,31 +333,13 @@ router.get("/api/lobbies/:id/restaurants", run(async (req, res) => {
     throw new HttpError(400, "Set a lobby location before searching");
   }
   try {
-    const places = await searchRestaurants(
-      `restaurants in ${location}`,
-      10
-    );
-
-    const restaurants = await Promise.all(
-      places.map(async place => {
-        const photoUrl = place.cachedPhoto ? `/api/restaurant-photos/${encodeURIComponent(place.id)}` : null;
-        return {
-          id: place.id,
-          name: place.displayName?.text ?? "Unnamed restaurant",
-          address: place.formattedAddress ?? null,
-          category: place.primaryType ?? null,
-          googleMapsUri: place.googleMapsUri ?? null,
-          photoUrl,
-          photoAuthors: photoUrl ? place.photoAuthors ?? [] : [],
-        };
-
-      }),
-    );
+    const { restaurants, warnings } = await findLobbyRestaurants(lobby.filters);
     res.json({
       lobbyId: String(lobby._id),
       attribution: "Google Maps",
       count: restaurants.length,
       restaurants,
+      warnings,
     });
   }
   catch (error) {
@@ -381,21 +362,16 @@ router.post("/api/lobbies/:id/round", run(async (req, res) => {
   const location = initial.filters.location?.trim();
   if (!location) throw new HttpError(400, "Set a lobby location before starting voting.");
   let restaurants: NonNullable<LobbyDocument["round"]>["restaurants"];
+  let warnings: string[];
   try {
-    const places = await searchRestaurants(`restaurants in ${location}`, 10);
-    restaurants = await Promise.all(places.map(async place => {
-      const photoUrl = place.cachedPhoto ? `/api/restaurant-photos/${encodeURIComponent(place.id)}` : null;
-      return { id: place.id, name: place.displayName?.text ?? "Unnamed restaurant", address: place.formattedAddress ?? null,
-        category: place.primaryType ?? null, googleMapsUri: place.googleMapsUri ?? null,
-        photoUrl, photoAuthors: photoUrl ? place.photoAuthors ?? [] : [] };
-    }));
-  } catch { throw new HttpError(502, "Could not load restaurants. Please try again."); }
-  if (!restaurants.length) throw new HttpError(400, "No restaurants found. Change the lobby location and try again.");
+    ({ restaurants, warnings } = await findLobbyRestaurants(initial.filters));
+  } catch { throw new HttpError(502, "Could not load restaurants. Check the location and try again."); }
+  if (!restaurants.length) throw new HttpError(400, "No restaurants matched these filters. Try changing the lobby settings.");
   const lobby = await changeLobby(String(req.params.id), current => {
     requireHost(current, req.identity);
     if (current.round) throw new HttpError(409, "A voting round already exists.");
-    if (current.filters.location?.trim() !== location) throw new HttpError(409, "The location changed. Please start again.");
-    current.round = { id: randomUUID(), restaurants, participants: current.members.map(member => member.memberId), decisions: {} };
+    if (JSON.stringify(current.filters) !== JSON.stringify(initial.filters)) throw new HttpError(409, "The filters changed. Please start again.");
+    current.round = { id: randomUUID(), restaurants, warnings, participants: current.members.map(member => member.memberId), decisions: {} };
     current.status = "playing";
   });
   res.status(201).json({ lobby: serializeLobby(lobby!, req.identity) });
@@ -413,7 +389,7 @@ router.get("/api/lobbies/:id/round", run(async (req, res) => {
     return { restaurant, yes: choices.filter(x => x === "yes").length, no: choices.filter(x => x === "no").length,
       veto: choices.filter(x => x === "veto").length, skip: choices.filter(x => x === "skip").length };
   }).sort((a, b) => Number(a.veto > 0) - Number(b.veto > 0) || b.yes - a.yes) : null;
-  res.json({ round: { id: round.id, restaurants: round.restaurants, decisions: round.decisions[member.memberId] ?? {},
+  res.json({ round: { id: round.id, restaurants: round.restaurants, warnings: round.warnings ?? [], decisions: round.decisions[member.memberId] ?? {},
     canVote: participants.includes(member.memberId), completed: participants.filter(id => round.restaurants.every(r => Boolean(round.decisions[id]?.[r.id]))).length,
     totalMembers: participants.length, complete, results } });
 }));

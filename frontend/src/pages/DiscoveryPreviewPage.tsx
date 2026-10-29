@@ -24,6 +24,7 @@ type RestaurantResponse = {
   attribution: string
   count: number
   restaurants: Restaurant[]
+  warnings?: string[]
 }
 
 function RestaurantPhoto({ restaurant }: { restaurant: Restaurant }) {
@@ -77,6 +78,7 @@ function DiscoveryPreviewScreen({ lobbyId }: { lobbyId: string }) {
   const [restaurants, setRestaurants] = useState<Restaurant[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [warnings, setWarnings] = useState<string[]>([])
   const [attempt, setAttempt] = useState(0)
 
   useEffect(() => {
@@ -86,6 +88,7 @@ function DiscoveryPreviewScreen({ lobbyId }: { lobbyId: string }) {
       setLoading(true)
       setError('')
       setRestaurants([])
+      setWarnings([])
 
       try {
         const response = await fetch(
@@ -111,6 +114,7 @@ function DiscoveryPreviewScreen({ lobbyId }: { lobbyId: string }) {
 
         if (!controller.signal.aborted) {
           setRestaurants(result.restaurants)
+          setWarnings(result.warnings ?? [])
         }
       } catch (cause) {
         if (!controller.signal.aborted) {
@@ -142,8 +146,7 @@ function DiscoveryPreviewScreen({ lobbyId }: { lobbyId: string }) {
         <div>
           <h1>Explore restaurants</h1>
           <p className="discovery-page__intro">
-            Restaurants near your lobby's saved location.
-            Other round filters have not been applied yet.
+            Restaurants matching your lobby's saved filters.
           </p>
         </div>
 
@@ -168,6 +171,7 @@ function DiscoveryPreviewScreen({ lobbyId }: { lobbyId: string }) {
 
       {!loading && !error && (
         <>
+          {warnings.map(warning => <p className="discovery-page__intro" key={warning}>{warning}</p>)}
           <p className="discovery-page__intro" role="status">
             {restaurants.length === 0 ? 'No restaurants found. Try changing lobby location.' : `${restaurants.length} restaurants found.`}
           </p>

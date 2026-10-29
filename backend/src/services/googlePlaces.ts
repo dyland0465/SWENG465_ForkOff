@@ -1,6 +1,6 @@
 const PLACES_API_BASE = "https://places.googleapis.com/v1";
 const SEARCH_FIELD_MASK =
-  "places.id,places.displayName,places.formattedAddress,places.primaryType,places.googleMapsUri,places.photos";
+  "places.id,places.displayName,places.formattedAddress,places.primaryType,places.types,places.location,places.googleMapsUri,places.photos,places.rating,places.userRatingCount,places.priceLevel,places.currentOpeningHours,places.regularOpeningHours,places.timeZone,places.servesBeer,places.servesWine,places.servesCocktails";
 const DETAILS_FIELD_MASK =
   "id,displayName,formattedAddress,location,primaryType,googleMapsUri,websiteUri,nationalPhoneNumber";
 
@@ -30,6 +30,16 @@ export interface GooglePlace {
   photos?: GooglePhoto[];
   cachedPhoto?: boolean;
   photoAuthors?: GooglePhoto['authorAttributions'];
+  types?: string[];
+  rating?: number;
+  userRatingCount?: number;
+  priceLevel?: string;
+  currentOpeningHours?: { openNow?: boolean; weekdayDescriptions?: string[] };
+  regularOpeningHours?: { periods?: { open: { day: number; hour: number; minute: number }; close?: { day: number; hour: number; minute: number } }[]; weekdayDescriptions?: string[] };
+  timeZone?: { id?: string };
+  servesBeer?: boolean;
+  servesWine?: boolean;
+  servesCocktails?: boolean;
 }
 
 interface TextSearchResponse {
@@ -93,8 +103,8 @@ async function requestPlaces<T>(url: string, fieldMask: string, body?: object): 
   return payload as T;
 }
 
-export async function searchRestaurants(query: string, limit: number): Promise<GooglePlace[]> {
-  const key = createHash('sha256').update(`${query.trim().toLowerCase()}\0${limit}`).digest('hex');
+export async function searchRestaurants(query: string, limit: number, center?: { latitude: number; longitude: number }, radiusMeters?: number): Promise<GooglePlace[]> {
+  const key = createHash('sha256').update(`v2\0${query.trim().toLowerCase()}\0${limit}\0${JSON.stringify(center)}\0${radiusMeters}`).digest('hex');
   const field = `searchCache.${key}`;
   const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
   const cached = await Restaurant.find({ [`${field}.fetchedAt`]: { $gt: cutoff }, cachedPlace: { $exists: true } }).lean();
@@ -109,6 +119,7 @@ export async function searchRestaurants(query: string, limit: number): Promise<G
       includedType: "restaurant",
       strictTypeFiltering: true,
       maxResultCount: limit,
+      ...(center && radiusMeters ? { locationBias: { circle: { center, radius: Math.min(radiusMeters, 50000) } } } : {}),
       languageCode: "en",
       regionCode: "US",
     },
@@ -137,6 +148,15 @@ export async function searchRestaurants(query: string, limit: number): Promise<G
     return places.map((place, index) => ({ ...place, cachedPhoto: Boolean(photos[index]), photoAuthors: photos[index] ? place.photos?.[0]?.authorAttributions ?? [] : [] }));
   }
   return places;
+}
+
+export async function resolveSearchLocation(location: string): Promise<{ latitude: number; longitude: number }> {
+  const result = await requestPlaces<TextSearchResponse>(`${PLACES_API_BASE}/places:searchText`, 'places.location', {
+    textQuery: location, maxResultCount: 1, languageCode: 'en', regionCode: 'US',
+  });
+  const center = result.places?.[0]?.location;
+  if (!center) throw new GooglePlacesError(400, 'Could not locate the selected address or city.');
+  return center;
 }
 
 export async function clearExpiredRestaurantCache() {

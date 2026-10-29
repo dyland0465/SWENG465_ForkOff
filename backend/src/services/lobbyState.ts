@@ -14,7 +14,7 @@ export type LobbyDocument = mongoose.HydratedDocument<{
   members: Member[]; status: "waiting" | "playing" | "finished";
   filters: { location?: string; dinnerAt?: Date; maxDistance?: number; minimumRating?: number; categories?: string[]; openNow?: boolean; priceLevels?: string[]; diningNeeds?: string[] };
   createdAt: Date; updatedAt: Date;
-  round?: { id: string; restaurants: { id: string; name: string; address: string | null; category: string | null; googleMapsUri: string | null; photoUrl: string | null; photoAuthors: { displayName: string; uri?: string }[] }[]; participants: string[]; decisions: Record<string, Record<string, string>> } | null;
+  round?: { id: string; warnings?: string[]; restaurants: { id: string; name: string; address: string | null; category: string | null; googleMapsUri: string | null; photoUrl: string | null; photoAuthors: { displayName: string; uri?: string }[]; rating?: number | null; ratingCount?: number | null; priceLevel?: string | null; distanceMiles?: number | null; hours?: string[] }[]; participants: string[]; decisions: Record<string, Record<string, string>> } | null;
 }>;
 export const lobbyEvents = new EventEmitter();
 export const presence = new Map<string, Map<string, Set<string>>>();
