@@ -1,14 +1,18 @@
 import { spawn } from 'node:child_process'
-import { mkdtemp, readFile, readdir, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, readdir, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import assert from 'node:assert/strict'
 import { getDemoPartnerReport, partnerReportCsv, reportingPeriods } from '../src/features/partner/demoPartnerAnalytics.ts'
 
-// Installed Chrome + Node 24; start Vite on port 5175. No added dependencies.
+// Installed Chrome + Node 24; server/build matrix: docs/partner-authentication.md.
 let base = process.env.FORKOFF_TEST_URL ?? 'http://127.0.0.1:5175'
 const disabledBase = process.env.FORKOFF_DISABLED_TEST_URL ?? 'http://127.0.0.1:5187'
 const productionBase = process.env.FORKOFF_PRODUCTION_TEST_URL ?? 'http://127.0.0.1:5188'
+const stagingBase = process.env.FORKOFF_STAGING_TEST_URL ?? 'http://127.0.0.1:5189'
+const productionDefaultBase = process.env.FORKOFF_PRODUCTION_DEFAULT_TEST_URL ?? 'http://127.0.0.1:5190'
+const stagingDisabledBase = process.env.FORKOFF_STAGING_DISABLED_TEST_URL ?? 'http://127.0.0.1:5191'
+const demoBuildsOnly = process.argv.includes('--demo-builds-only')
 const artifacts = await mkdtemp(path.join(tmpdir(), 'forkoff-partner-'))
 const chrome = spawn(process.env.CHROME_PATH ?? 'C:/Program Files/Google/Chrome/Application/chrome.exe', [
   '--headless=new', '--disable-gpu', '--no-first-run', '--no-default-browser-check',
@@ -84,6 +88,7 @@ try {
   await cdp('Network.enable')
   await cdp('Browser.setDownloadBehavior', { behavior: 'allow', downloadPath: artifacts })
 
+  if (!demoBuildsOnly) {
   await navigate('/partners')
   await evaluate('sessionStorage.clear(); localStorage.clear()')
   await guardedVisit()
@@ -142,7 +147,7 @@ try {
     await key('Enter', 'Enter', 13)
     await poll(() => evaluate("location.pathname === '/partners' && document.activeElement.id === 'main-content'"), 'Partner Access')
     await check("document.querySelector('h1').textContent === 'Partner access' && !!document.querySelector('.app-header') && !document.querySelector('.partner-header')", `${width}px Home opens Partner Access in the shared layout`)
-    await check("document.querySelector('#partner-demo-description').textContent.includes('synthetic sample data only') && document.querySelector('#partner-demo-description').textContent.includes('does not sign you in') && document.querySelectorAll('form input').length === 2", `${width}px Partner Access separates sign-in from the labeled development preview`)
+    await check("document.querySelector('#partner-demo-description').textContent.includes('synthetic sample data only') && document.querySelector('#partner-demo-description').textContent.includes('does not sign you in') && document.querySelectorAll('form input').length === 2", `${width}px Partner Access separates sign-in from the labeled demo preview`)
     await key('Tab', 'Tab', 9)
     await check("document.activeElement.id === 'partner-tab-sign-in' && document.activeElement.getAttribute('aria-selected') === 'true'", `${width}px Tab from route focus reaches the selected Sign in tab`)
     await key('Tab', 'Tab', 9)
@@ -278,9 +283,15 @@ try {
   await activate('.partner-header nav button:last-child')
   await check("location.pathname === '/partners'", 'Exit clears in-memory access when storage is blocked')
   await evaluate("Object.defineProperty(window, 'sessionStorage', window.storageDescriptor); true")
+  }
 
   const developmentBase = base
-  for (const [url, label] of [[disabledBase, 'Development without opt-in'], [productionBase, 'Production built with opt-in true']]) {
+  for (const [url, label] of [
+    [disabledBase, 'Development without opt-in'],
+    [productionBase, 'Production built with opt-in true'],
+    [productionDefaultBase, 'Production built with defaults'],
+    [stagingDisabledBase, 'Staging built without opt-in'],
+  ]) {
     base = url
     await navigate('/partners')
     await check("!!document.querySelector('form') && !document.querySelector('.partner-access__demo') && !document.body.textContent.includes('Preview Demo Dashboard')", `${label} keeps sign-in but has no demo entry`)
@@ -290,12 +301,62 @@ try {
     await reload('.partner-access')
     await check("location.pathname === '/partners' && !document.querySelector('.partner-access__demo')", `${label} remains disabled on refresh`)
   }
+
+  // Exercise the shipped optimized staging bundle; source-module imports are dev-only.
+  base = stagingBase
+  const stagingRequestStart = requests.length
+  await navigate('/partners')
+  await evaluate('sessionStorage.clear(); localStorage.clear()')
+  await guardedVisit()
+  await check("!!document.querySelector('form') && !!document.querySelector('.partner-access__demo') && !document.querySelector('.partner-page')", 'Optimized staging requires entry from Access before opening the dashboard')
+  await input('#partner-email', 'partner@example.test')
+  await input('#partner-password', 'test-only-input')
+  await activate('form button[type=submit]')
+  await check("location.pathname === '/partners' && document.querySelector('.partner-access__feedback').textContent.includes('You have not been signed in') && !sessionStorage.getItem('forkoff.partner-demo-preview.v1') && localStorage.length === 0", 'Optimized staging sign-in remains unavailable and cannot start demo mode')
+  await guardedVisit()
+  await evaluate("window.storageBeforePreview = { ...sessionStorage }; true")
+  await activate('.partner-access__demo button')
+  const stagingReport = getDemoPartnerReport(reportingPeriods[0])
+  await check(`location.pathname === '/partners/harbor' && document.querySelector('.partner-demo-notice').textContent.includes('All figures are synthetic.') && document.querySelectorAll('.partner-metric__value')[1].textContent === '${stagingReport.totals.yes}'`, 'Explicit staging demo entry opens only the synthetic Harbor report')
+  await check("sessionStorage.getItem('forkoff.partner-demo-preview.v1') === 'active' && Object.keys(sessionStorage).every(key => ['forkoff.partner-demo-preview.v1', 'react-router-scroll-positions'].includes(key) || sessionStorage.getItem(key) === window.storageBeforePreview[key]) && localStorage.length === 0", 'Optimized staging adds only demo and router state, never credentials or authentication')
+  const stagingDownloads = path.join(artifacts, 'staging')
+  await mkdir(stagingDownloads)
+  await cdp('Browser.setDownloadBehavior', { behavior: 'allow', downloadPath: stagingDownloads })
+  await activate('.partner-export')
+  const stagingCsv = `fork-off-demo-harbor-${stagingReport.period.start}-to-${stagingReport.period.end}.csv`
+  await poll(async () => (await readdir(stagingDownloads)).includes(stagingCsv), 'Optimized staging CSV download')
+  assert.equal((await readFile(path.join(stagingDownloads, stagingCsv), 'utf8')).replace(/^\uFEFF/, ''), partnerReportCsv(stagingReport))
+  passed++; console.log('PASS Optimized staging exports only the displayed synthetic report')
+  await navigate('/partners/unknown')
+  await check("document.querySelector('.partner-export').disabled && !document.querySelector('.partner-chart__group') && document.querySelector('.partner-demo-notice a').getAttribute('href') === '/partners/harbor'", 'Optimized staging unknown restaurant IDs expose no records or invented analytics')
+  await activate('.partner-demo-notice a')
+  await reload('.partner-page')
+  await check("location.pathname === '/partners/harbor' && !!document.querySelector('.partner-demo-notice')", 'Optimized staging refresh retains the tab-scoped preview')
+  await activate('.partner-header nav button:last-child')
+  await check("location.pathname === '/partners' && !sessionStorage.getItem('forkoff.partner-demo-preview.v1')", 'Optimized staging exit clears demo state and returns to Access')
+  await evaluate('history.back()')
+  await delay(200)
+  await check("!document.querySelector('.partner-page')", 'Optimized staging history cannot restore an exited demo')
+  await guardedVisit()
+  await check("!document.querySelector('.partner-page')", 'Optimized staging direct entry remains guarded after exit')
+  await evaluate("window.storageDescriptor = Object.getOwnPropertyDescriptor(window, 'sessionStorage'); Object.defineProperty(window, 'sessionStorage', { configurable: true, get() { throw new DOMException('Blocked', 'SecurityError') } }); true")
+  await activate('.partner-access__demo button')
+  await check("location.pathname === '/partners/harbor' && !!document.querySelector('.partner-page')", 'Optimized staging supports explicit demo entry with blocked storage')
+  await activate('.partner-header nav button:last-child')
+  await check("location.pathname === '/partners'", 'Optimized staging exit clears in-memory demo state with blocked storage')
+  await activate('.partner-access__demo button')
+  await reload('.partner-access')
+  await check("location.pathname === '/partners' && !document.querySelector('.partner-page')", 'Optimized staging refresh without a stored marker requires explicit entry again')
+  assert.ok(requests.slice(stagingRequestStart).every(url => !/^https?:/.test(url) || (new URL(url).origin === new URL(stagingBase).origin && (!new URL(url).pathname.startsWith('/api') || new URL(url).pathname === '/api/auth/session'))), 'Optimized staging makes no partner API or external requests; only the existing consumer session check is allowed')
+  passed++; console.log('PASS Optimized staging makes no partner API or external requests')
   base = developmentBase
 
   const screens = ['/', '/lobbies/create', '/lobbies/join', '/lobbies/partner-regression', '/lobbies/partner-regression/discovery', '/lobbies/partner-regression/voting', '/lobbies/partner-regression/restaurants/ramen', '/lobbies/partner-regression/chat', '/lobbies/partner-regression/results']
-  for (const url of screens) { await navigate(url); await check("!!document.querySelector('.app-header') && !document.querySelector('.partner-header') && document.querySelector('main h1').textContent.length > 0", `Consumer screen ${url} retains its existing header and renders`) }
+  if (!demoBuildsOnly) {
+    for (const url of screens) { await navigate(url); await check("!!document.querySelector('.app-header') && !document.querySelector('.partner-header') && document.querySelector('main h1').textContent.length > 0", `Consumer screen ${url} retains its existing header and renders`) }
+  }
   assert.deepEqual(errors, [], 'No browser runtime exceptions')
-  assert.ok(requests.every(url => !/^https?:/.test(url) || [base, disabledBase, productionBase].some(origin => url.startsWith(origin))), 'No external API or service requests')
+  assert.ok(requests.every(url => !/^https?:/.test(url) || [base, disabledBase, productionBase, stagingBase, productionDefaultBase, stagingDisabledBase].some(origin => new URL(url).origin === new URL(origin).origin)), 'No external API or service requests')
   console.log(`COMPLETE ${passed} Partner browser checks passed. Artifacts: ${artifacts}`)
 } finally {
   if (ws?.readyState === 1) { await cdp('Browser.close').catch(() => {}); ws.close() }
