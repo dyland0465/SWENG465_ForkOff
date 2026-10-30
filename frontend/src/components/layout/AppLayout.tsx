@@ -20,16 +20,17 @@ export function AppLayout() {
   const isVoting = useMatch(paths.voting) !== null
   const isRestaurantDetails = useMatch(`${paths.lobby}/restaurants/*`) !== null
   const isResults = useMatch(paths.results) !== null
+  const isPartner = useMatch({ path: paths.partnerAccess, end: false }) !== null
 
   return (
     <>
       {/* Reuse the original Home canvas so its dimensions and cropping stay unchanged. */}
       {/* Login: added `|| isLogin` to reuse the lobby-screen styling, and the
           login-screen class so LoginScreen.css can un-highlight the Home tab. */}
-      <div className={`home-screen${isCreateLobby || isJoinLobby || isLogin ? ' lobby-screen' : ''}${isLobby || isGroupChat ? ' lobby-detail-screen' : ''}${isLobby ? ' lobby-page-screen' : ''}${isDiscovery || isVoting || isRestaurantDetails || isResults ? ' discovery-screen' : ''}${isVoting ? ' voting-screen' : ''}${isLogin ? ' login-screen' : ''}`}>        <AppHeader
+      <div className={`home-screen${isCreateLobby || isJoinLobby || isLogin ? ' lobby-screen' : ''}${isLobby || isGroupChat ? ' lobby-detail-screen' : ''}${isLobby ? ' lobby-page-screen' : ''}${isDiscovery || isVoting || isRestaurantDetails || isResults ? ' discovery-screen' : ''}${isVoting ? ' voting-screen' : ''}${isLogin ? ' login-screen' : ''}`}>        {!isPartner && <AppHeader
           onHowItWorks={() => setShowHowItWorks(true)}
           onJoinLobby={() => navigate(paths.joinLobby)}
-        />
+        />}
         <VotingSessionProvider><LiveLobbyProvider>{lobbyNotice && <p className="lobby-global-notice" role="status">{lobbyNotice}</p>}<Outlet /></LiveLobbyProvider></VotingSessionProvider>
       </div>
       <RouteNavigation />
