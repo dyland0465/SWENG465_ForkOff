@@ -1,0 +1,2 @@
+.google-maps-link { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border: 1px solid var(--color-border-default); border-radius: var(--radius-md); background: var(--color-bg-surface); vertical-align: middle; }
+.google-maps-link:hover { background: var(--neutral-gray-100); }

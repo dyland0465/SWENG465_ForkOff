@@ -1,156 +1,61 @@
-import { useEffect, useRef, useState } from 'react'
-import { generatePath, useParams } from 'react-router'
+import { GoogleMapsLink } from '../components/ui/GoogleMapsLink'
+import { useEffect, useState } from 'react'
+import { generatePath, Navigate, useParams } from 'react-router'
 import { Button } from '../components/ui/Button'
-import { ProgressIndicator } from '../components/ui/ProgressIndicator'
 import { TextAction } from '../components/ui/TextAction'
-import { votingRestaurants } from '../data/demoRestaurants'
-import { useVotingSession } from '../features/voting/useVotingSession'
-import { getRecordedVotes } from '../features/voting/votingSession'
-import type { VotingDecision } from '../features/voting/votingSession'
-import { useRestaurantPreferences } from '../features/preferences/useRestaurantPreferences'
-import { preferenceSummary } from '../features/preferences/restaurantPreferences'
-import undoIcon from '../assets/figma/voting/undo.png'
+import { useLiveLobby, lobbyRequest } from '../features/lobby/liveLobby'
+import { useRound } from '../features/voting/useRound'
+import type { Decision } from '../features/voting/useRound'
 import { paths } from '../routes/paths'
-import '../components/ui/FilterChip.css'
 import './VotingPage.css'
 
-const shortcutDecisions: Record<string, VotingDecision> = { y: 'yes', n: 'no', v: 'veto' }
-
 function VotingScreen({ lobbyId }: { lobbyId: string }) {
-  const { session, dispatch } = useVotingSession(lobbyId)
-  const { filters } = useRestaurantPreferences(lobbyId)
-  const [shortcutsEnabled, setShortcutsEnabled] = useState(true)
-  const mainRef = useRef<HTMLElement>(null)
-  const completedRef = useRef<HTMLHeadingElement>(null)
-  const wasComplete = useRef(false)
-  const processed = session.history.length
-  const current = votingRestaurants[processed]
-  const complete = processed === votingRestaurants.length
-  const votes = getRecordedVotes(session)
-  const skipped = processed - votes.length
-  const routeParams = { lobbyId }
-
-  function processDecision(decision: VotingDecision) {
-    if (current) dispatch({ type: 'process', restaurantId: current.id, decision })
-  }
-
+  const { lobby } = useLiveLobby()
+  const { round, loading, error, refresh, base } = useRound(lobbyId)
+  const [busy, setBusy] = useState(false)
+  const [actionError, setActionError] = useState('')
+  const [images, setImages] = useState<{ roundId: string; urls: Record<string, string> } | null>(null)
+  const roundId = round?.id
   useEffect(() => {
-    function onKeyDown(event: KeyboardEvent) {
-      const target = event.target
-      if (!shortcutsEnabled || event.repeat || event.isComposing || event.ctrlKey || event.altKey || event.metaKey
-        || document.querySelector('dialog[open]') || !(target instanceof HTMLElement)
-        || target.closest('input, textarea, select, [contenteditable]:not([contenteditable="false"])')
-        || (target !== document.body && !mainRef.current?.contains(target))) return
-      const key = event.key.toLowerCase()
-      if (key === 'u' && processed) {
-        event.preventDefault()
-        dispatch({ type: 'undo' })
-      } else if (current && Object.hasOwn(shortcutDecisions, key)) {
-        event.preventDefault()
-        processDecision(shortcutDecisions[key])
-      }
-    }
-    window.addEventListener('keydown', onKeyDown)
-    return () => window.removeEventListener('keydown', onKeyDown)
-  })
-
-  useEffect(() => {
-    if (complete) completedRef.current?.focus({ preventScroll: true })
-    else if (wasComplete.current) mainRef.current?.querySelector<HTMLElement>('#voting-restaurant-heading')?.focus({ preventScroll: true })
-    wasComplete.current = complete
-  }, [complete])
-
-  const feedback = session.feedback
-  let status = ''
-  if (feedback?.kind === 'restarted') status = 'Demo restarted. All local choices cleared.'
-  else if (feedback) {
-    const name = votingRestaurants.find(restaurant => restaurant.id === feedback.entry.restaurantId)?.name
-    const choice = feedback.entry.decision
-    status = feedback.kind === 'undone'
-      ? `Undid ${choice === 'skip' ? 'skip' : choice.toUpperCase()} for ${name}. Its previous choice has been removed.`
-      : choice === 'skip' ? `Skipped ${name}. No vote recorded.` : `${choice.toUpperCase()} recorded locally for ${name}.`
+    if (!roundId || !round) return
+    const controller = new AbortController()
+    const urls: string[] = []
+    void Promise.all(round.restaurants.map(async restaurant => {
+      if (!restaurant.photoUrl) return [restaurant.id, ''] as const
+      try {
+        const response = await fetch(restaurant.photoUrl, { signal: AbortSignal.any([controller.signal, AbortSignal.timeout(15000)]) })
+        if (!response.ok) return [restaurant.id, ''] as const
+        const url = URL.createObjectURL(await response.blob())
+        if (controller.signal.aborted) { URL.revokeObjectURL(url); return [restaurant.id, ''] as const }
+        urls.push(url)
+        return [restaurant.id, url] as const
+      } catch { return [restaurant.id, ''] as const }
+    })).then(entries => { if (!controller.signal.aborted) setImages({ roundId, urls: Object.fromEntries(entries) }) })
+    return () => { controller.abort(); urls.forEach(url => URL.revokeObjectURL(url)) }
+  // Restaurant images are immutable within a round.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [roundId])
+  const current = round?.restaurants.find(item => !round.decisions[item.id])
+  const processed = round ? Object.keys(round.decisions).length : 0
+  if (round?.complete) return <Navigate to={generatePath(paths.results, { lobbyId })} replace />
+  async function start() {
+    setBusy(true); setActionError('')
+    try { await lobbyRequest(base, 'POST'); await refresh() }
+    catch (cause) { setActionError(cause instanceof Error ? cause.message : 'Could not start voting.') }
+    finally { setBusy(false) }
   }
-  if (status) status += complete ? ' Demo complete; choices saved in this tab only.' : ` ${processed} of ${votingRestaurants.length} processed. Now showing ${current.name}.`
-
-  const undoControl = (
-    <TextAction className="voting-undo" disabled={!processed} onClick={() => dispatch({ type: 'undo' })} aria-keyshortcuts={shortcutsEnabled ? 'U' : undefined}>
-      <img src={undoIcon} width="17" height="17" alt="" />
-      Undo last {session.history.at(-1)?.decision === 'skip' ? 'skip' : 'vote'}
-    </TextAction>
-  )
-
-  return (
-    <main ref={mainRef} id="main-content" className="voting-page" tabIndex={-1}>
-      <div className="voting-page__heading">
-        <div>
-          <div className="voting-page__title"><h1>Vote privately</h1><span className="discovery-page__demo-label">Demo only</span></div>
-          <p className="voting-page__intro">Your group sees results only when the round ends.</p>
-        </div>
-        <ProgressIndicator value={processed} total={votingRestaurants.length} />
-      </div>
-
-      {current ? (
-        <div className="voting-page__columns">
-          <div className="voting-page__visual">
-            <img className="voting-photo" src={current.photo} width="620" height="520" alt={`${current.name} demonstration photo`} />
-            <p className="voting-keyboard">Keyboard: Y = yes · N = no · V = veto · U = undo</p>
-          </div>
-          <section className="voting-card" aria-labelledby="voting-restaurant-heading" aria-describedby="voting-demo-note">
-            <h2 id="voting-restaurant-heading" tabIndex={-1}>{current.name}</h2>
-            <p className="voting-card__meta">{current.cuisine} · {current.price} · {current.rating} · {current.distanceMiles} mi</p>
-            <ul className="voting-card__features" aria-label="Sample restaurant features">
-              {current.features.map(feature => <li key={feature} className="ui-filter-chip">{feature}</li>)}
-            </ul>
-            <div className="voting-card__match">
-              <h3>Current restaurant preferences</h3>
-              <p>{preferenceSummary(filters)}</p>
-            </div>
-            <TextAction className="voting-card__details" to={generatePath(paths.restaurantDetails, { ...routeParams, restaurantId: current.id })}>View restaurant details →</TextAction>
-            <div className="voting-controls" role="group" aria-label={`Vote on ${current.name}`}>
-              {(['yes', 'no', 'veto'] as const).map(choice => (
-                <Button key={choice} className={`voting-choice voting-choice--${choice}`} aria-label={`Vote ${choice} for ${current.name}`} aria-keyshortcuts={shortcutsEnabled ? choice[0].toUpperCase() : undefined} onClick={event => { if (event.detail < 2) processDecision(choice) }}>{choice.toUpperCase()}</Button>
-              ))}
-            </div>
-            {undoControl}
-            <div className="voting-card__footer">
-              <p className="voting-card__privacy">Votes stay hidden until everyone finishes.<br /><span>Demo: only your local choices.</span></p>
-              <Button className="voting-choice voting-choice--skip" onClick={event => { if (event.detail < 2) processDecision('skip') }} aria-label={`Skip ${current.name} without voting`}>SKIP</Button>
-            </div>
-          </section>
-        </div>
-      ) : (
-        <section className="voting-complete" aria-labelledby="voting-complete-heading">
-          <h2 id="voting-complete-heading" ref={completedRef} className="text-heading-h2" tabIndex={-1}>Demo voting complete</h2>
-          <p>You processed all {processed} sample restaurants: {votes.length} {votes.length === 1 ? 'vote' : 'votes'} and {skipped} skipped. These are only your local choices.</p>
-          <p aria-label="Current restaurant preferences">{preferenceSummary(filters)}</p>
-          <dl className="voting-complete__counts" aria-label="Your local demo choices">
-            {(['yes', 'no', 'veto'] as const).map(choice => <div key={choice}><dt>{choice.toUpperCase()}</dt><dd>{votes.filter(vote => vote.decision === choice).length}</dd></div>)}
-          </dl>
-          <p>No group results have been calculated. Nothing was sent or saved.</p>
-          <div className="voting-complete__actions">{undoControl}<Button onClick={() => dispatch({ type: 'restart' })}>Restart demo</Button><TextAction className="voting-results-link" to={generatePath(paths.results, routeParams)}>View your results →</TextAction></div>
-        </section>
-      )}
-
-      <p className="voting-status" role="status" aria-atomic="true">{status}</p>
-      <aside className="voting-demo-note" aria-label="Voting demonstration details">
-        <p id="voting-demo-note"><strong>Frontend demonstration.</strong> Three sample restaurants; no live matches, group votes, or server saves. Lobby <span>{lobbyId}</span> is not loaded. Choices stay in this browser tab per lobby, including after refresh.</p>
-        <TextAction to={generatePath(paths.discoveryPreview, routeParams)}>Back to Discovery Preview</TextAction>
-        <label className="voting-shortcuts"><input type="checkbox" checked={shortcutsEnabled} onChange={event => setShortcutsEnabled(event.target.checked)} />Enable letter shortcuts</label>
-      </aside>
-    </main>
-  )
-}
-
-export function VotingPage() {
-  const { lobbyId } = useParams<'lobbyId'>()
-  if (!lobbyId?.trim() || lobbyId.startsWith(':')) {
-    return (
-      <main id="main-content" className="route-placeholder" tabIndex={-1}>
-        <h1 className="text-heading-h1">Lobby ID unavailable</h1>
-        <p className="text-body-large">Open a lobby link with its ID to try demo voting.</p>
-        <TextAction to={paths.joinLobby}>Enter lobby code</TextAction>
-      </main>
-    )
+  async function vote(decision: Decision) {
+    if (!round || !current || busy) return
+    setBusy(true); setActionError('')
+    try { await lobbyRequest(`${base}/vote`, 'PUT', { roundId: round.id, restaurantId: current.id, decision }); await refresh() }
+    catch (cause) { setActionError(cause instanceof Error ? cause.message : 'Could not save your vote.') }
+    finally { setBusy(false) }
   }
-  return <VotingScreen key={lobbyId} lobbyId={lobbyId} />
+  return <main id="main-content" className="voting-page" tabIndex={-1}>
+    <div className="voting-page__heading"><div><h1>Vote privately</h1><p className="voting-page__intro">Votes are revealed when everyone in the round finishes.</p></div>{round && <p>{processed} of {round.restaurants.length} reviewed</p>}</div>
+    {(error || actionError) && <p role="alert">{actionError || error}</p>}
+    {round?.warnings?.map(warning => <p key={warning}>{warning}</p>)}
+    {loading ? <p role="status">Loading voting round…</p> : !round ? <section className="voting-complete"><h2>No round started</h2><p>The host can start a round using restaurants near the lobby location.</p>{lobby?.isHost && <Button disabled={busy} onClick={start}>{busy ? 'Finding restaurants…' : 'Start voting'}</Button>}<TextAction to={generatePath(paths.lobby, { lobbyId })}>Back to lobby</TextAction></section> : !round.canVote ? <section className="voting-complete"><h2>Round already in progress</h2><p>You joined after this round started. Results will appear when everyone finishes.</p></section> : current && images?.roundId !== round.id ? <p role="status">Loading restaurant photos before voting…</p> : current ? <div className="voting-page__columns"><div className="voting-page__visual">{images?.urls[current.id] ? <img className="voting-photo" src={images.urls[current.id]} alt={`Photo of ${current.name}`} /> : <div className="discovery-restaurant__photo-placeholder">Photo unavailable</div>}{current.photoAuthors.map((author, index) => <small key={index}> Photo: {author.uri ? <a href={author.uri} target="_blank" rel="noreferrer">{author.displayName}</a> : author.displayName}</small>)}<p>Restaurant information from Google Maps</p></div><section className="voting-card"><h2>{current.name}</h2><p className="voting-card__meta">{current.category?.replace(/_/g, ' ') ?? 'Restaurant'} · {current.address ?? 'Address unavailable'}</p><p className="voting-card__meta">{current.rating != null ? `${current.rating} / 5 (${current.ratingCount ?? 0} reviews)` : 'Rating unavailable'} · {current.priceLevel?.replace('PRICE_LEVEL_', '').toLowerCase() ?? 'Price unavailable'} · {current.distanceMiles != null ? `${current.distanceMiles} miles away` : 'Distance unavailable'}</p>{!!current.hours?.length && <details><summary>Opening hours</summary>{current.hours.map(day => <p key={day}>{day}</p>)}</details>}{current.googleMapsUri && <p><GoogleMapsLink href={current.googleMapsUri} /></p>}<div className="voting-controls" role="group" aria-label={`Vote on ${current.name}`}>{(['yes', 'no', 'veto', 'skip'] as const).map(choice => <Button key={choice} disabled={busy} className={`voting-choice voting-choice--${choice}`} onClick={() => void vote(choice)}>{choice.toUpperCase()}</Button>)}</div><p className="voting-card__privacy">Your choices stay private until everyone finishes.</p></section></div> : <section className="voting-complete" role="status"><h2>Waiting for the group</h2><p>You've finished voting. {round.completed} of {round.totalMembers} members finished.</p><p>Results will appear automatically when everyone finishes.</p></section>}
+  </main>
 }
+export function VotingPage() { const { lobbyId } = useParams<'lobbyId'>(); return lobbyId ? <VotingScreen key={lobbyId} lobbyId={lobbyId} /> : <main id="main-content">Lobby unavailable.</main> }

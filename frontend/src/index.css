@@ -63,6 +63,11 @@ button:not(:disabled), a {
   outline-offset: var(--focus-ring-offset);
 }
 
+/* Route navigation focuses the main landmark, which should not appear boxed. */
+main#main-content:focus-visible {
+  outline: none;
+}
+
 ::selection {
   color: var(--color-text-inverse);
   background: var(--color-bg-inverse);

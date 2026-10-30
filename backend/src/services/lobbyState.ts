@@ -1,19 +1,20 @@
 import { EventEmitter } from "node:events";
 import mongoose from "mongoose";
-import { Lobby } from "../models/lobby";
-import { GroupchatMessage } from "../models/groupchat";
-import { Vote } from "../models/vote";
+import { Lobby } from "../db_models/lobby";
+import { GroupchatMessage } from "../db_models/groupchat";
+import { Vote } from "../db_models/vote";
 import type { Identity } from "./session";
 
-export class HttpError extends Error {
-  constructor(public status: number, message: string) { super(message); }
-}
+// HttpError now lives in utils/errors.ts; re-exported here so existing imports keep working.
+import { HttpError } from "../utils/errors";
+export { HttpError };
 export type Member = { memberId: string; identityKey: string; userId?: mongoose.Types.ObjectId; type: "user" | "guest"; displayName: string; joinOrder: number; joinedAt: Date };
 export type LobbyDocument = mongoose.HydratedDocument<{
   lobbyCode: string; name: string; hostMemberId: string | null; nextJoinOrder: number; revision: number;
   members: Member[]; status: "waiting" | "playing" | "finished";
   filters: { location?: string; dinnerAt?: Date; maxDistance?: number; minimumRating?: number; categories?: string[]; openNow?: boolean; priceLevels?: string[]; diningNeeds?: string[] };
   createdAt: Date; updatedAt: Date;
+  round?: { id: string; warnings?: string[]; restaurants: { id: string; name: string; address: string | null; category: string | null; googleMapsUri: string | null; photoUrl: string | null; photoAuthors: { displayName: string; uri?: string }[]; rating?: number | null; ratingCount?: number | null; priceLevel?: string | null; distanceMiles?: number | null; hours?: string[] }[]; participants: string[]; decisions: Record<string, Record<string, string>> } | null;
 }>;
 export const lobbyEvents = new EventEmitter();
 export const presence = new Map<string, Map<string, Set<string>>>();
@@ -48,7 +49,7 @@ export function serializeLobby(lobby: LobbyDocument, identity?: Identity) {
   const own = lobby.members.find(member => member.identityKey === identity?.key);
   return {
     id: String(lobby._id), lobbyCode: lobby.lobbyCode, name: lobby.name, status: lobby.status,
-    hostMemberId: lobby.hostMemberId, revision: lobby.revision, filters: lobby.filters,
+    hostMemberId: lobby.hostMemberId, revision: lobby.revision, filters: lobby.filters, roundId: lobby.round?.id ?? null,
     members: lobby.members.map(({ memberId, userId, type, displayName, joinOrder, joinedAt }) => ({
       memberId, userId, type, displayName, joinOrder, joinedAt, online: isOnline(String(lobby._id), memberId),
     })),
@@ -72,7 +73,7 @@ export async function changeLobby(key: string, change: (lobby: LobbyDocument) =>
     }
     const result = await Lobby.findOneAndUpdate({ _id: lobby._id, revision }, { $set: {
       members: lobby.members, hostMemberId: lobby.hostMemberId, nextJoinOrder: lobby.nextJoinOrder,
-      name: lobby.name, status: lobby.status, filters: lobby.filters,
+      name: lobby.name, status: lobby.status, filters: lobby.filters, round: lobby.round,
     }, $inc: { revision: 1 } }, { returnDocument: "after", runValidators: true });
     if (!result) continue;
     lobbyEvents.emit("changed", String(lobby._id));

@@ -3,7 +3,6 @@ import { generatePath, useNavigate } from 'react-router'
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Button } from '../components/ui/Button'
-import { TextAction } from '../components/ui/TextAction'
 import { TextInput } from '../components/ui/FormField'
 import { ForkEmblem } from '../components/lobby/ForkEmblem'
 import { useLobbyForm } from '../components/lobby/useLobbyForm'
@@ -59,8 +58,9 @@ export function JoinLobbyPage() {
 
   return (
     <main id="main-content" className="lobby-form-page" tabIndex={-1}>
-      <h1 className="text-heading-h1">Join dinner crew</h1>
+      {/*<h1 className="text-heading-h1">Join dinner crew</h1>
       <p className="lobby-form-page__intro text-body-large">Enter your invitation code to help choose your crew’s restaurant.</p>
+      */}
       <div className="join-lobby lobby-panel">
         <div className="join-lobby__invitation">
           <div className="join-lobby__crew">
@@ -82,10 +82,8 @@ export function JoinLobbyPage() {
           <p id="join-backend-note" className="lobby-form-note">{user ? 'Your account username will be shown to the lobby.' : 'No account is needed; your display name is saved as a guest member.'}</p>
           <p className="lobby-form-status" role="status">{status}</p>
         </form>
-        <p className="join-lobby__privacy">By joining, your name and presence are visible to this lobby. Your individual votes remain private.</p>
         <div className="join-lobby__help">Invite not working? Check the full link or ask your host for the six-character lobby code.</div>
       </div>
-      <TextAction className="lobby-form-page__back" to={paths.home}>Back to home</TextAction>
     </main>
   )
 }

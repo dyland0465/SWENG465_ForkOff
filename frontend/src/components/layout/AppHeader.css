@@ -1,16 +1,19 @@
 .app-header {
   position: relative;
   z-index: 1;
-  padding-block-start: 71px;
+  padding-block-start: 28px;
+  max-inline-size: var(--layout-page-max);
+  margin-inline: auto;
 }
 
 .app-header__inner {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  inline-size: min(var(--layout-content-max), calc(100% - 40px));
-  min-block-size: 70px;
-  margin-inline-start: 20px;
+  inline-size: calc(100% - 160px);
+  min-block-size: 72px;
+  margin-inline: auto;
+  flex-wrap: wrap;
 }
 
 .app-header__brand {
@@ -18,6 +21,7 @@
   display: block;
   flex: 0 0 auto;
   inline-size: 260px;
+  max-inline-size: 100%;
   block-size: 70px;
   overflow: hidden;
   border-radius: var(--radius-sm);
@@ -36,26 +40,34 @@
   display: flex;
   align-items: center;
   gap: var(--spacing-6);
+  min-inline-size: 0;
+  max-inline-size: 100%;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .app-header__nav .ui-text-action {
   padding-inline: var(--spacing-3);
   border-radius: var(--radius-md);
   color: var(--color-text-primary);
-  white-space: nowrap;
-}
-
-.app-header--home .app-header__nav {
-  flex-wrap: wrap;
-  justify-content: flex-end;
+  max-inline-size: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-align: center;
 }
 
 .app-header__divider {
   block-size: 1px;
-  margin-block-start: 11px;
+  margin-block-start: var(--spacing-4);
   margin-inline: auto;
   inline-size: calc(100% - 160px);
   background: var(--color-border-default);
+}
+
+@media (max-width: 1200px) {
+  .app-header__inner, .app-header__divider {
+    inline-size: calc(100% - var(--spacing-16));
+  }
 }
 
 @media (max-width: 768px) {
@@ -79,10 +91,6 @@
     flex-wrap: wrap;
     justify-content: center;
     gap: var(--spacing-1);
-  }
-
-  .app-header--home .app-header__nav {
-    justify-content: center;
   }
 
   .app-header__nav .ui-text-action {

@@ -1,8 +1,9 @@
 import { createServer } from "node:http";
 import { attachRealtime } from "./services/realtime";
 import dotenv from "dotenv";
-import { connectDB } from "./Config/db";
+import { connectDB } from "./config/db";
 import app from "./app";
+import { clearExpiredRestaurantCache } from "./services/googlePlaces";
 
 dotenv.config();
 
@@ -12,6 +13,10 @@ const PORT = Number(process.env.PORT) || 3000;
 async function startServer() {
   try {
     await connectDB();
+    const cleanRestaurantCache = () => { void clearExpiredRestaurantCache().catch(error => console.error("Restaurant cache cleanup failed:", error)); };
+    cleanRestaurantCache();
+    const cacheTimer = setInterval(cleanRestaurantCache, 60 * 60 * 1000);
+    cacheTimer.unref();
     const server = createServer(app);
     attachRealtime(server);
     server.listen(PORT, () => console.log(`Server running on port ${PORT}`));

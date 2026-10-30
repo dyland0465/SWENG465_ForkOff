@@ -1,18 +1,4 @@
-/* 05_Discovery_Preview (33:54). Keep the shared header changes route scoped. */
-.discovery-screen .app-header { padding-block-start: 28px; }
-.discovery-screen .app-header__inner {
-  inline-size: calc(100% - 160px);
-  min-block-size: 72px;
-  margin-inline: auto;
-}
-.discovery-screen .app-header__divider { margin-block-start: var(--spacing-4); }
-.discovery-screen .app-header__brand img {
-  inset: 0;
-  inline-size: 100%;
-  block-size: 100%;
-  object-fit: cover;
-}
-.discovery-screen .app-header__nav .ui-text-action[href='/'] { background: var(--color-action-primary); }
+/* 05_Discovery_Preview (33:54). */
 
 .discovery-page {
   inline-size: calc(100% - 160px);
@@ -95,7 +81,7 @@
 .discovery-page input:is([type='date'], [type='time']):focus-within { outline: var(--focus-ring-width) solid var(--color-border-focus); outline-offset: var(--focus-ring-offset); }
 
 @media (max-width: 1200px) {
-  .discovery-screen .app-header__inner, .discovery-screen .app-header__divider, .discovery-page { inline-size: calc(100% - var(--spacing-16)); }
+  .discovery-page { inline-size: calc(100% - var(--spacing-16)); }
   .discovery-page__controls { padding-inline-end: 0; gap: var(--spacing-6); }
   .discovery-restaurants { gap: var(--spacing-6); }
   .discovery-options { grid-template-columns: 156px minmax(0, 1fr) auto; }
@@ -109,9 +95,8 @@
   .discovery-demo-note > .ui-text-action { grid-column: auto; grid-row: auto; }
 }
 @media (max-width: 768px) {
-  .discovery-screen .app-header { padding-block-start: var(--spacing-6); }
-  .discovery-screen .app-header__inner, .discovery-screen .app-header__divider, .discovery-page { inline-size: calc(100% - var(--spacing-8)); }
-  .discovery-screen .app-header__divider { margin-block-start: var(--spacing-6); }
+  .discovery-page { inline-size: calc(100% - var(--spacing-8)); }
+
   .discovery-page { padding-block-start: var(--spacing-6); }
   .discovery-page__heading { flex-direction: column; gap: var(--spacing-2); }
   .discovery-page h1 { font-size: var(--font-size-heading-h2); line-height: var(--line-height-heading-h2); }
@@ -126,3 +111,10 @@
   .discovery-filter-editor { padding: var(--spacing-4); }
   .discovery-filter-editor__fields { grid-template-columns: minmax(0, 1fr); }
 }
+
+.discovery-restaurant__photo { margin: 0; }
+.discovery-restaurant__photo img { display: block; width: 100%; height: 180px; object-fit: cover;}
+.discovery-restaurant__photo figcaption { padding: 8px 16px; font-size: 0.75rem; color: var(--color-text-secondary);}
+.discovery-restaurant__photo-placeholder { display: grid; place-items: center; height: 180px; background: var(--color-border-default); color: var(--color-text-secondary);}
+
+

@@ -4,15 +4,6 @@
   --lobby-radius-join: var(--spacing-6);
 }
 
-.lobby-screen .app-header { padding-block-start: 28px; }
-.lobby-screen .app-header__inner {
-  inline-size: calc(100% - 160px);
-  margin-inline: auto;
-  min-block-size: 72px;
-}
-.lobby-screen .app-header__divider { margin-block-start: var(--spacing-4); }
-.lobby-screen .app-header__nav .ui-text-action[href='/'] { background: var(--color-action-primary); }
-
 .lobby-form-page {
   inline-size: calc(100% - 160px);
   max-inline-size: var(--layout-content-max);
@@ -35,7 +26,7 @@
   display: grid;
   grid-template-columns: minmax(0, 850fr) minmax(0, 390fr);
   gap: 40px;
-  margin-block-start: 37px;
+  margin-block-start: 20px;
 }
 
 .create-lobby__filters {
@@ -162,7 +153,7 @@
 
 .join-lobby {
   inline-size: min(800px, 100%);
-  margin: 65px auto 0;
+  margin: 20px auto 0;
   padding: 28px 47px 23px;
   border-radius: var(--lobby-radius-join);
 }
@@ -229,7 +220,7 @@
 }
 
 @media (max-width: 1200px) {
-  .lobby-screen .app-header__inner, .lobby-screen .app-header__divider, .lobby-form-page { inline-size: calc(100% - var(--spacing-16)); }
+  .lobby-form-page { inline-size: calc(100% - var(--spacing-16)); }
   .create-lobby { grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr); gap: var(--spacing-6); }
   .create-lobby__fields { padding-inline-end: 0; gap: 30px var(--spacing-6); }
   .create-lobby__preferences { grid-template-columns: 1fr; gap: var(--spacing-6); }
@@ -245,9 +236,8 @@
 }
 
 @media (max-width: 768px) {
-  .lobby-screen .app-header { padding-block-start: var(--spacing-6); }
-  .lobby-screen .app-header__inner, .lobby-screen .app-header__divider, .lobby-form-page { inline-size: calc(100% - var(--spacing-8)); }
-  .lobby-screen .app-header__divider { margin-block-start: var(--spacing-6); }
+  .lobby-form-page { inline-size: calc(100% - var(--spacing-8)); }
+
   .lobby-form-page h1 { font-size: clamp(2rem, 6vw, var(--font-size-heading-h1)); line-height: 1.2; }
   .create-lobby, .join-lobby { margin-block-start: var(--spacing-8); }
   .create-lobby__preferences { grid-template-columns: 1fr; }

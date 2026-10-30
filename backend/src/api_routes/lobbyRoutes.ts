@@ -1,10 +1,13 @@
 import { Router, type Request, type Response, type NextFunction } from "express";
 import { randomInt, randomUUID } from "node:crypto";
 import mongoose from "mongoose";
-import { Lobby } from "../models/lobby";
-import { GroupchatMessage } from "../models/groupchat";
-import { establishSession, publicUser, revokeSession } from "./session";
-import { changeLobby, findLobby, HttpError, lobbyEvents, memberFor, nextOnline, requireHost, serializeLobby, type Member } from "./lobbyState";
+import { Lobby } from "../db_models/lobby";
+import { GroupchatMessage } from "../db_models/groupchat";
+import { establishSession, publicUser, revokeSession } from "../services/session";
+import { HttpError } from "../utils/errors";
+import { changeLobby, findLobby, lobbyEvents, memberFor, nextOnline, requireHost, serializeLobby, type LobbyDocument, type Member } from "../services/lobbyState";
+import { findLobbyRestaurants } from "../services/lobbyRestaurants";
+
 
 /**
  * @swagger
@@ -212,7 +215,6 @@ router.post("/api/lobbies", run(async (req, res) => {
   const filterBody = Object.fromEntries(filterKeys.filter(key => key in body).map(key => [key, body[key]]));
   const filters = filtersFrom(filterBody);
   if (!filters.location || !filters.dinnerAt) reject("Location and dinner time are required.");
-  if (filters.openNow === undefined && Array.isArray(filters.diningNeeds)) filters.openNow = filters.diningNeeds.includes("Open at dining time");
   const name = body.name === undefined ? `Dinner in ${filters.location}` : shortString(body.name, "name", 120);
   const member = await newMember(req, res, body);
   for (let attempt = 0; attempt < 5; attempt++) {
@@ -321,7 +323,105 @@ router.post("/api/lobbies/:id/messages", run(async (req, res) => {
   res.status(201).json({ message: value });
 }));
 
-// These remain demo responses, but are still private to lobby members.
+router.get("/api/lobbies/:id/restaurants", run(async (req, res) => {
+  const lobby = await findLobby(String(req.params.id));
+  memberFor(lobby, req.identity);
+
+  const location = lobby.filters.location?.trim();
+
+  if (!location) {
+    throw new HttpError(400, "Set a lobby location before searching");
+  }
+  try {
+    const { restaurants, warnings } = await findLobbyRestaurants(lobby.filters);
+    res.json({
+      lobbyId: String(lobby._id),
+      attribution: "Google Maps",
+      count: restaurants.length,
+      restaurants,
+      warnings,
+    });
+  }
+  catch (error) {
+    console.error("Lobby restaurant search failed: ", error);
+    throw new HttpError(502, "could not load restaurants. Please try again",);
+  }
+
+
+
+
+}));
+
+
+
+// A round uses one shared list and captures the members present when it starts.
+router.post("/api/lobbies/:id/round", run(async (req, res) => {
+  const initial = await findLobby(String(req.params.id));
+  requireHost(initial, req.identity);
+  if (initial.round) throw new HttpError(409, "A voting round already exists.");
+  const location = initial.filters.location?.trim();
+  if (!location) throw new HttpError(400, "Set a lobby location before starting voting.");
+  let restaurants: NonNullable<LobbyDocument["round"]>["restaurants"];
+  let warnings: string[];
+  try {
+    ({ restaurants, warnings } = await findLobbyRestaurants(initial.filters));
+  } catch { throw new HttpError(502, "Could not load restaurants. Check the location and try again."); }
+  if (!restaurants.length) throw new HttpError(400, "No restaurants matched these filters. Try changing the lobby settings.");
+  const lobby = await changeLobby(String(req.params.id), current => {
+    requireHost(current, req.identity);
+    if (current.round) throw new HttpError(409, "A voting round already exists.");
+    if (JSON.stringify(current.filters) !== JSON.stringify(initial.filters)) throw new HttpError(409, "The filters changed. Please start again.");
+    current.round = { id: randomUUID(), restaurants, warnings, participants: current.members.map(member => member.memberId), decisions: {} };
+    current.status = "playing";
+  });
+  res.status(201).json({ lobby: serializeLobby(lobby!, req.identity) });
+}));
+
+router.get("/api/lobbies/:id/round", run(async (req, res) => {
+  const lobby = await findLobby(String(req.params.id));
+  const member = memberFor(lobby, req.identity);
+  const round = lobby.round;
+  if (!round) return res.json({ round: null });
+  const participants = round.participants.filter(id => lobby.members.some(m => m.memberId === id));
+  const complete = participants.every(id => round.restaurants.every(r => Boolean(round.decisions[id]?.[r.id])));
+  const results = complete ? round.restaurants.map(restaurant => {
+    const choices = participants.map(id => round.decisions[id]?.[restaurant.id]);
+    return { restaurant, yes: choices.filter(x => x === "yes").length, no: choices.filter(x => x === "no").length,
+      veto: choices.filter(x => x === "veto").length, skip: choices.filter(x => x === "skip").length };
+  }).sort((a, b) => Number(a.veto > 0) - Number(b.veto > 0) || b.yes - a.yes) : null;
+  res.json({ round: { id: round.id, restaurants: round.restaurants, warnings: round.warnings ?? [], decisions: round.decisions[member.memberId] ?? {},
+    canVote: participants.includes(member.memberId), completed: participants.filter(id => round.restaurants.every(r => Boolean(round.decisions[id]?.[r.id]))).length,
+    totalMembers: participants.length, complete, results } });
+}));
+
+router.put("/api/lobbies/:id/round/vote", run(async (req, res) => {
+  const { roundId, restaurantId, decision } = req.body ?? {};
+  if (typeof roundId !== "string" || typeof restaurantId !== "string" || !["yes", "no", "veto", "skip"].includes(decision)) throw new HttpError(400, "Invalid vote.");
+  await changeLobby(String(req.params.id), current => {
+    const member = memberFor(current, req.identity);
+    const round = current.round;
+    if (!round || round.id !== roundId) throw new HttpError(409, "This round is no longer active.");
+    if (!round.participants.includes(member.memberId)) throw new HttpError(403, "You joined after this round started.");
+    if (!round.restaurants.some(restaurant => restaurant.id === restaurantId)) throw new HttpError(400, "Restaurant is not in this round.");
+    const active = round.participants.filter(id => current.members.some(m => m.memberId === id));
+    if (active.every(id => round.restaurants.every(r => Boolean(round.decisions[id]?.[r.id])))) throw new HttpError(409, "Voting is complete.");
+    round.decisions = { ...round.decisions, [member.memberId]: { ...round.decisions[member.memberId], [restaurantId]: decision } };
+  });
+  res.json({ ok: true });
+}));
+
+router.delete("/api/lobbies/:id/round", run(async (req, res) => {
+  await changeLobby(String(req.params.id), current => { requireHost(current, req.identity); current.round = null; current.status = "waiting"; });
+  res.json({ ok: true });
+}));
+
+// Do not expose the old demonstration endpoints as real votes or results.
+router.all(["/api/lobbies/:id/votes", "/api/lobbies/:id/results"], run(async (req, res) => {
+  memberFor(await findLobby(String(req.params.id)), req.identity);
+  res.status(410).json({ message: "Use the lobby round endpoints for live voting and results." });
+}));
+
+// Remaining placeholder endpoints are private to lobby members.
 router.use("/api/lobbies/:id", (req, _res, next) => {
   findLobby(String(req.params.id)).then(lobby => { memberFor(lobby, req.identity); next(); }).catch(next);
 });

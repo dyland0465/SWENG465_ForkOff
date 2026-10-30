@@ -95,12 +95,14 @@ export function LoginScreen({ initialMode = 'login', onLogin, onRegister }: Logi
 
   return (
     <main id="main-content" className="lobby-form-page login-page" tabIndex={-1}>
-      <h1 className="text-heading-h1">{mode === 'login' ? 'Welcome back' : 'Join Fork Off'}</h1>
-      <p className="lobby-form-page__intro text-body-large">
-        {mode === 'login'
-          ? 'Log in to host lobbies and keep track of your dinner crews.'
-          : 'Create an account to host lobbies. Joining a lobby never requires one.'}
-      </p>
+      <div className="login-page__welcome">
+        <h1 className="text-heading-h1">{mode === 'login' ? 'Welcome back' : 'Join Fork Off'}</h1>
+        <p className="lobby-form-page__intro text-body-large">
+          {mode === 'login'
+            ? 'Log in to host lobbies and keep track of your dinner crews.'
+            : 'Create an account to host lobbies. Joining a lobby never requires one.'}
+        </p>
+      </div>
 
       <div className="login-card lobby-panel">
         <div className="login-card__emblem"><ForkEmblem /></div>
@@ -150,8 +152,12 @@ export function LoginScreen({ initialMode = 'login', onLogin, onRegister }: Logi
         <p className="login-card__guest">
           Just joining a friend’s lobby? <TextAction to={paths.joinLobby}>Continue as a guest</TextAction>
         </p>
+        {/* Partner link: sends restaurant owners to the separate Partner access
+            page (/partners), since partner accounts sign in there, not here. */}
+        <p className="login-card__partner">
+          Own a restaurant? <TextAction to={paths.partnerAccess}>Partner sign in</TextAction>
+        </p>
       </div>
-      <TextAction className="lobby-form-page__back" to={paths.home}>Back to home</TextAction>
     </main>
   )
 }

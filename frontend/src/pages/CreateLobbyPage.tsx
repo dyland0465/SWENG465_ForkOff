@@ -105,6 +105,9 @@ export function CreateLobbyPage() {
       <form className="create-lobby" noValidate onSubmit={submit} onChange={() => setStatus('')}>
         <div className="create-lobby__filters lobby-panel">
           <div className="create-lobby__fields">
+            {!user && <div className="create-lobby__identity">
+              <TextInput label="Display name" name="displayName" required autoComplete="nickname" maxLength={40} placeholder="Your name" hint="The name your dinner crew will see." value={values.displayName} error={errors.displayName} onChange={event => setValue('displayName', event.target.value)} onBlur={() => onBlur('displayName')} />
+            </div>}
             <TextInput label="Location" name="location" required autoComplete="street-address" value={values.location} error={errors.location} onChange={event => setValue('location', event.target.value)} onBlur={() => onBlur('location')} />
             <SelectField label="Distance" name="distance" value={values.distance} error={errors.distance} onChange={event => setValue('distance', event.target.value)} onBlur={() => onBlur('distance')}>
               {distanceOptions.map(distance => <option key={distance} value={distance}>Within {distance} {distance === '1' ? 'mile' : 'miles'}</option>)}
@@ -143,7 +146,7 @@ export function CreateLobbyPage() {
             <ul>{summary.map((line, index) => <li key={index}><span aria-hidden="true">✓</span><span>{line}</span></li>)}</ul>
           </aside>
           <div className="create-lobby__submit">
-            <Button type="submit" disabled={loading || isSubmitting} aria-describedby="create-backend-note">
+            <Button type="submit" disabled={loading || isSubmitting}>
               {isSubmitting ? 'Creating lobby…' : 'Create lobby'}
             </Button>
             <p className="lobby-form-note">You can edit these filters before voting starts.</p>
@@ -151,7 +154,6 @@ export function CreateLobbyPage() {
           </div>
         </div>
       </form>
-      <TextAction className="lobby-form-page__back" to={paths.home}>Back to home</TextAction>
     </main>
   )
 }

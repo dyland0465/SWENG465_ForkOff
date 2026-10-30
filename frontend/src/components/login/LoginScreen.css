@@ -10,9 +10,31 @@
  *  - .login-card__guest: the "Continue as a guest" line at the bottom
  *  - The last rule stops the Home nav tab from looking active on /login.
  */
+.login-page {
+  display: grid;
+  grid-template-columns: minmax(0, max-content) minmax(0, 480px);
+  justify-content: center;
+  align-items: start;
+  row-gap: var(--spacing-8);
+  column-gap: var(--spacing-4);
+}
+
+.login-page__welcome {
+  min-inline-size: 0;
+  max-inline-size: 520px;
+  align-self: center;
+  padding-inline-end: 60px;
+}
+
+.login-page > .lobby-form-page__back {
+  grid-column: 1 / -1;
+  justify-self: start;
+  margin-block-start: 0;
+}
+
 .login-card {
   inline-size: min(480px, 100%);
-  margin: var(--spacing-8) auto 0;
+  margin: 0;
   padding: var(--spacing-8) var(--spacing-8) var(--spacing-6);
   border-radius: var(--spacing-6);
   box-shadow: var(--shadow-card);
@@ -76,10 +98,17 @@
   font-size: var(--font-size-caption-default);
   text-align: center;
 }
-
+/* Partner link: sits right under the guest line, same small gray text,
+   without the divider line so the two read as one footer. */
+.login-card__partner {
+  margin-block-start: var(--spacing-2);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-caption-default);
+  text-align: center;
+}
 @media (max-width: 768px) {
+  .login-page { grid-template-columns: minmax(0, 1fr); }
+  .login-page__welcome { padding-inline-end: 0; }
+  .login-card { justify-self: center; }
   .login-card { padding: var(--spacing-6) var(--spacing-4); }
 }
-
-/* LobbyForms.css highlights Home on lobby-style screens; on login, the Log in tab is current instead. */
-.login-screen .app-header__nav .ui-text-action[href='/'] { background: transparent; }

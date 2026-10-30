@@ -1,10 +1,11 @@
 import { EventEmitter } from "node:events";
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import type { Request, Response, NextFunction } from "express";
-import { Session } from "../models/session";
-import { User } from "../models/user";
+import { Session } from "../db_models/session";
+import { User } from "../db_models/user";
 
-export type Identity = { key: string; userId?: string; username?: string; email?: string };
+export type Identity = {
+  key: string; userId?: string; username?: string; email?: string; role?: string; partnerStatus?: string; restaurantIds?: string[];};
 declare global {
   namespace Express { interface Request { identity?: Identity } }
 }
@@ -23,9 +24,13 @@ export async function resolveIdentity(cookie?: string): Promise<Identity | undef
   const session = await Session.findOne({ tokenHash: hash(token), expiresAt: { $gt: new Date() } }).lean();
   if (!session) return;
   if (session.userId) {
-    const user = await User.findById(session.userId).select("username email").lean();
+    const user = await User.findById(session.userId).select("username email role partnerStatus restaurantIds").lean();
     if (!user) return;
-    return { key: session.identityKey, userId: String(user._id), username: user.username, email: user.email };
+    return {
+      key: session.identityKey, userId: String(user._id), username: user.username, email: user.email,
+      role: user.role ?? "user", partnerStatus: user.partnerStatus ?? undefined,
+      restaurantIds: (user.restaurantIds ?? []).map(String),
+    };
   }
   return { key: session.identityKey };
 }
@@ -74,5 +79,8 @@ export async function establishSession(req: Request, res: Response, user?: { id:
 }
 
 export function publicUser(identity?: Identity) {
-  return identity?.userId ? { id: identity.userId, username: identity.username, email: identity.email } : null;
+  return identity?.userId ? {
+    id: identity.userId, username: identity.username, email: identity.email,
+    role: identity.role ?? "user", partnerStatus: identity.partnerStatus ?? null, restaurantIds: identity.restaurantIds ?? [],
+  } : null;
 }
