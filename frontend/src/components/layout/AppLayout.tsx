@@ -5,7 +5,6 @@ import { Dialog } from '../ui/Dialog'
 import { AppHeader } from './AppHeader'
 import { paths } from '../../routes/paths'
 import { VotingSessionProvider } from '../../features/voting/VotingSessionProvider'
-import { RestaurantPreferencesProvider } from '../../features/preferences/RestaurantPreferencesProvider'
 import { RouteNavigation } from './RouteNavigation'
 
 export function AppLayout() {
@@ -21,7 +20,6 @@ export function AppLayout() {
   const isVoting = useMatch(paths.voting) !== null
   const isRestaurantDetails = useMatch(`${paths.lobby}/restaurants/*`) !== null
   const isResults = useMatch(paths.results) !== null
-  const isPartner = useMatch(paths.partnerRestaurant) !== null
 
   return (
     <>

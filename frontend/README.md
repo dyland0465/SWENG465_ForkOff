@@ -21,8 +21,12 @@ npm.cmd run dev
 Open `/partners` on the printed Vite URL and choose **Preview Demo Dashboard**.
 No password is needed. A separate tab-scoped preview marker preserves access
 across navigation/refresh. Direct dashboard entry without it redirects to
-`/partners`. **Exit demo preview** clears access and returns there. Production
-builds always disable preview, even with the flag set and a stored marker.
+`/partners`. **Exit demo preview** clears access and returns there. Optimized
+staging builds require both `VITE_APP_ENV=staging` and
+`VITE_ENABLE_PARTNER_DEMO=true` at build time. Production defaults to disabled,
+including when only the demo flag is enabled. See the
+[Coolify staging setup](docs/partner-demo-staging.md) for exact build settings,
+deployment steps, and mandatory server-side access protection.
 
 `src/features/partner/PartnerAccountAccess.tsx` is the future authentication
 integration boundary. The form, request/account state, authentication adapter,
@@ -40,14 +44,14 @@ Backend integration requirements:
 - Enforce partner role and restaurant ownership/authorization on the backend for
   every private analytics request. A frontend guard/restaurant ID is not security.
   Prevent cross-restaurant access, including modified URLs and request IDs.
-- Disable/remove demo access before deployment. Never bundle actual private
+- Keep demo access disabled in real production. Never bundle actual private
   analytics into public frontend assets or replace synthetic fixtures with them.
 
 `node tests/partnerAnalytics.browser.mjs` checks sign-in, demo guards, production
 restrictions, history/refresh, keyboard focus, 320–1920px layouts, analytics/CSVs,
 and all nine consumer routes. It uses installed Chrome and Node 24 and prints
 a temporary artifact directory. It requires enabled/disabled development servers
-and a production preview server; setup and URL overrides are in the handoff.
+and production/staging preview servers; setup and URL overrides are in the handoff.
 
 ## Partner Analytics
 
@@ -60,7 +64,7 @@ an expandable accessible data table, promotion engagement, and a privacy panel.
 It reuses Button, SelectField, TextAction, the foundation tokens, and self-hosted
 Atkinson Hyperlegible. The partner design contains no image or SVG assets.
 
-**Development preview only; no authenticated partner access.** Harbor & Hearth
+**Synthetic demo preview only; no authenticated partner access.** Harbor & Hearth
 is the only analytics fixture. Other restaurant IDs show an empty report and an
 explicit link to this demo. No consumer vote/preference state is used or changed.
 Reporting controls select 30 or 7 sample days ending **September 8, 2026**, or an

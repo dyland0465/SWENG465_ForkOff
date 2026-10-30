@@ -121,7 +121,7 @@ function PartnerDashboard({ restaurantId }: { restaurantId: string | undefined }
           <Button onClick={exportCsv} disabled={!hasData} className="partner-export">Export CSV</Button>
         </div>
       </div>
-      <p className="partner-demo-notice"><strong>Demonstration data</strong> · {formatSampleRange(period)} · Development preview, no authenticated partner access. All figures are synthetic. {!hasFixture && <Link to={generatePath(paths.partnerRestaurant, { restaurantId: 'harbor' })}>Open Harbor &amp; Hearth demo</Link>}</p>
+      <p className="partner-demo-notice"><strong>Demonstration data</strong> · {formatSampleRange(period)} · Demo preview, no authenticated partner access. All figures are synthetic. {!hasFixture && <Link to={generatePath(paths.partnerRestaurant, { restaurantId: 'harbor' })}>Open Harbor &amp; Hearth demo</Link>}</p>
       <p role="status" className="partner-sr-only">{exportMessage || `${hasData ? 'Sample report updated' : 'No sample data'}: ${formatSampleRange(period)}. ${formatCount(voteCount(totals))} votes; ${formatCount(totals.impressions)} impressions. Charts, metrics, and promotions use this period.`}</p>
       {showSupport && <section id="partner-support" className="partner-panel partner-support" aria-labelledby="partner-support-title">
         <h2 id="partner-support-title" tabIndex={-1} ref={supportHeading}>Partner preview support</h2>
