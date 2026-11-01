@@ -119,7 +119,16 @@ export async function searchRestaurants(query: string, limit: number, center?: {
       includedType: "restaurant",
       strictTypeFiltering: true,
       maxResultCount: limit,
-      ...(center && radiusMeters ? { locationBias: { circle: { center, radius: Math.min(radiusMeters, 50000) } } } : {}),
+      ...(center && radiusMeters ? {
+        locationBias:
+        {
+          circle:
+          {
+            center,
+            radius: Math.min(radiusMeters, 50000)
+          }
+        }
+      } : {}),
       languageCode: "en",
       regionCode: "US",
     },
