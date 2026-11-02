@@ -32,9 +32,9 @@ export function PartnerAccessPage() {
       </div>
 
       {partnerDemoEnabled && <section className="partner-access__demo" aria-labelledby="partner-demo-title" aria-describedby="partner-demo-description">
-        <p className="text-label-default">Development preview</p>
+        <p className="text-label-default">Demo preview</p>
         <h2 id="partner-demo-title" className="text-heading-h2">Explore Partner Analytics</h2>
-        <p id="partner-demo-description">This development-only preview uses synthetic sample data only. It does not sign you in or provide access to real restaurant information. No password is needed.</p>
+        <p id="partner-demo-description">This demo preview uses synthetic sample data only. It does not sign you in or provide access to real restaurant information. No password is needed.</p>
         <Button variant="secondary" onClick={() => { preview.start(); navigate(generatePath(paths.partnerRestaurant, { restaurantId: 'harbor' })) }}>
           Preview Demo Dashboard
         </Button>

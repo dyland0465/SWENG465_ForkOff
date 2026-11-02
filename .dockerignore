@@ -1,0 +1,7 @@
+# Keep local dependencies, generated assets, and secrets out of image builds.
+.git
+**/node_modules
+**/dist
+**/.env
+**/.env.*
+!**/.env.example

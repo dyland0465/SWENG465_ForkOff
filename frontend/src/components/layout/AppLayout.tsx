@@ -23,7 +23,7 @@ export function AppLayout() {
   const isVoting = useMatch(paths.voting) !== null
   const isRestaurantDetails = useMatch(`${paths.lobby}/restaurants/*`) !== null
   const isResults = useMatch(paths.results) !== null
-  const isPartner = useMatch(paths.partnerRestaurant) !== null
+  const isPartner = useMatch({ path: paths.partnerAccess, end: false }) !== null
 
   return (
     <>

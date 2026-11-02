@@ -120,9 +120,17 @@ export async function searchRestaurantPage(query: string, limit: number, center?
       textQuery: query,
       includedType: "restaurant",
       strictTypeFiltering: true,
-      pageSize: limit,
-      ...(pageToken ? { pageToken } : {}),
-      ...(center && radiusMeters ? { locationBias: { circle: { center, radius: Math.min(radiusMeters, 50000) } } } : {}),
+      maxResultCount: limit,
+      ...(center && radiusMeters ? {
+        locationBias:
+        {
+          circle:
+          {
+            center,
+            radius: Math.min(radiusMeters, 50000)
+          }
+        }
+      } : {}),
       languageCode: "en",
       regionCode: "US",
     },

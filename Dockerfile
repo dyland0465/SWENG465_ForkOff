@@ -6,6 +6,13 @@ COPY frontend/package*.json ./
 RUN npm ci
 
 COPY frontend/ ./
+
+# Public Vite settings are compiled into the frontend, not read at runtime.
+# Defaults keep real production disabled, even if only the demo flag is changed.
+ARG VITE_APP_ENV=production
+ARG VITE_ENABLE_PARTNER_DEMO=false
+ENV VITE_APP_ENV=$VITE_APP_ENV
+ENV VITE_ENABLE_PARTNER_DEMO=$VITE_ENABLE_PARTNER_DEMO
 RUN npm run build
 
 FROM node:22-alpine
