@@ -125,3 +125,7 @@ AggregateError [ECONNREFUSED]:
 AggregateError [ECONNREFUSED]: 
     at internalConnectMultiple (node:net:1430:18)
     at afterConnectMultiple (node:net:2099:7)
+1:23:04 PM [vite] (client) hmr update /src/components/layout/AppLayout.tsx
+1:23:04 PM [vite] (client) hmr update /src/features/partner/PartnerDemoPreview.tsx, /src/pages/PartnerRestaurantPage.tsx, /src/pages/PartnerAccessPage.tsx
+1:23:04 PM [vite] (client) hmr update /src/pages/PartnerAccessPage.tsx
+1:23:04 PM [vite] (client) hmr update /src/pages/PartnerRestaurantPage.tsx
