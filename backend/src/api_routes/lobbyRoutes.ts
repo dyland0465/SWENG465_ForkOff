@@ -257,12 +257,15 @@ router.get("/api/lobbies/:id/filters", run(async (req, res) => {
 router.patch("/api/lobbies/:id", run(async (req, res) => {
   requireHost(await findLobby(String(req.params.id)), req.identity);
   const body = bodyObject(req);
-  if (!Object.keys(body).length || Object.keys(body).some(key => !["name", "status"].includes(key))) reject("Provide name and/or status only.");
+  if (!Object.keys(body).length || Object.keys(body).some(key => !["name", "status", "filters"].includes(key))) reject("Provide name, status, and/or filters only.");
   const name = body.name === undefined ? undefined : shortString(body.name, "name", 120);
+  if (body.filters !== undefined && (!body.filters || typeof body.filters !== "object" || Array.isArray(body.filters))) reject("Invalid filters.");
+  const filters = body.filters === undefined ? undefined : filtersFrom(body.filters as Record<string, unknown>);
   if (body.status !== undefined && !["waiting", "playing", "finished"].includes(String(body.status))) reject("Invalid lobby status.");
   const lobby = await changeLobby(String(req.params.id), current => {
     requireHost(current, req.identity);
     if (name !== undefined) current.name = name;
+    if (filters !== undefined) current.filters = { ...JSON.parse(JSON.stringify(current.filters)), ...filters };
     if (body.status !== undefined) current.status = body.status as "waiting" | "playing" | "finished";
   });
   res.json({ lobby: serializeLobby(lobby!, req.identity) });
@@ -333,7 +336,8 @@ router.get("/api/lobbies/:id/restaurants", run(async (req, res) => {
     throw new HttpError(400, "Set a lobby location before searching");
   }
   try {
-    const { restaurants, warnings } = await findLobbyRestaurants(lobby.filters);
+    const excludeIds = typeof req.query.exclude === "string" ? req.query.exclude.split(",").filter(id => /^[A-Za-z0-9_-]{1,200}$/.test(id)).slice(0, 10) : [];
+    const { restaurants, warnings } = await findLobbyRestaurants(lobby.filters, excludeIds);
     res.json({
       lobbyId: String(lobby._id),
       attribution: "Google Maps",

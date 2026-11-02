@@ -78,3 +78,29 @@
   .voting-card__privacy { flex-basis: 100%; }
   .voting-card__footer .voting-choice--skip { margin-inline-start: auto; }
 }
+
+/* Restaurant voting card */
+.voting-card { display: flex; flex-direction: column; min-height: 520px; padding: 32px; }
+.voting-card__eyebrow, .voting-card__facts span, .voting-card__visit span { color: var(--color-text-secondary); font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.09em; }
+.voting-card__eyebrow { color: #bf370c; }
+.voting-card__heading h2 { margin-block-start: 8px; font-size: clamp(1.65rem, 2.4vw, 2.125rem); line-height: 1.15; overflow-wrap: anywhere; }
+.voting-card__category { margin-block-start: 8px; color: var(--color-text-secondary); text-transform: capitalize; }
+.voting-card__facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-block-start: 24px; padding: 16px; border-radius: var(--radius-md); background: var(--color-bg-canvas); }
+.voting-card__facts div { display: grid; align-content: start; gap: 5px; min-width: 0; }
+.voting-card__facts strong { font-size: 1rem; overflow-wrap: anywhere; }
+.voting-card__facts small, .voting-card__visit small { color: var(--color-text-secondary); font-size: 0.75rem; }
+.voting-card__visit { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; gap: 16px; align-items: start; margin-block-start: 22px; }
+.voting-card__visit p { margin-block-start: 6px; font-size: 0.9375rem; line-height: 1.4; overflow-wrap: anywhere; }
+.voting-card__map { align-self: center; }
+.voting-card__vote { margin-block-start: auto; padding-block-start: 28px; }
+.voting-card__vote h3 { font-size: 1.125rem; }
+.voting-card__vote > p:not(.voting-card__privacy) { margin-block-start: 4px; color: var(--color-text-secondary); font-size: 0.875rem; }
+.voting-card .voting-controls { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin: 16px 0 0; }
+.voting-page .voting-card .voting-choice { min-width: 0; width: 100%; padding-inline: 6px; }
+.voting-card .voting-card__privacy { min-height: 0; margin-block-start: 14px; padding: 0; border: 0; background: none; color: var(--color-text-secondary); font-weight: 400; }
+@media (max-width: 480px) { .voting-card { padding: 20px; } .voting-card__visit { grid-template-columns: 1fr auto; } .voting-card__visit > div:nth-child(2) { grid-row: 2; } .voting-card .voting-controls { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+.voting-page__columns { align-items: stretch; }
+.voting-page__visual { display: flex; flex-direction: column; gap: var(--spacing-4); }
+.voting-page__photo-credit { display: grid; align-content: center; gap: var(--spacing-1); flex: 1; min-height: 68px; padding: var(--spacing-3) var(--spacing-4); border: 1px solid var(--color-border-default); border-radius: var(--radius-lg); background: var(--color-bg-surface); color: var(--color-text-secondary); font-size: 0.8125rem; overflow-wrap: anywhere; }
+@media (max-width: 1000px) { .voting-page__photo-credit { flex: initial; } }

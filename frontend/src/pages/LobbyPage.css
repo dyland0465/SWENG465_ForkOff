@@ -158,10 +158,10 @@
   justify-content: space-between;
   gap: var(--spacing-4);
   inline-size: min(430px, 100%);
-  min-block-size: 100px;
+  min-block-size: 77px;
   margin-block-start: 22px;
   margin-inline-start: auto;
-  padding: var(--spacing-4) 42px var(--spacing-6) 20px;
+  padding: var(--spacing-2) 42px var(--spacing-2) 20px;
   border-radius: var(--radius-lg);
   color: var(--color-text-inverse);
   background: var(--color-bg-inverse);
@@ -282,3 +282,40 @@
 .lobby-chat-preview__composer { display: flex; align-items: center; gap: var(--spacing-2); margin-block-start: auto; padding-block-start: var(--spacing-4); }
 .lobby-chat-preview__composer .lobby-chat-preview__draft { flex: 1; margin-block-start: 0; }
 .lobby-page__back { margin-block-start: var(--spacing-6); }
+
+/* Keep the editor within the same card as the round summary. */
+.lobby-edit-panel { max-block-size: 420px; overflow-y: auto; padding-inline-end: var(--spacing-2); }
+.lobby-match-availability { padding-inline: 0; }
+@media (max-width: 480px) { .lobby-match-availability { flex-direction: column; } }
+
+.lobby-restaurant-preview { display: flex; align-items: center; gap: var(--spacing-4); margin-block-start: var(--spacing-4); padding: var(--spacing-4); border: 1px solid var(--color-border-default); border-radius: var(--radius-lg); background: var(--color-bg-surface); }
+.lobby-restaurant-preview__stack { display: flex; flex: 0 0 auto; padding-inline-start: 20px; }
+.lobby-restaurant-preview__stack img { position: relative; width: 54px; height: 70px; object-fit: cover; border: 3px solid var(--color-bg-surface); border-radius: var(--radius-md); margin-inline-start: -20px; }
+.lobby-restaurant-preview__content { min-inline-size: 0; display: grid; gap: var(--spacing-1); }
+.lobby-restaurant-preview__content p, .lobby-restaurant-preview__content small { color: var(--color-text-secondary); }
+.lobby-restaurant-preview__content small { font-size: 0.7rem; overflow-wrap: anywhere; }
+.lobby-restaurant-preview__content button { cursor: pointer; text-decoration: underline; }
+@media (max-width: 480px) { .lobby-restaurant-preview { align-items: flex-start; flex-direction: column; } }
+
+.lobby-restaurant-preview { flex-direction: column; align-items: stretch; }
+.lobby-restaurant-preview__stack { width: 100%; padding: 0; gap: var(--spacing-2); }
+.lobby-restaurant-preview__stack button { flex: 1 1 0; min-width: 0; padding: 0; border: 0; background: transparent; cursor: pointer; }
+.lobby-restaurant-preview__stack img { display: block; width: 100%; height: 90px; margin: 0; border: 0; }
+.lobby-restaurant-preview__attribution { font: 400 12px/1.4 Roboto, sans-serif !important; color: #5e5e5e !important; white-space: nowrap; }
+.lobby-restaurant-preview__dialog { max-width: min(90vw, 700px); max-height: 90vh; margin: auto; padding: var(--spacing-6); border: 1px solid var(--color-border-default); border-radius: var(--radius-lg); }
+.lobby-restaurant-preview__dialog::backdrop { background: rgb(0 0 0 / 60%); }
+.lobby-restaurant-preview__dialog img { display: block; max-width: 100%; max-height: 60vh; object-fit: contain; margin-block: var(--spacing-4); }
+
+.lobby-restaurant-preview__thumbnail { position: relative; }
+.lobby-restaurant-preview__placeholder { display: grid; place-items: center; height: 90px; border-radius: var(--radius-md); background: var(--color-bg-canvas); font-size: 0.75rem; }
+.lobby-restaurant-preview__tooltip { position: absolute; inset-inline: 0; bottom: 0; padding: 4px; border-radius: 0 0 var(--radius-md) var(--radius-md); background: rgb(0 0 0 / 80%); color: white; font-size: 0.75rem; overflow-wrap: anywhere; opacity: 0; transition: opacity 0.15s; }
+.lobby-restaurant-preview__thumbnail:hover .lobby-restaurant-preview__tooltip, .lobby-restaurant-preview__thumbnail:focus-visible .lobby-restaurant-preview__tooltip { opacity: 1; }
+.lobby-restaurant-preview__carousel-controls { display: flex; justify-content: center; align-items: center; gap: var(--spacing-4); padding-block-start: var(--spacing-2); font-size: 0.875rem; }
+.lobby-restaurant-preview__carousel-controls button { min-width: 44px; min-height: 44px; border: 1px solid var(--color-border-default); border-radius: var(--radius-md); background: var(--color-bg-surface); font-size: 1.5rem; cursor: pointer; }
+.lobby-restaurant-preview__carousel-controls button:disabled { opacity: 0.45; cursor: default; }
+
+.lobby-restaurant-preview__stack { overflow-x: auto; overscroll-behavior-inline: contain; scrollbar-width: thin; }
+.lobby-restaurant-preview__stack button { flex: 0 0 calc((100% - 3 * var(--spacing-2)) / 4); }
+@media (prefers-reduced-motion: reduce) { .lobby-restaurant-preview__stack { scroll-behavior: auto; } }
+
+.lobby-restaurant-preview__discovery { align-self: flex-end; }

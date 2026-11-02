@@ -1,0 +1,127 @@
+
+> my-react-app@0.0.0 dev
+> vite
+
+10:43:26 AM [vite] (client) Re-optimizing dependencies because vite config has changed
+
+  VITE v8.3.4  ready in 613 ms
+
+  ➜  Local:   http://localhost:5000/
+  ➜  Network: use --host to expose
+  ➜  press h + enter to show help
+10:45:33 AM [vite] (client) hmr update /src/pages/LobbyPage.tsx
+10:45:33 AM [vite] ws proxy error:
+Error: read ECONNRESET
+    at TCP.onStreamRead (node:internal/stream_base_commons:216:20)
+10:45:34 AM [vite] http proxy error: /socket.io/?EIO=4&transport=polling&t=fklrj39u
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1430:18)
+    at afterConnectMultiple (node:net:2099:7)
+10:45:36 AM [vite] http proxy error: /socket.io/?EIO=4&transport=polling&t=fknqowcw
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1430:18)
+    at afterConnectMultiple (node:net:2099:7)
+10:46:06 AM [vite] (client) hmr update /src/pages/LobbyPage.tsx
+10:47:04 AM [vite] (client) hmr update /src/pages/LobbyPage.css
+10:47:34 AM [vite] (client) hmr update /src/pages/LobbyPage.tsx
+10:48:31 AM [vite] (client) hmr update /src/features/preferences/RestaurantPreferencesProvider.tsx, /src/pages/JoinLobbyPage.tsx, /src/pages/CreateLobbyPage.tsx
+10:52:00 AM [vite] ws proxy error:
+Error: read ECONNRESET
+    at TCP.onStreamRead (node:internal/stream_base_commons:216:20)
+10:52:01 AM [vite] http proxy error: /socket.io/?EIO=4&transport=polling&t=fswwzyvu
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1430:18)
+    at afterConnectMultiple (node:net:2099:7)
+10:52:03 AM [vite] http proxy error: /socket.io/?EIO=4&transport=polling&t=fsxzxnhp
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1430:18)
+    at afterConnectMultiple (node:net:2099:7)
+10:54:04 AM [vite] (client) hmr update /src/pages/LobbyPage.tsx
+10:54:04 AM [vite] (client) hmr update /src/pages/LobbyPage.css
+10:55:50 AM [vite] (client) hmr update /src/components/lobby/LobbyRestaurantPreview.tsx
+10:55:50 AM [vite] (client) hmr update /src/pages/LobbyPage.css
+10:56:43 AM [vite] (client) hmr update /src/components/lobby/LobbyRestaurantPreview.tsx
+10:56:43 AM [vite] (client) hmr update /src/pages/LobbyPage.css
+10:57:45 AM [vite] (client) hmr update /src/pages/CreateLobbyPage.tsx
+10:58:43 AM [vite] (client) hmr update /src/components/lobby/LobbyRestaurantPreview.tsx
+10:58:43 AM [vite] (client) hmr update /src/pages/LobbyPage.css
+10:58:56 AM [vite] (client) hmr update /src/components/lobby/LobbyRestaurantPreview.tsx
+11:00:23 AM [vite] (client) hmr update /src/components/lobby/LobbyRestaurantPreview.tsx
+11:00:23 AM [vite] (client) hmr update /src/pages/LobbyPage.tsx
+11:00:23 AM [vite] (client) hmr update /src/pages/LobbyPage.css
+11:01:09 AM [vite] (client) hmr update /src/pages/DiscoveryPreviewPage.tsx
+11:01:09 AM [vite] ws proxy error:
+Error: read ECONNRESET
+    at TCP.onStreamRead (node:internal/stream_base_commons:216:20)
+11:01:10 AM [vite] http proxy error: /api/lobbies/6ae8b3113f3535cfab039524/restaurants
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1430:18)
+    at afterConnectMultiple (node:net:2099:7)
+11:01:11 AM [vite] http proxy error: /socket.io/?EIO=4&transport=polling&t=g4p5f34i
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1430:18)
+    at afterConnectMultiple (node:net:2099:7)
+11:05:13 AM [vite] (client) hmr update /src/pages/ResultsPage.tsx, /src/pages/VotingPage.tsx
+11:05:13 AM [vite] (client) hmr update /src/pages/VotingPage.tsx
+11:05:13 AM [vite] (client) hmr update /src/pages/VotingPage.css
+11:05:13 AM [vite] ws proxy error:
+Error: read ECONNRESET
+    at TCP.onStreamRead (node:internal/stream_base_commons:216:20)
+11:05:13 AM [vite] ws proxy error:
+Error: read ECONNRESET
+    at TCP.onStreamRead (node:internal/stream_base_commons:216:20)
+11:05:13 AM [vite] http proxy error: /api/lobbies/6ae8b435ee412d9293e5a930/round
+Error: read ECONNRESET
+    at TCP.onStreamRead (node:internal/stream_base_commons:216:20)
+11:05:13 AM [vite] http proxy error: /api/lobbies/6ae8b435ee412d9293e5a930/round
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1430:18)
+    at afterConnectMultiple (node:net:2099:7)
+11:05:14 AM [vite] http proxy error: /socket.io/?EIO=4&transport=polling&t=g9wofrce
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1430:18)
+    at afterConnectMultiple (node:net:2099:7)
+11:05:15 AM [vite] http proxy error: /socket.io/?EIO=4&transport=polling&t=g9xj9uzf
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1430:18)
+    at afterConnectMultiple (node:net:2099:7)
+11:05:16 AM [vite] http proxy error: /socket.io/?EIO=4&transport=polling&t=g9xq3dtu
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1430:18)
+    at afterConnectMultiple (node:net:2099:7)
+11:05:16 AM [vite] http proxy error: /api/lobbies/6ae8b435ee412d9293e5a930/round
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1430:18)
+    at afterConnectMultiple (node:net:2099:7)
+11:05:18 AM [vite] http proxy error: /socket.io/?EIO=4&transport=polling&t=g9z8ihfu
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1430:18)
+    at afterConnectMultiple (node:net:2099:7)
+11:10:50 AM [vite] (client) hmr update /src/pages/VotingPage.tsx
+11:10:50 AM [vite] (client) hmr update /src/pages/VotingPage.css
+11:13:00 AM [vite] ws proxy error:
+Error: read ECONNRESET
+    at TCP.onStreamRead (node:internal/stream_base_commons:216:20)
+11:13:00 AM [vite] ws proxy error:
+Error: read ECONNRESET
+    at TCP.onStreamRead (node:internal/stream_base_commons:216:20)
+11:13:01 AM [vite] http proxy error: /socket.io/?EIO=4&transport=polling&t=gjx57mm8
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1430:18)
+    at afterConnectMultiple (node:net:2099:7)
+11:13:02 AM [vite] http proxy error: /socket.io/?EIO=4&transport=polling&t=gjx8omfp
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1430:18)
+    at afterConnectMultiple (node:net:2099:7)
+11:13:02 AM [vite] http proxy error: /api/lobbies/6ae8b67f9fe5e94bd7a1baef/round
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1430:18)
+    at afterConnectMultiple (node:net:2099:7)
+11:13:04 AM [vite] http proxy error: /socket.io/?EIO=4&transport=polling&t=gjzgakxw
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1430:18)
+    at afterConnectMultiple (node:net:2099:7)
+11:13:05 AM [vite] http proxy error: /api/lobbies/6ae8b67f9fe5e94bd7a1baef/round
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1430:18)
+    at afterConnectMultiple (node:net:2099:7)

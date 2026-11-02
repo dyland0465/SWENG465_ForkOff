@@ -1,5 +1,5 @@
 import { GoogleMapsLink } from '../components/ui/GoogleMapsLink'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { generatePath, useParams } from 'react-router'
 import { TextAction } from '../components/ui/TextAction'
 import { paths } from '../routes/paths'
@@ -80,6 +80,7 @@ function DiscoveryPreviewScreen({ lobbyId }: { lobbyId: string }) {
   const [error, setError] = useState('')
   const [warnings, setWarnings] = useState<string[]>([])
   const [attempt, setAttempt] = useState(0)
+  const previousIds = useRef<string[]>([])
 
   useEffect(() => {
     const controller = new AbortController()
@@ -92,7 +93,7 @@ function DiscoveryPreviewScreen({ lobbyId }: { lobbyId: string }) {
 
       try {
         const response = await fetch(
-          `/api/lobbies/${encodeURIComponent(lobbyId)}/restaurants`,
+          `/api/lobbies/${encodeURIComponent(lobbyId)}/restaurants${previousIds.current.length ? `?exclude=${encodeURIComponent(previousIds.current.join(','))}` : ''}`,
           {
             signal: controller.signal,
             credentials: 'same-origin',
@@ -152,7 +153,7 @@ function DiscoveryPreviewScreen({ lobbyId }: { lobbyId: string }) {
 
         <TextAction
           disabled={loading}
-          onClick={() => setAttempt(value => value + 1)}
+          onClick={() => { previousIds.current = restaurants.map(restaurant => restaurant.id); setAttempt(value => value + 1) }}
         >
           Refresh restaurants
         </TextAction>

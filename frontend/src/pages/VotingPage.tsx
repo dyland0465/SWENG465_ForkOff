@@ -9,6 +9,18 @@ import type { Decision } from '../features/voting/useRound'
 import { paths } from '../routes/paths'
 import './VotingPage.css'
 
+function hoursForToday(hours: string[] | undefined, timeZone?: string | null) {
+  if (!hours?.length) return null
+  let weekday: string
+  try {
+    weekday = new Intl.DateTimeFormat('en-US', { weekday: 'long', ...(timeZone ? { timeZone } : {}) }).format(new Date())
+  } catch {
+    weekday = new Intl.DateTimeFormat('en-US', { weekday: 'long' }).format(new Date())
+  }
+  const entry = hours.find(day => day.toLowerCase().startsWith(`${weekday.toLowerCase()}:`))
+  return entry ? entry.slice(entry.indexOf(':') + 1).trim() : null
+}
+
 function VotingScreen({ lobbyId }: { lobbyId: string }) {
   const { lobby } = useLiveLobby()
   const { round, loading, error, refresh, base } = useRound(lobbyId)
@@ -55,7 +67,29 @@ function VotingScreen({ lobbyId }: { lobbyId: string }) {
     <div className="voting-page__heading"><div><h1>Vote privately</h1><p className="voting-page__intro">Votes are revealed when everyone in the round finishes.</p></div>{round && <p>{processed} of {round.restaurants.length} reviewed</p>}</div>
     {(error || actionError) && <p role="alert">{actionError || error}</p>}
     {round?.warnings?.map(warning => <p key={warning}>{warning}</p>)}
-    {loading ? <p role="status">Loading voting round…</p> : !round ? <section className="voting-complete"><h2>No round started</h2><p>The host can start a round using restaurants near the lobby location.</p>{lobby?.isHost && <Button disabled={busy} onClick={start}>{busy ? 'Finding restaurants…' : 'Start voting'}</Button>}<TextAction to={generatePath(paths.lobby, { lobbyId })}>Back to lobby</TextAction></section> : !round.canVote ? <section className="voting-complete"><h2>Round already in progress</h2><p>You joined after this round started. Results will appear when everyone finishes.</p></section> : current && images?.roundId !== round.id ? <p role="status">Loading restaurant photos before voting…</p> : current ? <div className="voting-page__columns"><div className="voting-page__visual">{images?.urls[current.id] ? <img className="voting-photo" src={images.urls[current.id]} alt={`Photo of ${current.name}`} /> : <div className="discovery-restaurant__photo-placeholder">Photo unavailable</div>}{current.photoAuthors.map((author, index) => <small key={index}> Photo: {author.uri ? <a href={author.uri} target="_blank" rel="noreferrer">{author.displayName}</a> : author.displayName}</small>)}<p>Restaurant information from Google Maps</p></div><section className="voting-card"><h2>{current.name}</h2><p className="voting-card__meta">{current.category?.replace(/_/g, ' ') ?? 'Restaurant'} · {current.address ?? 'Address unavailable'}</p><p className="voting-card__meta">{current.rating != null ? `${current.rating} / 5 (${current.ratingCount ?? 0} reviews)` : 'Rating unavailable'} · {current.priceLevel?.replace('PRICE_LEVEL_', '').toLowerCase() ?? 'Price unavailable'} · {current.distanceMiles != null ? `${current.distanceMiles} miles away` : 'Distance unavailable'}</p>{!!current.hours?.length && <details><summary>Opening hours</summary>{current.hours.map(day => <p key={day}>{day}</p>)}</details>}{current.googleMapsUri && <p><GoogleMapsLink href={current.googleMapsUri} /></p>}<div className="voting-controls" role="group" aria-label={`Vote on ${current.name}`}>{(['yes', 'no', 'veto', 'skip'] as const).map(choice => <Button key={choice} disabled={busy} className={`voting-choice voting-choice--${choice}`} onClick={() => void vote(choice)}>{choice.toUpperCase()}</Button>)}</div><p className="voting-card__privacy">Your choices stay private until everyone finishes.</p></section></div> : <section className="voting-complete" role="status"><h2>Waiting for the group</h2><p>You've finished voting. {round.completed} of {round.totalMembers} members finished.</p><p>Results will appear automatically when everyone finishes.</p></section>}
+    {loading ? <p role="status">Loading voting round…</p> : !round ? <section className="voting-complete"><h2>No round started</h2><p>The host can start a round using restaurants near the lobby location.</p>{lobby?.isHost && <Button disabled={busy} onClick={start}>{busy ? 'Finding restaurants…' : 'Start voting'}</Button>}<TextAction to={generatePath(paths.lobby, { lobbyId })}>Back to lobby</TextAction></section> : !round.canVote ? <section className="voting-complete"><h2>Round already in progress</h2><p>You joined after this round started. Results will appear when everyone finishes.</p></section> : current && images?.roundId !== round.id ? <p role="status">Loading restaurant photos before voting…</p> : current ? <div className="voting-page__columns"><div className="voting-page__visual">{images?.urls[current.id] ? <img className="voting-photo" src={images.urls[current.id]} alt={`Photo of ${current.name}`} /> : <div className="discovery-restaurant__photo-placeholder">Photo unavailable</div>}<div className="voting-page__photo-credit">{current.photoAuthors.length > 0 && <p>Photo: {current.photoAuthors.map((author, index) => <span key={index}>{index > 0 && ', '}{author.uri ? <a href={author.uri} target="_blank" rel="noreferrer">{author.displayName}</a> : author.displayName}</span>)}</p>}<p>Restaurant information from Google Maps</p></div></div><section className="voting-card" aria-label={`Vote on ${current.name}`}>
+      <div className="voting-card__heading">
+        <p className="voting-card__eyebrow">YOUR NEXT OPTION</p>
+        <h2>{current.name}</h2>
+        <p className="voting-card__category">{current.category?.replace(/_/g, ' ') ?? 'Restaurant'}</p>
+      </div>
+      <div className="voting-card__facts" aria-label="Restaurant details">
+        <div><span>RATING</span><strong>{current.rating != null ? `★ ${current.rating} / 5` : 'Not available'}</strong>{current.rating != null && current.ratingCount != null && <small>{current.ratingCount.toLocaleString()} reviews</small>}</div>
+        <div><span>PRICE</span><strong>{({ PRICE_LEVEL_INEXPENSIVE: '$', PRICE_LEVEL_MODERATE: '$$', PRICE_LEVEL_EXPENSIVE: '$$$', PRICE_LEVEL_VERY_EXPENSIVE: '$$$$' } as Record<string, string>)[current.priceLevel ?? ''] ?? 'Not available'}</strong></div>
+        <div><span>DISTANCE</span><strong>{current.distanceMiles != null ? `${current.distanceMiles} mi` : 'Not available'}</strong></div>
+      </div>
+      <div className="voting-card__visit">
+        <div><span>LOCATION</span><p>{current.address ?? 'Address unavailable'}</p></div>
+        <div><span>TODAY’S HOURS</span><p>{hoursForToday(current.hours, current.timeZone) ?? 'Hours unavailable'}</p>{hoursForToday(current.hours, current.timeZone) && <small>Regular hours may vary.</small>}</div>
+        {current.googleMapsUri && <div className="voting-card__map"><GoogleMapsLink href={current.googleMapsUri} /></div>}
+      </div>
+      <div className="voting-card__vote">
+        <h3>What do you think?</h3>
+        <p>Make your pick for this restaurant.</p>
+        <div className="voting-controls" role="group" aria-label={`Vote on ${current.name}`}>{(['yes', 'no', 'veto', 'skip'] as const).map(choice => <Button key={choice} disabled={busy} className={`voting-choice voting-choice--${choice}`} onClick={() => void vote(choice)}>{choice.toUpperCase()}</Button>)}</div>
+        <p className="voting-card__privacy">Your choices stay private until everyone finishes.</p>
+      </div>
+    </section></div> : <section className="voting-complete" role="status"><h2>Waiting for the group</h2><p>You've finished voting. {round.completed} of {round.totalMembers} members finished.</p><p>Results will appear automatically when everyone finishes.</p></section>}
   </main>
 }
 export function VotingPage() { const { lobbyId } = useParams<'lobbyId'>(); return lobbyId ? <VotingScreen key={lobbyId} lobbyId={lobbyId} /> : <main id="main-content">Lobby unavailable.</main> }

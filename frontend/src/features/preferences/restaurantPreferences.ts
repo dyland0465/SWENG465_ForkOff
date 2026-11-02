@@ -1,4 +1,4 @@
-export const cuisineOptions = ['Italian', 'Ramen', 'Mexican', 'American', 'Vegetarian'] as const
+export const cuisineOptions = ['Italian', 'Ramen', 'Mexican', 'American', 'Asian', 'Fast food', 'Vegetarian'] as const
 export const priceOptions = ['$', '$$', '$$$'] as const
 export const distanceOptions = ['1', '3', '5', '8', '10', '15', '25'] as const
 export const ratingOptions = ['any', '3.0', '3.5', '4.0', '4.5'] as const

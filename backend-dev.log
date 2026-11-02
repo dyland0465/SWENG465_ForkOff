@@ -1,0 +1,54 @@
+
+> forkoff-backend@1.0.0 dev
+> tsx watch src/server.ts
+
+◇ injected env (0) from .env
+Connected to MongoDB database "main"; collections ready: users, vote, lobbies, groupchat, restaurants, sessions
+Server running on port 3000
+10:45:33 AM [tsx] change in ./src\api_routes\lobbyRoutes.ts Restarting...
+◇ injected env (0) from .env
+Connected to MongoDB database "main"; collections ready: users, vote, lobbies, groupchat, restaurants, sessions
+Server running on port 3000
+10:48:31 AM [tsx] change in ./src\services\lobbyRestaurants.ts Restarting...
+◇ injected env (0) from .env
+Connected to MongoDB database "main"; collections ready: users, vote, lobbies, groupchat, restaurants, sessions
+Server running on port 3000
+10:51:24 AM [tsx] change in ./src\services\lobbyRestaurants.ts Restarting...
+◇ injected env (0) from .env
+Connected to MongoDB database "main"; collections ready: users, vote, lobbies, groupchat, restaurants, sessions
+Server running on port 3000
+10:52:00 AM [tsx] change in ./src\services\lobbyRestaurants.ts Restarting...
+◇ injected env (0) from .env
+Connected to MongoDB database "main"; collections ready: users, vote, lobbies, groupchat, restaurants, sessions
+Server running on port 3000
+11:01:09 AM [tsx] change in ./src\api_routes\lobbyRoutes.ts Restarting...
+◇ injected env (0) from .env
+Connected to MongoDB database "main"; collections ready: users, vote, lobbies, groupchat, restaurants, sessions
+Server running on port 3000
+11:05:13 AM [tsx] change in ./src\services\lobbyState.ts Restarting...
+◇ injected env (0) from .env
+Connected to MongoDB database "main"; collections ready: users, vote, lobbies, groupchat, restaurants, sessions
+Server running on port 3000
+11:13:00 AM [tsx] change in ./src\services\lobbyRestaurants.ts Restarting...
+◇ injected env (0) from .env
+Connected to MongoDB database "main"; collections ready: users, vote, lobbies, groupchat, restaurants, sessions
+Server running on port 3000
+Restaurant cache cleanup failed: PoolClearedOnNetworkError: Connection to ac-aif7de9-shard-00-01.4e4cqc1.mongodb.net:27017 interrupted due to server monitor timeout
+    at ConnectionPool.interruptInUseConnections (C:\Users\User\Desktop\SWENG465_ForkOff\backend\node_modules\mongoose\node_modules\mongodb\src\cmap\connection_pool.ts:478:28)
+    at <anonymous> (C:\Users\User\Desktop\SWENG465_ForkOff\backend\node_modules\mongoose\node_modules\mongodb\src\cmap\connection_pool.ts:464:33)
+    at processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at runNextTicks (node:internal/process/task_queues:69:3)
+    at listOnTimeout (node:internal/timers:644:9)
+    at process.processTimers (node:internal/timers:618:7) {
+  errorLabelSet: Set(1) { 'PoolRequestedRetry' },
+  beforeHandshake: false,
+  address: 'ac-aif7de9-shard-00-01.4e4cqc1.mongodb.net:27017',
+  [cause]: MongoNetworkTimeoutError: connection <monitor> to 89.192.235.212:27017 timed out
+      at Timeout._onTimeout (C:\Users\User\Desktop\SWENG465_ForkOff\backend\node_modules\mongoose\node_modules\mongodb\src\cmap\connection.ts:332:20)
+      at listOnTimeout (node:internal/timers:685:17)
+      at process.processTimers (node:internal/timers:618:7) {
+    errorLabelSet: Set(2) { 'ResetPool', 'InterruptInUseConnections' },
+    beforeHandshake: false,
+    [cause]: undefined
+  }
+}

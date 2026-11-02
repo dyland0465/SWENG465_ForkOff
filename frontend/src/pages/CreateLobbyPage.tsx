@@ -6,7 +6,6 @@ import { Button } from '../components/ui/Button'
 import { TextAction } from '../components/ui/TextAction'
 import { TextInput, SelectField } from '../components/ui/FormField'
 import { FilterChip } from '../components/ui/FilterChip'
-import { ForkEmblem } from '../components/lobby/ForkEmblem'
 import { useLobbyForm } from '../components/lobby/useLobbyForm'
 import {
   cuisineOptions, priceOptions, diningOptions, distanceOptions, ratingOptions,
@@ -28,9 +27,9 @@ export function CreateLobbyPage() {
       rating: value => ratingOptions.some(option => option === value) ? undefined : 'Choose a minimum rating.',
     },
   )
-  const [cuisines, setCuisines] = useState<string[]>(['Italian', 'Ramen'])
-  const [prices, setPrices] = useState<string[]>(['$$'])
-  const [diningNeeds, setDiningNeeds] = useState<string[]>(['Open at dining time', 'Mocktails'])
+  const [cuisines, setCuisines] = useState<string[]>([])
+  const [prices, setPrices] = useState<string[]>([])
+  const [diningNeeds, setDiningNeeds] = useState<string[]>([])
   const [status, setStatus] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const diningTime = new Date(values.dateTime)
@@ -132,13 +131,7 @@ export function CreateLobbyPage() {
             </fieldset>
           </div>
           <TextAction className="create-lobby__reset" onClick={resetFilters}>Reset filters</TextAction>
-          <div className="create-lobby__availability">
-            <ForkEmblem />
-            <div className="create-lobby__match-note">
-              <strong>Restaurant matches pending</strong>
-              <p>Match counts will appear when restaurant search is connected. TODO</p>
-            </div>
-          </div>
+
         </div>
         <div className="create-lobby__aside">
           <aside className="create-lobby__summary" aria-labelledby="lobby-summary-heading">
