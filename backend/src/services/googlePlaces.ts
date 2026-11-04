@@ -58,6 +58,13 @@ export interface GoogleReview {
   googleMapsUri?: string;
 }
 
+export async function getGooglePlacePhotos(placeId: string): Promise<GooglePhoto[]> {
+  const place = await requestPlaces<{ photos?: GooglePhoto[] }>(
+    `${PLACES_API_BASE}/places/${encodeURIComponent(placeId)}`, "photos",
+  );
+  return place.photos ?? [];
+}
+
 export async function getGooglePlaceReviews(placeId: string): Promise<GoogleReview[]> {
   const place = await requestPlaces<{ reviews?: GoogleReview[] }>(
     `${PLACES_API_BASE}/places/${encodeURIComponent(placeId)}`, "reviews",

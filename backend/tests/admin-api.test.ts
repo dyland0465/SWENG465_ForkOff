@@ -12,9 +12,9 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import express from "express";
-import router from "../src/routes/adminRoutes";
-import { User } from "../src/models/user";
-import { Restaurant } from "../src/models/restaurant";
+import router from "../src/api_routes/adminRoutes";
+import { User } from "../src/db_models/user";
+import { Restaurant } from "../src/db_models/restaurant";
 
 test("admin partner review", async () => {
   const original = { find: User.find, update: User.findOneAndUpdate, restaurant: Restaurant.findOneAndUpdate };

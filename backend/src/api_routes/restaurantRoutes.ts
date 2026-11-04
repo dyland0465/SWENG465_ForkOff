@@ -6,7 +6,7 @@
  *  - GET    /api/restaurants/:id     one restaurant
  *  - POST   /api/restaurants/import  search Google and save the results
  *  - DELETE /api/restaurants/:id     remove a saved restaurant
- * Unfinished restaurant routes (edit, menu, analytics) are in placeholderRoutes.ts.
+ * Partner-managed details, menus, and live analytics are in restaurantManagementRoutes.ts.
  */
 import { Router } from "express";
 import mongoose from "mongoose";
@@ -43,13 +43,13 @@ router.get("/api/restaurants/:id", async (req, res) => {
     : { placeId: id };
 
   try {
-    const savedRestaurant = await Restaurant.findOne(filter).select({ placeId: 1 }).lean();
+    const savedRestaurant = await Restaurant.findOne(filter).select({ placeId: 1, partnerDetails: 1 }).lean();
     if (!savedRestaurant) {
       return res.status(404).json({ message: "Restaurant not found in the saved collection." });
     }
 
     const place = await getGooglePlace(savedRestaurant.placeId);
-    return res.status(200).json({ attribution: "Google Maps", place });
+    return res.status(200).json({ attribution: "Google Maps", place, partnerDetails: savedRestaurant.partnerDetails ?? {} });
   } catch (error) {
     return handlePlacesError(res, error, "Failed to load restaurant:");
   }

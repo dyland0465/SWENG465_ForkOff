@@ -4,9 +4,6 @@
  * Puts every route file together into one router that app.ts mounts.
  * Each file handles one area of the API.
  *
- * Order matters: lobbyRoutes must come before placeholderRoutes, because the
- * membership guard at the end of lobbyRoutes.ts protects the placeholder
- * /api/lobbies/:id/votes and /results routes.
  */
 import { Router } from "express";
 import lobbyRoutes from "./lobbyRoutes";
@@ -17,7 +14,7 @@ import userRoutes from "./userRoutes";
 import partnerRoutes from "./partnerRoutes";
 import restaurantRoutes from "./restaurantRoutes";
 import placesRoutes from "./placesRoutes";
-import placeholderRoutes from "./placeholderRoutes";
+import restaurantManagementRoutes from "./restaurantManagementRoutes";
 
 const router = Router();
 
@@ -29,6 +26,6 @@ router.use(userRoutes);         // /api/users
 router.use(partnerRoutes);      // /api/partners/register
 router.use(restaurantRoutes);   // /api/restaurants
 router.use(placesRoutes);       // /api/places (Google)
-router.use(placeholderRoutes);  // ⚠️ demo-data routes that aren't built yet
+router.use(restaurantManagementRoutes);
 
 export default router;

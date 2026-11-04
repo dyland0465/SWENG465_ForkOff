@@ -7,6 +7,8 @@ const restaurantSchema = new Schema(
     cachedAt: { type: Date },
     cachedPhoto: { type: Buffer, select: false },
     cachedPhotoType: { type: String },
+    partnerDetails: { type: Schema.Types.Mixed, default: {} },
+    menu: { type: Schema.Types.Mixed, default: null },
     searchCache: { type: Schema.Types.Mixed, default: {} },
   },
   {

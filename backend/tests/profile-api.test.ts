@@ -1,10 +1,10 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import express from "express";
-import router from "../src/routes";
-import { User } from "../src/models/user";
-import { Restaurant } from "../src/models/restaurant";
-import { Session } from "../src/models/session";
+import router from "../src/api_routes";
+import { User } from "../src/db_models/user";
+import { Restaurant } from "../src/db_models/restaurant";
+import { Session } from "../src/db_models/session";
 import { sessionEvents } from "../src/services/session";
 
 test("profile, deletion, and reviews endpoints", async () => {

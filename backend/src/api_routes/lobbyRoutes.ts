@@ -142,6 +142,47 @@ import { findLobbyRestaurants } from "../services/lobbyRestaurants";
  *       content: { application/json: { schema: { type: object, required: [text, requestId], properties: { text: { type: string, minLength: 1, maxLength: 2000 }, requestId: { type: string, maxLength: 80 } } } } }
  *     responses:
  *       201: { description: Saved message; duplicate retries return the same ID. }
+ * /api/lobbies/{id}/restaurants:
+ *   get:
+ *     summary: Search restaurants using the lobby filters.
+ *     tags: [lobby]
+ *     security: [{ lobbySession: [] }]
+ *     parameters: [{ in: path, name: id, required: true, schema: { type: string } }, { in: query, name: exclude, schema: { type: string }, description: Comma-separated place IDs. }]
+ *     responses:
+ *       200: { description: Matching restaurants and warnings. }
+ * /api/lobbies/{id}/round:
+ *   parameters: [{ in: path, name: id, required: true, schema: { type: string } }]
+ *   post:
+ *     summary: Start a voting round as host.
+ *     tags: [lobby]
+ *     security: [{ lobbySession: [] }]
+ *     responses:
+ *       201: { description: Started round and lobby snapshot. }
+ *   get:
+ *     summary: Get the current round, progress, and results when complete.
+ *     tags: [lobby]
+ *     security: [{ lobbySession: [] }]
+ *     responses:
+ *       200: { description: Current round or null. }
+ *   delete:
+ *     summary: End the current round as host.
+ *     tags: [lobby]
+ *     security: [{ lobbySession: [] }]
+ *     responses:
+ *       200: { description: Round ended. }
+ * /api/lobbies/{id}/round/vote:
+ *   put:
+ *     summary: Record the current member's decision in the active round.
+ *     tags: [lobby]
+ *     security: [{ lobbySession: [] }]
+ *     parameters: [{ in: path, name: id, required: true, schema: { type: string } }]
+ *     requestBody:
+ *       required: true
+ *       content: { application/json: { schema: { type: object, required: [roundId, restaurantId, decision], properties: { roundId: { type: string }, restaurantId: { type: string }, decision: { type: string, enum: [yes, no, veto, skip] } } } } }
+ *     responses:
+ *       200: { description: Vote recorded. }
+ *       400: { description: Invalid vote. }
+ *       409: { description: Round is no longer active or voting is complete. }
  */
 const router = Router();
 const run = (handler: (req: Request, res: Response) => Promise<unknown>) => (req: Request, res: Response, next: NextFunction) => { handler(req, res).catch(next); };
