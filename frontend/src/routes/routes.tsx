@@ -1,5 +1,7 @@
 import type { RouteObject } from 'react-router'
 import { AppLayout } from '../components/layout/AppLayout'
+import { ImportCollectionPage } from '../pages/ImportCollectionPage'
+import { SavedPage } from '../pages/SavedPage'
 import { HomePage } from '../pages/HomePage'
 import { LoginPage } from '../pages/LoginPage'
 import { CreateLobbyPage } from '../pages/CreateLobbyPage'
@@ -25,6 +27,8 @@ export const appRoutes: RouteObject[] = [
     element: <AppLayout />,
     children: [
       { path: paths.home, element: <HomePage /> },
+      { path: paths.saved, element: <SavedPage /> },
+      { path: "/saved/import/:token", element: <ImportCollectionPage /> },
       { path: paths.login, element: <LoginPage /> },
       { path: paths.createLobby, element: <CreateLobbyPage /> },
       { path: paths.joinLobby, element: <JoinLobbyPage /> },

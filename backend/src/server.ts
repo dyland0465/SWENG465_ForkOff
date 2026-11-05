@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import { connectDB } from "./config/db";
 import app from "./app";
 import { clearExpiredRestaurantCache } from "./services/googlePlaces";
+import { jwtSecret } from "./services/session";
 
 dotenv.config();
 
@@ -12,6 +13,7 @@ const PORT = Number(process.env.PORT) || 3000;
 
 async function startServer() {
   try {
+    jwtSecret();
     await connectDB();
     const cleanRestaurantCache = () => { void clearExpiredRestaurantCache().catch(error => console.error("Restaurant cache cleanup failed:", error)); };
     cleanRestaurantCache();

@@ -1,12 +1,13 @@
 import { useAuth } from '../features/auth/useAuth'
-import { generatePath, useNavigate } from 'react-router'
-import { useState } from 'react'
+import { generatePath, useNavigate, useSearchParams } from 'react-router'
+import { useEffect, useState } from 'react'
+import { savedRequest } from '../features/saved/savedApi'
+import type { Collection } from '../features/saved/savedApi'
 import type { FormEvent } from 'react'
 import { Button } from '../components/ui/Button'
 import { TextAction } from '../components/ui/TextAction'
 import { TextInput, SelectField } from '../components/ui/FormField'
 import { FilterChip } from '../components/ui/FilterChip'
-import { ForkEmblem } from '../components/lobby/ForkEmblem'
 import { useLobbyForm } from '../components/lobby/useLobbyForm'
 import {
   cuisineOptions, priceOptions, diningOptions, distanceOptions, ratingOptions,
@@ -17,7 +18,19 @@ import './LobbyForms.css'
 
 export function CreateLobbyPage() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const groupId = searchParams.get('group')
+  const requestedCollection = searchParams.get('collection') ?? ''
+  const [collections, setCollections] = useState<Collection[]>([])
+  const [collectionId, setCollectionId] = useState(requestedCollection)
+  const [collectionError, setCollectionError] = useState('')
   const { user, loading } = useAuth()
+  useEffect(() => {
+    if (!user) return
+    let active = true
+    savedRequest<{ collections: Collection[] }>('/collections').then(result => { if (active) setCollections(result.collections) }).catch(() => { if (active) setCollectionError('Could not load collections. Please refresh and try again.') })
+    return () => { active = false }
+  }, [user])
   const { values, errors, setValue, onBlur, validate } = useLobbyForm(
     { displayName: '', location: 'Erie, PA', dateTime: initialDinnerTime(), distance: '5', rating: '4.0' },
     {
@@ -28,9 +41,9 @@ export function CreateLobbyPage() {
       rating: value => ratingOptions.some(option => option === value) ? undefined : 'Choose a minimum rating.',
     },
   )
-  const [cuisines, setCuisines] = useState<string[]>(['Italian', 'Ramen'])
-  const [prices, setPrices] = useState<string[]>(['$$'])
-  const [diningNeeds, setDiningNeeds] = useState<string[]>(['Open at dining time', 'Mocktails'])
+  const [cuisines, setCuisines] = useState<string[]>([])
+  const [prices, setPrices] = useState<string[]>([])
+  const [diningNeeds, setDiningNeeds] = useState<string[]>([])
   const [status, setStatus] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const diningTime = new Date(values.dateTime)
@@ -54,6 +67,10 @@ export function CreateLobbyPage() {
       return
     }
 
+    if (collectionId && (!user || !collections.some(collection => collection._id === collectionId))) {
+      setStatus('Select one of your available collections before continuing.')
+      return
+    }
     setIsSubmitting(true)
     setStatus('Saving lobby…')
     try {
@@ -62,6 +79,7 @@ export function CreateLobbyPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...(!user ? { displayName: values.displayName.trim() } : {}),
+          ...(collectionId ? { collectionId } : {}),
           location: values.location.trim(),
           dinnerAt: new Date(values.dateTime).toISOString(),
           maxDistance: Number(values.distance),
@@ -81,6 +99,15 @@ export function CreateLobbyPage() {
       }
 
       if (!result.lobby?.id) throw new Error('The server did not return a lobby ID.')
+      if (groupId && user) {
+        try {
+          const invite = await fetch(`/api/saved/groups/${encodeURIComponent(groupId)}/invitations`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ lobbyId: result.lobby.id }) })
+          if (!invite.ok) throw new Error('Could not send group invitations. Use “Invite to this lobby” to retry.')
+        } catch {
+          navigate(generatePath(paths.lobby, { lobbyId: result.lobby.id }), { state: { invitationError: 'Lobby created, but invitations could not be sent. Use “Invite to this lobby” to retry.' } })
+          return
+        }
+      }
       navigate(generatePath(paths.lobby, { lobbyId: result.lobby.id }))
     } catch (error) {
       setStatus(error instanceof Error ? error.message : 'Could not create the lobby. Please try again.')
@@ -90,6 +117,7 @@ export function CreateLobbyPage() {
   }
 
   const summary = [
+    ...(collectionId ? [`Collection: ${collections.find(collection => collection._id === collectionId)?.name ?? 'Loading…'}`] : []),
     `Location: ${values.location.trim() || 'Choose a location'}`,
     formatDinnerTime(values.dateTime),
     `${values.distance}-mile radius`,
@@ -101,9 +129,18 @@ export function CreateLobbyPage() {
   return (
     <main id="main-content" className="lobby-form-page" tabIndex={-1}>
       <h1 className="text-heading-h1">Create a lobby</h1>
+      {groupId && <p>Your saved group will be invited when the lobby is created.</p>}
       <p className="lobby-form-page__intro text-body-large">Set the guardrails. Your group can still explore inside them.</p>
       <form className="create-lobby" noValidate onSubmit={submit} onChange={() => setStatus('')}>
         <div className="create-lobby__filters lobby-panel">
+          {user && <div className="create-lobby__collection">
+            <SelectField label="Restaurant source" value={collectionId} onChange={event => setCollectionId(event.target.value)}>
+              <option value="">Discover restaurants with filters</option>
+              {collections.map(collection => <option key={collection._id} value={collection._id} disabled={!collection.placeIds.length}>{collection.name} ({collection.placeIds.length}){!collection.placeIds.length ? ' — empty' : ''}</option>)}
+            </SelectField>
+            {collectionId && <p className="lobby-form-note">Voting uses a snapshot of this collection. The discovery filters below won’t exclude its restaurants.</p>}
+            {collectionError && <p role="alert">{collectionError}</p>}
+          </div>}
           <div className="create-lobby__fields">
             {!user && <div className="create-lobby__identity">
               <TextInput label="Display name" name="displayName" required autoComplete="nickname" maxLength={40} placeholder="Your name" hint="The name your dinner crew will see." value={values.displayName} error={errors.displayName} onChange={event => setValue('displayName', event.target.value)} onBlur={() => onBlur('displayName')} />
@@ -132,13 +169,7 @@ export function CreateLobbyPage() {
             </fieldset>
           </div>
           <TextAction className="create-lobby__reset" onClick={resetFilters}>Reset filters</TextAction>
-          <div className="create-lobby__availability">
-            <ForkEmblem />
-            <div className="create-lobby__match-note">
-              <strong>Restaurant matches pending</strong>
-              <p>Match counts will appear when restaurant search is connected. TODO</p>
-            </div>
-          </div>
+
         </div>
         <div className="create-lobby__aside">
           <aside className="create-lobby__summary" aria-labelledby="lobby-summary-heading">

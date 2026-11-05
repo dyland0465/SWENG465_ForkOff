@@ -9,6 +9,7 @@ import { Router } from "express";
 import { User } from "../db_models/user";
 import { hashPassword } from "../services/passwordHashing";
 import { establishSession } from "../services/session";
+import { registrationFields } from "../utils/registration";
 import { isDuplicateKeyError } from "../utils/errors";
 
 const router = Router();
@@ -48,22 +49,14 @@ const router = Router();
  */
 router.post("/api/partners/register", async (req, res) => {
   // Only accept plain strings, trimmed and length-capped.
-  const text = (value: unknown, max: number) => typeof value === "string" ? value.trim().slice(0, max) : "";
-  const username = text(req.body?.username, 30);
-  const email = text(req.body?.email, 254).toLowerCase();
-  const password = typeof req.body?.password === "string" ? req.body.password : "";
+  const text = (value: unknown, max: number) => typeof value === "string" && value.trim().length <= max ? value.trim() : "";
+  const user = registrationFields(req.body);
   const restaurantName = text(req.body?.restaurantName, 120);
   const restaurantAddress = text(req.body?.restaurantAddress, 200);
-
-  if (!username || !email || !password || !restaurantName || !restaurantAddress) {
-    return res.status(400).json({ message: "Username, email, password, restaurant name, and restaurant address are required." });
+  if (!user || !restaurantName || !restaurantAddress) {
+    return res.status(400).json({ message: "Provide valid account and restaurant details; password must be 8 to 128 characters." });
   }
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    return res.status(400).json({ message: "Enter a valid email address." });
-  }
-  if (password.length < 8) {
-    return res.status(400).json({ message: "Password must be at least 8 characters." });
-  }
+  const { username, email, password } = user;
 
   try {
     const partner = await User.create({

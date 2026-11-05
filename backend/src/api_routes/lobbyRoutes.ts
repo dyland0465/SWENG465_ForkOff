@@ -1,12 +1,13 @@
 import { Router, type Request, type Response, type NextFunction } from "express";
 import { randomInt, randomUUID } from "node:crypto";
 import mongoose from "mongoose";
+import { GroupInvitation, RestaurantCollection } from "../db_models/saved";
 import { Lobby } from "../db_models/lobby";
 import { GroupchatMessage } from "../db_models/groupchat";
 import { establishSession, publicUser, revokeSession } from "../services/session";
 import { HttpError } from "../utils/errors";
 import { changeLobby, findLobby, lobbyEvents, memberFor, nextOnline, requireHost, serializeLobby, type LobbyDocument, type Member } from "../services/lobbyState";
-import { findLobbyRestaurants } from "../services/lobbyRestaurants";
+import { findCollectionRestaurants, findLobbyRestaurants } from "../services/lobbyRestaurants";
 
 
 /**
@@ -142,6 +143,47 @@ import { findLobbyRestaurants } from "../services/lobbyRestaurants";
  *       content: { application/json: { schema: { type: object, required: [text, requestId], properties: { text: { type: string, minLength: 1, maxLength: 2000 }, requestId: { type: string, maxLength: 80 } } } } }
  *     responses:
  *       201: { description: Saved message; duplicate retries return the same ID. }
+ * /api/lobbies/{id}/restaurants:
+ *   get:
+ *     summary: Search restaurants using the lobby filters.
+ *     tags: [lobby]
+ *     security: [{ lobbySession: [] }]
+ *     parameters: [{ in: path, name: id, required: true, schema: { type: string } }, { in: query, name: exclude, schema: { type: string }, description: Comma-separated place IDs. }]
+ *     responses:
+ *       200: { description: Matching restaurants and warnings. }
+ * /api/lobbies/{id}/round:
+ *   parameters: [{ in: path, name: id, required: true, schema: { type: string } }]
+ *   post:
+ *     summary: Start a voting round as host.
+ *     tags: [lobby]
+ *     security: [{ lobbySession: [] }]
+ *     responses:
+ *       201: { description: Started round and lobby snapshot. }
+ *   get:
+ *     summary: Get the current round, progress, and results when complete.
+ *     tags: [lobby]
+ *     security: [{ lobbySession: [] }]
+ *     responses:
+ *       200: { description: Current round or null. }
+ *   delete:
+ *     summary: End the current round as host.
+ *     tags: [lobby]
+ *     security: [{ lobbySession: [] }]
+ *     responses:
+ *       200: { description: Round ended. }
+ * /api/lobbies/{id}/round/vote:
+ *   put:
+ *     summary: Record the current member's decision in the active round.
+ *     tags: [lobby]
+ *     security: [{ lobbySession: [] }]
+ *     parameters: [{ in: path, name: id, required: true, schema: { type: string } }]
+ *     requestBody:
+ *       required: true
+ *       content: { application/json: { schema: { type: object, required: [roundId, restaurantId, decision], properties: { roundId: { type: string }, restaurantId: { type: string }, decision: { type: string, enum: [yes, no, veto, skip] } } } } }
+ *     responses:
+ *       200: { description: Vote recorded. }
+ *       400: { description: Invalid vote. }
+ *       409: { description: Round is no longer active or voting is complete. }
  */
 const router = Router();
 const run = (handler: (req: Request, res: Response) => Promise<unknown>) => (req: Request, res: Response, next: NextFunction) => { handler(req, res).catch(next); };
@@ -211,15 +253,24 @@ router.post("/api/auth/logout", run(async (req, res) => {
 router.post("/api/lobbies", run(async (req, res) => {
   const body = bodyObject(req);
   const filterKeys = ["location", "dinnerAt", "maxDistance", "minimumRating", "categories", "openNow", "priceLevels", "diningNeeds"];
-  if (Object.keys(body).some(key => ![...filterKeys, "name", "displayName"].includes(key))) reject("Unsupported lobby field.");
+  if (Object.keys(body).some(key => ![...filterKeys, "name", "displayName", "collectionId"].includes(key))) reject("Unsupported lobby field.");
   const filterBody = Object.fromEntries(filterKeys.filter(key => key in body).map(key => [key, body[key]]));
   const filters = filtersFrom(filterBody);
   if (!filters.location || !filters.dinnerAt) reject("Location and dinner time are required.");
   const name = body.name === undefined ? `Dinner in ${filters.location}` : shortString(body.name, "name", 120);
+  let collectionSource: { name: string; placeIds: string[] } | null = null;
+  if (body.collectionId !== undefined) {
+    if (!req.identity?.userId) throw new HttpError(401, "Sign in to use a collection.");
+    if (typeof body.collectionId !== "string" || !mongoose.isObjectIdOrHexString(body.collectionId)) reject("Invalid collection ID.");
+    const collection = await RestaurantCollection.findOne({ _id: body.collectionId, userId: req.identity.userId }).lean();
+    if (!collection) throw new HttpError(404, "Collection not found.");
+    if (!collection.placeIds.length) reject("Add restaurants to this collection before starting a lobby.");
+    collectionSource = { name: collection.name, placeIds: [...collection.placeIds] };
+  }
   const member = await newMember(req, res, body);
   for (let attempt = 0; attempt < 5; attempt++) {
     try {
-      const lobby = await Lobby.create({ lobbyCode: code(), name, hostMemberId: member.memberId, members: [member], nextJoinOrder: 1, revision: 0, status: "waiting", filters });
+      const lobby = await Lobby.create({ lobbyCode: code(), name, hostMemberId: member.memberId, members: [member], nextJoinOrder: 1, revision: 0, status: "waiting", filters, collectionSource });
       return res.status(201).json({ lobby: serializeLobby(lobby as never, req.identity) });
     } catch (error) {
       if ((error as { code?: number }).code === 11000 && attempt < 4) continue;
@@ -239,6 +290,9 @@ router.post("/api/lobbies/:id/join", run(async (req, res) => {
     candidate.joinOrder = current.nextJoinOrder++;
     current.members.push(candidate);
   });
+  if (req.identity?.userId) {
+    await GroupInvitation.updateMany({ lobbyId: lobby!._id, recipientId: req.identity.userId, status: "pending" }, { $set: { status: "accepted" } }).catch(error => console.error("Could not mark invitation accepted:", error));
+  }
   return res.json({ lobby: serializeLobby(lobby!, req.identity), member: serializeLobby(lobby!, req.identity).selfMemberId });
 }));
 
@@ -257,12 +311,15 @@ router.get("/api/lobbies/:id/filters", run(async (req, res) => {
 router.patch("/api/lobbies/:id", run(async (req, res) => {
   requireHost(await findLobby(String(req.params.id)), req.identity);
   const body = bodyObject(req);
-  if (!Object.keys(body).length || Object.keys(body).some(key => !["name", "status"].includes(key))) reject("Provide name and/or status only.");
+  if (!Object.keys(body).length || Object.keys(body).some(key => !["name", "status", "filters"].includes(key))) reject("Provide name, status, and/or filters only.");
   const name = body.name === undefined ? undefined : shortString(body.name, "name", 120);
+  if (body.filters !== undefined && (!body.filters || typeof body.filters !== "object" || Array.isArray(body.filters))) reject("Invalid filters.");
+  const filters = body.filters === undefined ? undefined : filtersFrom(body.filters as Record<string, unknown>);
   if (body.status !== undefined && !["waiting", "playing", "finished"].includes(String(body.status))) reject("Invalid lobby status.");
   const lobby = await changeLobby(String(req.params.id), current => {
     requireHost(current, req.identity);
     if (name !== undefined) current.name = name;
+    if (filters !== undefined) current.filters = { ...JSON.parse(JSON.stringify(current.filters)), ...filters };
     if (body.status !== undefined) current.status = body.status as "waiting" | "playing" | "finished";
   });
   res.json({ lobby: serializeLobby(lobby!, req.identity) });
@@ -333,7 +390,8 @@ router.get("/api/lobbies/:id/restaurants", run(async (req, res) => {
     throw new HttpError(400, "Set a lobby location before searching");
   }
   try {
-    const { restaurants, warnings } = await findLobbyRestaurants(lobby.filters);
+    const excludeIds = typeof req.query.exclude === "string" ? req.query.exclude.split(",").filter(id => /^[A-Za-z0-9_-]{1,200}$/.test(id)).slice(0, 10) : [];
+    const { restaurants, warnings } = await (lobby.collectionSource ? findCollectionRestaurants(lobby.collectionSource, excludeIds) : findLobbyRestaurants(lobby.filters, excludeIds));
     res.json({
       lobbyId: String(lobby._id),
       attribution: "Google Maps",
@@ -364,7 +422,7 @@ router.post("/api/lobbies/:id/round", run(async (req, res) => {
   let restaurants: NonNullable<LobbyDocument["round"]>["restaurants"];
   let warnings: string[];
   try {
-    ({ restaurants, warnings } = await findLobbyRestaurants(initial.filters));
+    ({ restaurants, warnings } = await (initial.collectionSource ? findCollectionRestaurants(initial.collectionSource) : findLobbyRestaurants(initial.filters)));
   } catch { throw new HttpError(502, "Could not load restaurants. Check the location and try again."); }
   if (!restaurants.length) throw new HttpError(400, "No restaurants matched these filters. Try changing the lobby settings.");
   const lobby = await changeLobby(String(req.params.id), current => {
@@ -415,6 +473,24 @@ router.delete("/api/lobbies/:id/round", run(async (req, res) => {
   res.json({ ok: true });
 }));
 
+/** @swagger
+ * /api/lobbies/{id}/votes:
+ *   post:
+ *     deprecated: true
+ *     summary: Retired voting endpoint; use the round vote endpoint.
+ *     tags: [lobby]
+ *     parameters: [{ in: path, name: id, required: true, schema: { type: string } }]
+ *     responses:
+ *       410: { description: "Retired; use PUT /api/lobbies/{id}/round/vote." }
+ * /api/lobbies/{id}/results:
+ *   get:
+ *     deprecated: true
+ *     summary: Retired results endpoint; use the round endpoint.
+ *     tags: [lobby]
+ *     parameters: [{ in: path, name: id, required: true, schema: { type: string } }]
+ *     responses:
+ *       410: { description: "Retired; use GET /api/lobbies/{id}/round." }
+ */
 // Do not expose the old demonstration endpoints as real votes or results.
 router.all(["/api/lobbies/:id/votes", "/api/lobbies/:id/results"], run(async (req, res) => {
   memberFor(await findLobby(String(req.params.id)), req.identity);

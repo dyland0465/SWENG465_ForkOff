@@ -1,6 +1,7 @@
 import { EventEmitter } from "node:events";
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import type { Request, Response, NextFunction } from "express";
+import jwt from "jsonwebtoken";
 import { Session } from "../db_models/session";
 import { User } from "../db_models/user";
 
@@ -13,6 +14,18 @@ export const sessionEvents = new EventEmitter();
 const cookieName = "forkoff_session";
 const lifetime = 30 * 24 * 60 * 60 * 1000;
 const hash = (token: string) => createHash("sha256").update(token).digest("hex");
+const issuer = "forkoff";
+const audience = "forkoff-web";
+
+// Never fall back to a built-in secret. The same secret must be configured on
+// every server instance, and rotating it intentionally invalidates all JWTs.
+export function jwtSecret(): string {
+  const secret = process.env.JWT_SECRET;
+  if (!secret || Buffer.byteLength(secret, "utf8") < 32) {
+    throw new Error("JWT_SECRET must be configured with at least 32 bytes of random secret data.");
+  }
+  return secret;
+}
 
 export function cookieToken(cookie = "") {
   return cookie.split(";").map(part => part.trim()).find(part => part.startsWith(`${cookieName}=`))?.slice(cookieName.length + 1);
@@ -20,9 +33,21 @@ export function cookieToken(cookie = "") {
 
 export async function resolveIdentity(cookie?: string): Promise<Identity | undefined> {
   const token = cookieToken(cookie);
-  if (!token || !/^[a-f0-9]{64}$/.test(token)) return;
+  if (!token || token.length > 4096) return;
+  const secret = jwtSecret();
+  let claims: jwt.JwtPayload;
+  try {
+    const decoded = jwt.verify(token, secret, { algorithms: ["HS256"], issuer, audience });
+    if (typeof decoded === "string" || typeof decoded.sub !== "string" ||
+        typeof decoded.jti !== "string" || typeof decoded.exp !== "number" ||
+        typeof decoded.iat !== "number") return;
+    claims = decoded;
+  } catch (error) {
+    if (error instanceof jwt.JsonWebTokenError) return;
+    throw error;
+  }
   const session = await Session.findOne({ tokenHash: hash(token), expiresAt: { $gt: new Date() } }).lean();
-  if (!session) return;
+  if (!session || session.identityKey !== claims.sub) return;
   if (session.userId) {
     const user = await User.findById(session.userId).select("username email role partnerStatus restaurantIds").lean();
     if (!user) return;
@@ -69,9 +94,11 @@ export async function revokeUserSessions(userId: string) {
 }
 
 export async function establishSession(req: Request, res: Response, user?: { id: string; username: string; email: string }) {
+  const secret = jwtSecret();
   await revokeSession(req.headers.cookie);
-  const token = randomBytes(32).toString("hex");
   const identityKey = user ? `user:${user.id}` : `guest:${randomUUID()}`;
+  const token = jwt.sign({}, secret, { algorithm: "HS256", issuer, audience,
+    subject: identityKey, jwtid: randomBytes(32).toString("hex"), expiresIn: lifetime / 1000 });
   await Session.create({ tokenHash: hash(token), identityKey, userId: user?.id, expiresAt: new Date(Date.now() + lifetime) });
   res.cookie(cookieName, token, { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax", path: "/", maxAge: lifetime });
   req.identity = user ? { key: identityKey, userId: user.id, username: user.username, email: user.email } : { key: identityKey };

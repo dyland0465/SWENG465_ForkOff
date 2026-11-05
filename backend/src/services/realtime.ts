@@ -1,6 +1,7 @@
 import { Server as HttpServer } from "node:http";
 import { Server } from "socket.io";
 import { allowedOrigin, cookieToken, resolveIdentity, sessionEvents } from "./session";
+import { HttpError } from "../utils/errors";
 import { Lobby } from "../db_models/lobby";
 import { changeLobby, deleteRelated, findLobby, isOnline, lobbyEvents, memberFor, nextOnline, presence } from "./lobbyState";
 
@@ -73,7 +74,7 @@ export function attachRealtime(server: HttpServer, options: { graceMs?: number; 
       if (subscribing || socket.data.lobbyId) return reply({ error: "Already subscribed." });
       subscribing = true;
       try {
-        if (typeof key !== "string") throw new Error("Invalid lobby.");
+        if (typeof key !== "string" || !/^[A-Za-z0-9]{1,40}$/.test(key)) throw new HttpError(400, "Invalid lobby.");
         const identity = await resolveIdentity(socket.handshake.headers.cookie);
         const lobby = await findLobby(key);
         const member = memberFor(lobby, identity);
@@ -97,7 +98,7 @@ export function attachRealtime(server: HttpServer, options: { graceMs?: number; 
         await prune(id);
         broadcast(id);
         reply({ ok: true });
-      } catch (error) { reply({ error: (error as Error).message }); }
+      } catch (error) { reply({ error: error instanceof HttpError ? error.message : "Could not join lobby." }); }
       finally { subscribing = false; }
     });
     socket.on("disconnect", () => {

@@ -12,11 +12,12 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import express from "express";
-import router from "../src/routes";
-import { User } from "../src/models/user";
-import { Session } from "../src/models/session";
+import router from "../src/api_routes";
+import { User } from "../src/db_models/user";
+import { Session } from "../src/db_models/session";
 
 test("partner registration", async () => {
+  process.env.JWT_SECRET = "test-only-secret-at-least-32-bytes-long";
   const original = { create: User.create, session: Session.create };
   const app = express();
   app.use(express.json());

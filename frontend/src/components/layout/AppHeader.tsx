@@ -33,6 +33,7 @@ export function AppHeader({ onHowItWorks, onJoinLobby }: AppHeaderProps) {
           <TextAction tone="nav" onClick={onHowItWorks}>How it works</TextAction>
           <TextAction tone="nav" current={isJoinLobby} onClick={onJoinLobby}>Enter lobby code</TextAction>
                     {/* Admin screen: only admin accounts see this tab. */}
+          {user && <TextAction to={paths.saved} tone="nav" current={pathname === paths.saved}>Saved</TextAction>}
           {user?.role === 'admin' && <TextAction to={paths.admin} tone="nav" current={isAdmin}>Admin</TextAction>}
           {user?.role === 'partner' && <TextAction to={paths.partnerAccess} tone="nav" current={isPartnerAccess}>Partner</TextAction>}
           {user ? (

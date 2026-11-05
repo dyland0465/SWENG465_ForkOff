@@ -22,19 +22,6 @@ import { Restaurant } from "../db_models/restaurant";
 
 const router = Router();
 
-/** @swagger
- * /api/restaurants/{id}:
- *   patch:
- *     summary: Update restaurant information.
- *     tags: [restaurant]
- *     parameters: [{ in: path, name: id, required: true, schema: { type: string } }]
- *     requestBody:
- *       required: true
- *       content: { application/json: { schema: { type: object, properties: { restaurantName: { type: string }, address: { type: string }, phone: { type: string }, website: { type: string, format: uri }, categories: { type: array, items: { type: string } } } } } }
- *     responses:
- *       200: { description: Restaurant updated successfully. }
- *       400: { description: Invalid restaurant data. }
- */
 // TODO: Connect to db to actually edit restaurant info.
 router.patch("/api/restaurants/:id", (req, res) => {
   const restaurantId = req.params.id;
@@ -56,15 +43,6 @@ router.patch("/api/restaurants/:id", (req, res) => {
   });
 });
 
-/** @swagger
- * /api/restaurants/{id}/menu:
- *   get:
- *     summary: Get a restaurant menu.
- *     tags: [restaurant]
- *     parameters: [{ in: path, name: id, required: true, schema: { type: string } }]
- *     responses:
- *       200: { description: Restaurant menu returned successfully. }
- */
 // TODO: Fetch menu from database.
 router.get("/api/restaurants/:id/menu", (req, res) => {
   const restaurantId = req.params.id;
@@ -106,19 +84,6 @@ router.get("/api/restaurants/:id/menu", (req, res) => {
   return res.status(200).json(menu);
 });
 
-/** @swagger
- * /api/restaurants/{id}/menu:
- *   patch:
- *     summary: Update a restaurant menu.
- *     tags: [restaurant]
- *     parameters: [{ in: path, name: id, required: true, schema: { type: string } }]
- *     requestBody:
- *       required: true
- *       content: { application/json: { schema: { type: object, required: [menu], properties: { menu: { type: object } } } } }
- *     responses:
- *       200: { description: Restaurant menu updated successfully. }
- *       400: { description: Menu data is required. }
- */
 // TODO: Save updates to database.
 router.patch("/api/restaurants/:id/menu", (req, res) => {
   const restaurantId = req.params.id;
@@ -137,15 +102,6 @@ router.patch("/api/restaurants/:id/menu", (req, res) => {
   });
 });
 
-/** @swagger
- * /api/restaurants/{id}/analytics:
- *   get:
- *     summary: Get restaurant analytics.
- *     tags: [restaurant]
- *     parameters: [{ in: path, name: id, required: true, schema: { type: string } }]
- *     responses:
- *       200: { description: Analytics returned successfully. }
- */
 // TODO: Generate analytics from database votes/views/swipes.
 router.get("/api/restaurants/:id/analytics", (req, res) => {
   const restaurantId = req.params.id;
@@ -162,15 +118,6 @@ router.get("/api/restaurants/:id/analytics", (req, res) => {
   return res.status(200).json(analytics);
 });
 
-/** @swagger
- * /api/places/{id}/photos:
- *   get:
- *     summary: Get restaurant photos from Google Places.
- *     tags: [places]
- *     parameters: [{ in: path, name: id, required: true, schema: { type: string } }]
- *     responses:
- *       200: { description: Place photos returned successfully. }
- */
 // TODO: Fetch photos from Google Places API.
 router.get("/api/places/:id/photos", (req, res) => {
   const placeId = req.params.id;
@@ -192,19 +139,6 @@ router.get("/api/places/:id/photos", (req, res) => {
   });
 });
 
-/** @swagger
- * /api/lobbies/{id}/votes:
- *   post:
- *     summary: Submit a restaurant vote or swipe.
- *     tags: [lobby]
- *     parameters: [{ in: path, name: id, required: true, schema: { type: string } }]
- *     requestBody:
- *       required: true
- *       content: { application/json: { schema: { type: object, required: [userId, restaurantId, vote], properties: { userId: { type: string }, restaurantId: { type: string }, vote: { type: string, enum: [like, dislike, veto] } } } } }
- *     responses:
- *       201: { description: Vote submitted successfully. }
- *       400: { description: Invalid vote request. }
- */
 router.post("/api/lobbies/:id/votes", (req, res) => {
   const lobbyId = req.params.id;
 
@@ -231,15 +165,6 @@ router.post("/api/lobbies/:id/votes", (req, res) => {
   });
 });
 
-/** @swagger
- * /api/lobbies/{id}/results:
- *   get:
- *     summary: Get game results.
- *     tags: [lobby]
- *     parameters: [{ in: path, name: id, required: true, schema: { type: string } }]
- *     responses:
- *       200: { description: Game results returned successfully. }
- */
 router.get("/api/lobbies/:id/results", (req, res) => {
   const lobbyId = req.params.id;
 
@@ -264,18 +189,6 @@ router.get("/api/lobbies/:id/results", (req, res) => {
   });
 });
 
-/** @swagger
- * /api/groupchats:
- *   post:
- *     summary: Create a group chat.
- *     tags: [group-chat]
- *     requestBody:
- *       required: true
- *       content: { application/json: { schema: { type: object, required: [creatorId], properties: { name: { type: string }, creatorId: { type: string } } } } }
- *     responses:
- *       201: { description: Group chat created successfully. }
- *       400: { description: Creator ID is required. }
- */
 router.post("/api/groupchats", (req, res) => {
   const groupchat = {
     id: "CHAT123",
@@ -295,15 +208,6 @@ router.post("/api/groupchats", (req, res) => {
   });
 });
 
-/** @swagger
- * /api/groupchats/{id}/members:
- *   get:
- *     summary: Get group chat members.
- *     tags: [group-chat]
- *     parameters: [{ in: path, name: id, required: true, schema: { type: string } }]
- *     responses:
- *       200: { description: Group chat members returned successfully. }
- */
 router.get("/api/groupchats/:id/members", (req, res) => {
   const groupchatId = req.params.id;
 
@@ -324,15 +228,6 @@ router.get("/api/groupchats/:id/members", (req, res) => {
   });
 });
 
-/** @swagger
- * /api/groupchats/{id}/messages:
- *   get:
- *     summary: Get group chat messages.
- *     tags: [group-chat]
- *     parameters: [{ in: path, name: id, required: true, schema: { type: string } }]
- *     responses:
- *       200: { description: Group chat messages returned successfully. }
- */
 router.get("/api/groupchats/:id/messages", (req, res) => {
   const groupchatId = req.params.id;
 
@@ -357,17 +252,6 @@ router.get("/api/groupchats/:id/messages", (req, res) => {
   });
 });
 
-/** @swagger
- * /api/groupchats/{id}:
- *   patch:
- *     summary: Update a group chat.
- *     tags: [group-chat]
- *     parameters: [{ in: path, name: id, required: true, schema: { type: string } }]
- *     requestBody:
- *       content: { application/json: { schema: { type: object, properties: { name: { type: string } } } } }
- *     responses:
- *       200: { description: Group chat updated successfully. }
- */
 router.patch("/api/groupchats/:id", (req, res) => {
   const groupchatId = req.params.id;
 
@@ -382,16 +266,6 @@ router.patch("/api/groupchats/:id", (req, res) => {
   });
 });
 
-/** @swagger
- * /api/groupchats/{id}:
- *   delete:
- *     summary: Delete a group chat.
- *     tags: [group-chat]
- *     parameters: [{ in: path, name: id, required: true, schema: { type: string } }]
- *     responses:
- *       200: { description: Group chat deleted successfully. }
- *       404: { description: Group chat not found. }
- */
 router.delete("/api/groupchats/:id", (req, res) => {
   const groupchatId = req.params.id;
 

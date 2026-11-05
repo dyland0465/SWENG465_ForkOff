@@ -2,8 +2,7 @@
  * requireRole.ts
  *
  * Express middleware that only lets certain kinds of accounts through. This is
- * Step 4 (authorization / restrictToRole) of the JWT security guide, built on top
- * of the existing session system instead of JWT:
+ * Authorization based on the current user loaded from the JWT-backed session:
  *
  *   router.use("/api/admin", requireRole("admin"))
  *

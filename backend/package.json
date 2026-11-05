@@ -2,7 +2,7 @@
   "name": "forkoff-backend",
   "version": "1.0.0",
   "description": "",
-    "scripts": {
+  "scripts": {
     "test": "node --import tsx --test tests/*.test.ts",
     "dev": "tsx watch src/server.ts",
     "start": "tsx src/server.ts",
@@ -16,6 +16,7 @@
     "argon2": "^0.45.1",
     "dotenv": "^18.0.5",
     "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.3",
     "mongodb": "^7.7.0",
     "mongoose": "^9.10.3",
     "socket.io": "^4.8.4",
@@ -34,10 +35,12 @@
   "license": "ISC",
   "devDependencies": {
     "@types/express": "^5.0.6",
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^26.6.3",
     "@types/swagger-jsdoc": "^6.0.4",
     "@types/swagger-ui-express": "^4.1.8",
     "prettier": "^3.9.9",
+    "socket.io-client": "^4.8.4",
     "tsx": "^4.23.15"
   },
   "allowScripts": {

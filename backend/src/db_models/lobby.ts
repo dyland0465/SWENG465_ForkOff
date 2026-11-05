@@ -19,6 +19,7 @@ const lobbySchema = new Schema(
     nextJoinOrder: { type: Number, default: 1 },
     revision: { type: Number, default: 0 },
     round: { type: Schema.Types.Mixed, default: null },
+    collectionSource: { type: Schema.Types.Mixed, default: null },
     members: [{
       _id: false,
       memberId: { type: String, required: true },

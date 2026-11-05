@@ -17,7 +17,7 @@ const router = Router();
  * @swagger
  * /api/auth/login:
  *   post:
- *     summary: Authorize a user login.
+ *     summary: Login using a username or email and password.
  *     tags:
  *       - auth
  *     requestBody:
@@ -27,7 +27,6 @@ const router = Router();
  *           schema:
  *             type: object
  *             required:
- *               - username
  *               - password
  *             properties:
  *               username:
@@ -49,20 +48,14 @@ const router = Router();
  *         description: Invalid username/email or password.
  */
 router.post("/api/auth/login", async (req, res) => {
-  const identifier = String(
-    req.body.username ??
-      req.body.Username ??
-      req.body.email ??
-      req.body.Email ??
-      "",
-  ).trim();
-  const password = String(req.body.password ?? req.body.Password ?? "");
-
-  if (!identifier || !password) {
-    return res.status(400).json({
-      message: "Username or email and password are required.",
-    });
+  const rawIdentifier = req.body?.username ?? req.body?.Username ?? req.body?.email ?? req.body?.Email;
+  const rawPassword = req.body?.password ?? req.body?.Password;
+  if (typeof rawIdentifier !== "string" || !rawIdentifier.trim() || rawIdentifier.trim().length > 254 ||
+      typeof rawPassword !== "string" || !rawPassword || rawPassword.length > 128) {
+    return res.status(400).json({ message: "Username or email and password are required." });
   }
+  const identifier = rawIdentifier.trim();
+  const password = rawPassword;
 
   const user = await User.findOne({
     $or: [

@@ -6,7 +6,7 @@
  *  - GET /api/places/:id/reviews  place reviews
  */
 import { Router } from "express";
-import { getGooglePlace, getGooglePlaceReviews } from "../services/googlePlaces";
+import { getGooglePlace, getGooglePlaceReviews, getGooglePlacePhotos, getPhotoUrl } from "../services/googlePlaces";
 import { handlePlacesError } from "../utils/errors";
 
 const router = Router();
@@ -49,6 +49,30 @@ router.get("/api/places/:id/reviews", async (req, res) => {
     return res.status(200).json({ placeId, attribution: "Google Maps", reviews });
   } catch (error) {
     return handlePlacesError(res, error, "Failed to load Google Place reviews:");
+  }
+});
+
+/** @swagger
+ * /api/places/{id}/photos:
+ *   get:
+ *     summary: Get Google Places photo URLs and author attributions.
+ *     tags: [places]
+ *     parameters: [{ in: path, name: id, required: true, schema: { type: string } }]
+ *     responses:
+ *       200: { description: Photo URLs and author attributions; display attribution. }
+ *       404: { description: Place not found. }
+ *       502: { description: Google Places request failed. }
+ *       503: { description: Google Places is not configured. }
+ */
+router.get("/api/places/:id/photos", async (req, res) => {
+  try {
+    const photos = await getGooglePlacePhotos(String(req.params.id));
+    const result = await Promise.all(photos.map(async photo => ({
+      url: await getPhotoUrl(photo), authorAttributions: photo.authorAttributions ?? [],
+    })));
+    return res.json({ placeId: req.params.id, attribution: "Google Maps", photos: result.filter(photo => photo.url) });
+  } catch (error) {
+    return handlePlacesError(res, error, "Failed to load Google Place photos:");
   }
 });
 
