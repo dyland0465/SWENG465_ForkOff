@@ -254,3 +254,5 @@
   .create-lobby__match-note { inline-size: 100%; }
   .create-lobby__submit > .ui-button, .join-lobby__form > .ui-button { inline-size: 100%; }
 }
+
+.create-lobby__collection { margin-block-end: var(--spacing-6); }

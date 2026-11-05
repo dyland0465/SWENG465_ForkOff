@@ -1,6 +1,7 @@
+import { GroupControls } from '../features/saved/GroupControls'
 import { lobbyRequest, useLiveLobby } from '../features/lobby/liveLobby'
 import { useRef, useState } from 'react'
-import { generatePath, useNavigate, useParams } from 'react-router'
+import { generatePath, useLocation, useNavigate, useParams } from 'react-router'
 import type { FormEvent } from 'react'
 import { Button } from '../components/ui/Button'
 import { TextInput, SelectField } from '../components/ui/FormField'
@@ -21,6 +22,8 @@ function LobbyScreen({ lobbyId }: { lobbyId: string }) {
     mutate: requestMutation,
   } = useLiveLobby()
   const navigate = useNavigate()
+  const location = useLocation()
+  const invitationError = (location.state as { invitationError?: string } | null)?.invitationError
   const [draft, setDraft] = useState('')
   const [sending, setSending] = useState(false)
   const pendingMessage = useRef<{ text: string; requestId: string } | null>(
@@ -126,7 +129,7 @@ function LobbyScreen({ lobbyId }: { lobbyId: string }) {
     <main id="main-content" className="lobby-page" tabIndex={-1}>
       {!lobby && <h1>Your dinner crew</h1>}
       {!lobby && !error && <p role="status">Loading lobby…</p>}
-      {(error || actionError) && <p role="alert">{actionError || error}</p>}
+      {(error || actionError || invitationError) && <p role="alert">{actionError || error || invitationError}</p>}
       <p className="lobby-page__status" role="status">
         {connection !== 'Live' ? connection : ''}
       </p>
@@ -275,11 +278,13 @@ function LobbyScreen({ lobbyId }: { lobbyId: string }) {
             </TextAction>
           )}
           </div>
+            <GroupControls lobbyId={lobbyId} isHost={lobby.isHost} />
             <LobbyRestaurantPreview lobbyId={lobbyId} filterKey={JSON.stringify(lobby.filters)} isHost={lobby.isHost} />
           </section>
 
           <section className="lobby-page__settings" aria-label="Round settings">
             <LobbyCode code={lobby.lobbyCode} />
+            {lobby.collectionSource && <p className="lobby-collection-source">Voting from collection: <strong>{lobby.collectionSource.name}</strong> · {lobby.collectionSource.count} restaurants. Discovery filters do not apply to this collection.</p>}
             <section
               className="lobby-round-filters"
               aria-labelledby="round-filters-heading"

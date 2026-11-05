@@ -1,3 +1,5 @@
+import { Favorite, RestaurantCollection, SavedGroup, GroupInvitation, CollectionShare } from "../db_models/saved";
+import { RateLimit } from "../db_models/rateLimit";
 import { Session } from "../db_models/session";
 import mongoose from "mongoose";
 import { GroupchatMessage } from "../db_models/groupchat";
@@ -13,7 +15,7 @@ export async function connectDB(): Promise<void> {
     throw new Error("MONGODB_URI is not defined in the environment variables");
   }
   await mongoose.connect(uri, { dbName: "main" });
-  const models = [User, Vote, Lobby, GroupchatMessage, Restaurant, Session];
+  const models = [User, Vote, Lobby, GroupchatMessage, Restaurant, Session, RateLimit, Favorite, RestaurantCollection, SavedGroup, GroupInvitation, CollectionShare];
   await Promise.all(models.map((model) => model.init()));
   console.log(
     `Connected to MongoDB database "main"; collections ready: ${models.map((model) => model.collection.name).join(", ")}`,

@@ -1,3 +1,4 @@
+import { SaveRestaurant } from '../features/saved/SaveRestaurant'
 import { GoogleMapsLink } from '../components/ui/GoogleMapsLink'
 import { useEffect, useState } from 'react'
 import { generatePath, Navigate, useParams } from 'react-router'
@@ -83,6 +84,7 @@ function VotingScreen({ lobbyId }: { lobbyId: string }) {
         <div><span>TODAY’S HOURS</span><p>{hoursForToday(current.hours, current.timeZone) ?? 'Hours unavailable'}</p>{hoursForToday(current.hours, current.timeZone) && <small>Regular hours may vary.</small>}</div>
         {current.googleMapsUri && <div className="voting-card__map"><GoogleMapsLink href={current.googleMapsUri} /></div>}
       </div>
+      <SaveRestaurant key={current.id} placeId={current.id} />
       <div className="voting-card__vote">
         <h3>What do you think?</h3>
         <p>Make your pick for this restaurant.</p>

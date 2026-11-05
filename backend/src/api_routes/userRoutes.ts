@@ -10,9 +10,11 @@
  */
 import { Router, type Request } from "express";
 import mongoose from "mongoose";
+import { Favorite, RestaurantCollection, SavedGroup, GroupInvitation, CollectionShare } from "../db_models/saved";
 import { User } from "../db_models/user";
 import { hashPassword } from "../services/passwordHashing";
 import { establishSession, revokeUserSessions } from "../services/session";
+import { registrationFields } from "../utils/registration";
 import { HttpError, isDuplicateKeyError } from "../utils/errors";
 
 const router = Router();
@@ -38,17 +40,18 @@ function requireOwnProfile(req: Request) {
  *           schema:
  *             type: object
  *             required:
- *               - Username
- *               - Password
- *               - Email
+ *               - username
+ *               - password
+ *               - email
  *             properties:
- *               Username:
+ *               username:
  *                 type: string
  *                 example: "Billy"
- *               Password:
+ *               password:
  *                 type: string
- *                 example: "Password"
- *               Email:
+ *                 minLength: 8
+ *                 maxLength: 128
+ *               email:
  *                 type: string
  *                 example: "example@example.com"
  *     responses:
@@ -60,17 +63,8 @@ function requireOwnProfile(req: Request) {
 router.post("/api/users", async (req, res) => {
   console.log("User creation request received");
 
-  let user = {
-    username: req.body.username,
-    password: req.body.password,
-    email: req.body.email,
-  };
-
-  if (!user.username || !user.password || !user.email) {
-    return res.status(400).json({
-      message: "Username, password, and email are required.",
-    });
-  }
+  const user = registrationFields(req.body);
+  if (!user) return res.status(400).json({ message: "Provide a valid username, email, and password of 8 to 128 characters." });
 
   try {
     const createdUser = await User.create({
@@ -224,6 +218,11 @@ router.delete("/api/users/:id", async (req, res) => {
   const user = await User.findByIdAndDelete(userId);
   if (!user) return res.status(404).json({ message: "User not found." });
   await revokeUserSessions(String(user._id));
+  await Promise.all([
+    Favorite.deleteMany({ userId: user._id }), RestaurantCollection.deleteMany({ userId: user._id }),
+    SavedGroup.deleteMany({ ownerId: user._id }), SavedGroup.updateMany({ "members.userId": user._id }, { $pull: { members: { userId: user._id } } }),
+    GroupInvitation.deleteMany({ $or: [{ recipientId: user._id }, { senderId: user._id }] }), CollectionShare.deleteMany({ ownerId: user._id }),
+  ]);
   res.clearCookie("forkoff_session", { path: "/", httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax" });
 
   return res.status(200).json({

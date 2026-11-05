@@ -1,3 +1,4 @@
+import { Favorite, RestaurantCollection, SavedGroup, GroupInvitation, CollectionShare } from "../src/db_models/saved";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import express from "express";
@@ -9,7 +10,12 @@ import { sessionEvents } from "../src/services/session";
 
 test("profile, deletion, and reviews endpoints", async () => {
   const id = "507f1f77bcf86cd799439011";
-  const original = { find: User.findById, update: User.findByIdAndUpdate, delete: User.findByIdAndDelete, restaurant: Restaurant.findOneAndDelete, sessions: Session.deleteMany, fetch: globalThis.fetch };
+  const cleanupModels = [Favorite, RestaurantCollection, SavedGroup, GroupInvitation, CollectionShare];
+  const cleanupDelete = cleanupModels.map(model => model.deleteMany);
+  const groupUpdate = SavedGroup.updateMany;
+  cleanupModels.forEach(model => { model.deleteMany = (async () => ({})) as any; });
+  SavedGroup.updateMany = (async () => ({})) as any;
+  const original = { find: User.findById, update: User.findByIdAndUpdate, delete: User.findByIdAndDelete, restaurant: Restaurant.findOneAndDelete, restaurantFind: Restaurant.findOne, sessions: Session.deleteMany, fetch: globalThis.fetch };
   const app = express();
   app.use(express.json());
   app.use((req, _res, next) => {
@@ -55,10 +61,10 @@ test("profile, deletion, and reviews endpoints", async () => {
     assert.equal(revoked, id);
     User.findByIdAndDelete = (async () => null) as any;
     assert.equal((await request(`/api/users/${id}`, "DELETE")).status, 404);
-    Restaurant.findOneAndDelete = (async (filter: any) => { assert.deepEqual(filter, { placeId: "place123" }); return { placeId: "place123" }; }) as any;
+    Restaurant.findOne = (async () => ({ _id: id, placeId: "place123" })) as any;
     assert.equal((await request("/api/restaurants/place123", "DELETE", undefined, null)).status, 401);
-    assert.equal((await request("/api/restaurants/place123", "DELETE")).status, 200);
-    Restaurant.findOneAndDelete = (async () => null) as any;
+    assert.equal((await request("/api/restaurants/place123", "DELETE")).status, 403);
+    Restaurant.findOne = (async () => null) as any;
     assert.equal((await request("/api/restaurants/missing", "DELETE")).status, 404);
     const previousKey = process.env.GOOGLE_PLACES;
     try {
@@ -80,8 +86,10 @@ test("profile, deletion, and reviews endpoints", async () => {
     }
   } finally {
     User.findById = original.find; User.findByIdAndUpdate = original.update; User.findByIdAndDelete = original.delete;
-    Restaurant.findOneAndDelete = original.restaurant; Session.deleteMany = original.sessions; globalThis.fetch = original.fetch;
+    Restaurant.findOneAndDelete = original.restaurant; Restaurant.findOne = original.restaurantFind; Session.deleteMany = original.sessions; globalThis.fetch = original.fetch;
     sessionEvents.off("userRevoked", listener);
+    cleanupModels.forEach((model, index) => { model.deleteMany = cleanupDelete[index] as any; });
+    SavedGroup.updateMany = groupUpdate;
     await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()));
   }
 });

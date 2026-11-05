@@ -1,3 +1,4 @@
+import { SaveRestaurant } from '../../features/saved/SaveRestaurant'
 import { useEffect, useRef, useState } from 'react'
 import { generatePath } from 'react-router'
 import { TextAction } from '../ui/TextAction'
@@ -80,6 +81,7 @@ export function LobbyRestaurantPreview({ lobbyId, filterKey, isHost }: { lobbyId
       {selected && <dialog ref={dialog} className="lobby-restaurant-preview__dialog" onClose={() => setSelected(null)}>
         <button type="button" onClick={() => dialog.current?.close()}>Close</button>
         <h2>{selected.name}</h2>
+        <SaveRestaurant key={selected.id} placeId={selected.id} />
         {selected.photoUrl ? <img src={selected.photoUrl} alt={`Photo of ${selected.name}`} /> : <p>Photo unavailable</p>}
         {!!selected.photoAuthors?.length && <p>Photo: {selected.photoAuthors.map((author, index) => <span key={index}>{index > 0 && ', '}{author.uri ? <a href={author.uri} target="_blank" rel="noopener noreferrer">{author.displayName}</a> : author.displayName}</span>)}</p>}
         {selected.googleMapsUri && <a href={selected.googleMapsUri} target="_blank" rel="noopener noreferrer">View on Google Maps</a>}

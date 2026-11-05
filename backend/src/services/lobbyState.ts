@@ -13,6 +13,7 @@ export type LobbyDocument = mongoose.HydratedDocument<{
   lobbyCode: string; name: string; hostMemberId: string | null; nextJoinOrder: number; revision: number;
   members: Member[]; status: "waiting" | "playing" | "finished";
   filters: { location?: string; dinnerAt?: Date; maxDistance?: number; minimumRating?: number; categories?: string[]; openNow?: boolean; priceLevels?: string[]; diningNeeds?: string[] };
+  collectionSource?: { name: string; placeIds: string[] } | null;
   createdAt: Date; updatedAt: Date;
   round?: { id: string; warnings?: string[]; restaurants: { id: string; name: string; address: string | null; category: string | null; googleMapsUri: string | null; photoUrl: string | null; photoAuthors: { displayName: string; uri?: string }[]; rating?: number | null; ratingCount?: number | null; priceLevel?: string | null; distanceMiles?: number | null; hours?: string[]; timeZone?: string | null }[]; participants: string[]; decisions: Record<string, Record<string, string>> } | null;
 }>;
@@ -49,6 +50,7 @@ export function serializeLobby(lobby: LobbyDocument, identity?: Identity) {
   const own = lobby.members.find(member => member.identityKey === identity?.key);
   return {
     id: String(lobby._id), lobbyCode: lobby.lobbyCode, name: lobby.name, status: lobby.status,
+    collectionSource: lobby.collectionSource ? { name: lobby.collectionSource.name, count: lobby.collectionSource.placeIds.length } : null,
     hostMemberId: lobby.hostMemberId, revision: lobby.revision, filters: lobby.filters, roundId: lobby.round?.id ?? null,
     members: lobby.members.map(({ memberId, userId, type, displayName, joinOrder, joinedAt }) => ({
       memberId, userId, type, displayName, joinOrder, joinedAt, online: isOnline(String(lobby._id), memberId),

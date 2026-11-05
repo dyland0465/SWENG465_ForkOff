@@ -1,23 +1,12 @@
 import { Router, type Request, type Response, type NextFunction } from "express";
-import mongoose from "mongoose";
 import { Restaurant } from "../db_models/restaurant";
 import { Lobby } from "../db_models/lobby";
+import { restaurantFilter, requireManagedRestaurant } from "../middleware/restaurantAccess";
 import { HttpError } from "../utils/errors";
 
 const router = Router();
 const run = (fn: (req: Request, res: Response) => Promise<unknown>) =>
   (req: Request, res: Response, next: NextFunction) => { fn(req, res).catch(next); };
-const idFilter = (id: string) => mongoose.isObjectIdOrHexString(id)
-  ? { $or: [{ placeId: id }, { _id: new mongoose.Types.ObjectId(id) }] } : { placeId: id };
-async function owned(req: Request) {
-  if (!req.identity?.userId) throw new HttpError(401, "Login is required.");
-  const restaurant = await Restaurant.findOne(idFilter(String(req.params.id)));
-  if (!restaurant) throw new HttpError(404, "Restaurant not found.");
-  const identity = req.identity;
-  if (identity.role !== "admin" && !(identity.role === "partner" && identity.partnerStatus === "approved" && identity.restaurantIds?.includes(String(restaurant._id))))
-    throw new HttpError(403, "Only an approved owner or an admin can manage this restaurant.");
-  return restaurant;
-}
 function plain(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value) && Object.getPrototypeOf(value) === Object.prototype;
 }
@@ -41,7 +30,7 @@ function plain(value: unknown): value is Record<string, unknown> {
  *       404: { description: Restaurant not found. }
  */
 router.patch("/api/restaurants/:id", run(async (req, res) => {
-  const restaurant = await owned(req);
+  const restaurant = await requireManagedRestaurant(req);
   if (!plain(req.body) || !Object.keys(req.body).length) throw new HttpError(400, "Provide restaurant details.");
   const fields = ["restaurantName", "address", "phone", "website", "categories"];
   const details = { ...(restaurant.partnerDetails ?? {}) } as Record<string, unknown>;
@@ -86,12 +75,12 @@ router.patch("/api/restaurants/:id", run(async (req, res) => {
  *       404: { description: Restaurant not found. }
  */
 router.get("/api/restaurants/:id/menu", run(async (req, res) => {
-  const restaurant = await Restaurant.findOne(idFilter(String(req.params.id))).lean();
+  const restaurant = await Restaurant.findOne(restaurantFilter(String(req.params.id))).lean();
   if (!restaurant) throw new HttpError(404, "Restaurant not found.");
   res.json({ restaurantId: String(restaurant._id), menu: restaurant.menu ?? null });
 }));
 router.patch("/api/restaurants/:id/menu", run(async (req, res) => {
-  const restaurant = await owned(req);
+  const restaurant = await requireManagedRestaurant(req);
   if (!plain(req.body) || Object.keys(req.body).length !== 1 || !plain(req.body.menu)) throw new HttpError(400, "Provide a menu object.");
   restaurant.menu = req.body.menu;
   await restaurant.save();
@@ -113,7 +102,7 @@ router.patch("/api/restaurants/:id/menu", run(async (req, res) => {
  *       404: { description: Restaurant not found. }
  */
 router.get("/api/restaurants/:id/analytics", run(async (req, res) => {
-  const restaurant = await owned(req);
+  const restaurant = await requireManagedRestaurant(req);
   const rounds = await Lobby.find({ "round.restaurants.id": restaurant.placeId }).select({ round: 1 }).lean();
   const counts = { yes: 0, no: 0, veto: 0, skip: 0 };
   for (const lobby of rounds) {

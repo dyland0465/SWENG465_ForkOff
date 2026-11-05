@@ -6,6 +6,7 @@
  *
  */
 import { Router } from "express";
+import savedRoutes from "./savedRoutes";
 import lobbyRoutes from "./lobbyRoutes";
 import adminRoutes from "./adminRoutes";
 import healthRoutes from "./healthRoutes";
@@ -18,6 +19,7 @@ import restaurantManagementRoutes from "./restaurantManagementRoutes";
 
 const router = Router();
 
+router.use(savedRoutes);
 router.use(lobbyRoutes);        // lobbies, live chat, guest + login session check, logout
 router.use(adminRoutes);        // /api/admin (admins only)
 router.use(healthRoutes);       // /api/health

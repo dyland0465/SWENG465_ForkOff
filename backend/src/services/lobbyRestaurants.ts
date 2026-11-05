@@ -1,6 +1,7 @@
-import { GooglePlacesError, resolveSearchLocation, searchRestaurantPage } from './googlePlaces'
+import { GooglePlacesError, getGooglePlace, resolveSearchLocation, searchRestaurantPage } from './googlePlaces'
 import type { GooglePlace } from './googlePlaces'
 import type { LobbyDocument } from './lobbyState'
+import { Restaurant } from '../db_models/restaurant'
 import { chooseRestaurants } from './restaurantSelection'
 
 type Filters = LobbyDocument['filters']
@@ -101,4 +102,22 @@ export async function findLobbyRestaurants(filters: Filters, excludeIds: string[
     pageToken = result.nextPageToken
   }
   return { restaurants: chooseRestaurants(restaurants, alternatives), warnings }
+}
+
+// Collection lobbies use the saved IDs as their voting pool, independent of discovery filters.
+export async function findCollectionRestaurants(source: { placeIds: string[] }, excludeIds: string[] = []) {
+  const excluded = new Set(excludeIds)
+  const unique = [...new Set(source.placeIds)]
+  const selected = chooseRestaurants(unique.filter(id => !excluded.has(id)).map(id => ({ id })), unique.filter(id => excluded.has(id)).map(id => ({ id })))
+  const cached = await Restaurant.find({ placeId: { $in: selected.map(item => item.id) }, cachedAt: { $gt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) } }).select({ placeId: 1, cachedPlace: 1 }).lean()
+  const byId = new Map(cached.map(item => [item.placeId, item.cachedPlace as GooglePlace]))
+  const restaurants = await Promise.all(selected.map(async ({ id }) => {
+    const place = byId.get(id) ?? await getGooglePlace(id)
+    return { id, name: place.displayName?.text ?? 'Unnamed restaurant', address: place.formattedAddress ?? null,
+      category: place.primaryType ?? null, googleMapsUri: place.googleMapsUri ?? null,
+      photoUrl: place.cachedPhoto ? `/api/restaurant-photos/${encodeURIComponent(id)}` : null,
+      photoAuthors: place.photoAuthors ?? [], rating: place.rating ?? null, ratingCount: place.userRatingCount ?? null,
+      priceLevel: place.priceLevel ?? null, distanceMiles: null, hours: place.regularOpeningHours?.weekdayDescriptions ?? [], timeZone: place.timeZone?.id ?? null }
+  }))
+  return { restaurants, warnings: [] as string[] }
 }

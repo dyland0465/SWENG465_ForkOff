@@ -4,6 +4,7 @@ import path from "node:path";
 import swaggerUi from "swagger-ui-express";
 import swaggerSpec from "./config/swagger";
 import { originGuard, sessionMiddleware } from "./services/session";
+import { rateLimit } from "./middleware/rateLimit";
 import { HttpError } from "./utils/errors";
 import type { Request, Response, NextFunction } from "express";
 // All API routes, one file per area (see routes/index.ts).
@@ -14,6 +15,7 @@ const app = express();
 app.set("trust proxy", 1);
 app.use(express.json({ limit: "32kb" }));
 app.use(originGuard);
+app.use(rateLimit);
 app.use(sessionMiddleware);
 app.use("/api", (_req, res, next) => { res.set("Cache-Control", "no-store"); next(); });
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
