@@ -274,7 +274,7 @@ function LobbyScreen({ lobbyId }: { lobbyId: string }) {
                   disabled={busy}
                   onClick={() => void deleteLobby()}
                 >
-                  Close lobby for everyone
+                  Delete lobby
                 </TextAction>
               )}
             </div>
