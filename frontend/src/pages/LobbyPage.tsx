@@ -112,14 +112,14 @@ function LobbyScreen({ lobbyId }: { lobbyId: string }) {
       name: values.get('name'),
       status: values.get('status'),
       filters: {
-      location: values.get('location'),
-      maxDistance: Number(values.get('maxDistance')),
-      minimumRating: Number(values.get('minimumRating')),
-      categories: list('categories'),
-      priceLevels: values.getAll('priceLevels'),
-      diningNeeds: list('diningNeeds'),
-      openNow: values.has('openNow'),
-      ...(dinner ? { dinnerAt: new Date(dinner).toISOString() } : {}),
+        location: values.get('location'),
+        maxDistance: Number(values.get('maxDistance')),
+        minimumRating: Number(values.get('minimumRating')),
+        categories: list('categories'),
+        priceLevels: values.getAll('priceLevels'),
+        diningNeeds: list('diningNeeds'),
+        openNow: values.has('openNow'),
+        ...(dinner ? { dinnerAt: new Date(dinner).toISOString() } : {}),
       },
     })
   }
@@ -259,25 +259,25 @@ function LobbyScreen({ lobbyId }: { lobbyId: string }) {
               </form>
             </section>
             <div className="lobby-controls-cards">
-              
-            <TextAction
-              className="lobby-page__leave"
-              disabled={busy}
-              tone="danger"
-              onClick={() => void mutate('/leave', {}, true)}
-            >
-              {busy ? 'Please wait…' : 'Leave lobby'}
-            </TextAction>
-                      {lobby.isHost && (
-            <TextAction
-              tone="danger"
-              disabled={busy}
-              onClick={() => void deleteLobby()}
-            >
-              Close lobby for everyone
-            </TextAction>
-          )}
-          </div>
+
+              <TextAction
+                className="lobby-page__leave"
+                disabled={busy}
+                tone="danger"
+                onClick={() => void mutate('/leave', {}, true)}
+              >
+                {busy ? 'Please wait…' : 'Leave lobby'}
+              </TextAction>
+              {lobby.isHost && (
+                <TextAction
+                  tone="danger"
+                  disabled={busy}
+                  onClick={() => void deleteLobby()}
+                >
+                  Close lobby for everyone
+                </TextAction>
+              )}
+            </div>
             <GroupControls lobbyId={lobbyId} isHost={lobby.isHost} />
             <LobbyRestaurantPreview lobbyId={lobbyId} filterKey={JSON.stringify(lobby.filters)} isHost={lobby.isHost} />
           </section>
@@ -293,35 +293,31 @@ function LobbyScreen({ lobbyId }: { lobbyId: string }) {
                 {editingFilters ? 'Edit lobby settings' : 'Round filters'}
               </h2>
               {!editingFilters && <>
-              <p className="lobby-round-filters__summary">
-                {filters?.location || 'Any location'}
-                {filters?.dinnerAt &&
-                  ` · ${new Date(filters.dinnerAt).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}`}{' '}
-                · within {filters?.maxDistance ?? 10} miles
-              </p>
-              <div className="lobby-filter-chips">
-                {[
-                  ...(filters?.categories?.length
-                    ? filters.categories
-                    : ['Any cuisine']),
-                  ...(filters?.priceLevels?.length
-                    ? filters.priceLevels
-                    : ['Any price']),
-                  ...(filters?.minimumRating
-                    ? [`${filters.minimumRating.toFixed(1)}+`]
-                    : []),
-                  ...(filters?.openNow ? ['Open now'] : []),
-                  ...(filters?.diningNeeds ?? []),
-                ].map((label, index) => (
-                  <span className="lobby-filter-tag" key={`${label}-${index}`}>
-                    {label}
-                  </span>
-                ))}
-              </div>
-              <div className="lobby-round-filters__matches">
-                <h3>Explore your restaurant options</h3>
-                <p>Preview sample restaurants before starting a vote.</p>
-              </div>
+                <p className="lobby-round-filters__summary">
+                  {filters?.location || 'Any location'}
+                  {filters?.dinnerAt &&
+                    ` · ${new Date(filters.dinnerAt).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}`}{' '}
+                  · within {filters?.maxDistance ?? 10} miles
+                </p>
+                <div className="lobby-filter-chips">
+                  {[
+                    ...(filters?.categories?.length
+                      ? filters.categories
+                      : ['Any cuisine']),
+                    ...(filters?.priceLevels?.length
+                      ? filters.priceLevels
+                      : ['Any price']),
+                    ...(filters?.minimumRating
+                      ? [`${filters.minimumRating.toFixed(1)}+`]
+                      : []),
+                    ...(filters?.openNow ? ['Open now'] : []),
+                    ...(filters?.diningNeeds ?? []),
+                  ].map((label, index) => (
+                    <span className="lobby-filter-tag" key={`${label}-${index}`}>
+                      {label}
+                    </span>
+                  ))}
+                </div>
               </>}
               {lobby.isHost && (
                 <div className="lobby-round-filters__controls">
@@ -345,82 +341,82 @@ function LobbyScreen({ lobbyId }: { lobbyId: string }) {
                         <option value="finished">Finished</option>
                       </SelectField>
                     </fieldset>
-                  <fieldset
-                    disabled={busy}
-                    className="lobby-filter-editor__group"
-                  >
-                    <div className="lobby-filter-editor__fields">
-                      <TextInput
-                        label="Location"
-                        name="location"
-                        required
-                        maxLength={120}
-                        defaultValue={filters?.location ?? ''}
-                      />
-                      <TextInput
-                        label="New dinner date and time (optional)"
-                        name="dinnerAt"
-                        type="datetime-local"
-                        hint="Leave blank to keep the current dinner time."
-                      />
-                      <TextInput
-                        label="Maximum distance (miles)"
-                        name="maxDistance"
-                        type="number"
-                        required
-                        min={1}
-                        max={100}
-                        step="any"
-                        defaultValue={filters?.maxDistance ?? 10}
-                      />
-                      <TextInput
-                        label="Minimum rating"
-                        name="minimumRating"
-                        type="number"
-                        required
-                        min={0}
-                        max={5}
-                        step="0.1"
-                        defaultValue={filters?.minimumRating ?? 0}
-                      />
-                      <TextInput
-                        label="Cuisines (comma separated)"
-                        name="categories"
-                        defaultValue={filters?.categories?.join(', ') ?? ''}
-                      />
-                      <TextInput
-                        label="Dining needs (comma separated)"
-                        name="diningNeeds"
-                        defaultValue={filters?.diningNeeds?.join(', ') ?? ''}
-                      />
-                    </div>
-                    <fieldset className="lobby-filter-editor__group">
-                      <legend>Price levels (none means any price)</legend>
-                      {['$', '$$', '$$$'].map((price) => (
-                        <label key={price}>
-                          <input
-                            type="checkbox"
-                            name="priceLevels"
-                            value={price}
-                            defaultChecked={filters?.priceLevels?.includes(
-                              price,
-                            )}
-                          />
-                          {price}{' '}
-                        </label>
-                      ))}
+                    <fieldset
+                      disabled={busy}
+                      className="lobby-filter-editor__group"
+                    >
+                      <div className="lobby-filter-editor__fields">
+                        <TextInput
+                          label="Location"
+                          name="location"
+                          required
+                          maxLength={120}
+                          defaultValue={filters?.location ?? ''}
+                        />
+                        <TextInput
+                          label="New dinner date and time (optional)"
+                          name="dinnerAt"
+                          type="datetime-local"
+                          hint="Leave blank to keep the current dinner time."
+                        />
+                        <TextInput
+                          label="Maximum distance (miles)"
+                          name="maxDistance"
+                          type="number"
+                          required
+                          min={1}
+                          max={100}
+                          step="any"
+                          defaultValue={filters?.maxDistance ?? 10}
+                        />
+                        <TextInput
+                          label="Minimum rating"
+                          name="minimumRating"
+                          type="number"
+                          required
+                          min={0}
+                          max={5}
+                          step="0.1"
+                          defaultValue={filters?.minimumRating ?? 0}
+                        />
+                        <TextInput
+                          label="Cuisines (comma separated)"
+                          name="categories"
+                          defaultValue={filters?.categories?.join(', ') ?? ''}
+                        />
+                        <TextInput
+                          label="Dining needs (comma separated)"
+                          name="diningNeeds"
+                          defaultValue={filters?.diningNeeds?.join(', ') ?? ''}
+                        />
+                      </div>
+                      <fieldset className="lobby-filter-editor__group">
+                        <legend>Price levels (none means any price)</legend>
+                        {['$', '$$', '$$$'].map((price) => (
+                          <label key={price}>
+                            <input
+                              type="checkbox"
+                              name="priceLevels"
+                              value={price}
+                              defaultChecked={filters?.priceLevels?.includes(
+                                price,
+                              )}
+                            />
+                            {price}{' '}
+                          </label>
+                        ))}
+                      </fieldset>
+                      <label>
+                        <input
+                          type="checkbox"
+                          name="openNow"
+                          defaultChecked={filters?.openNow ?? false}
+                        />{' '}
+                        Open now
+                      </label>
+                      <Button type="submit">Save settings</Button>
                     </fieldset>
-                    <label>
-                      <input
-                        type="checkbox"
-                        name="openNow"
-                        defaultChecked={filters?.openNow ?? false}
-                      />{' '}
-                      Open now
-                    </label>
-                    <Button type="submit">Save settings</Button>
-                  </fieldset>
-                </form>
+                  </form>
                 </div>
               )}
             </section>
