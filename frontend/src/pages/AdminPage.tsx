@@ -101,7 +101,11 @@ function PartnerReview() {
 
 // One partner: details, plus the approve (restaurant search) and reject controls.
 function PartnerCard({ partner, onChanged }: { partner: AdminPartner; onChanged: (partner: AdminPartner) => void }) {
-  const claimed = [partner.requestedRestaurant.name, partner.requestedRestaurant.address].filter(Boolean).join(', ')
+  const r = partner.requestedRestaurant
+  const cityLine = [r.city, [r.state, r.postalCode].filter(Boolean).join(' ')].filter(Boolean).join(', ')
+  const fullAddress = [r.address, cityLine].filter(Boolean).join(', ')
+  // Start the Google search with the restaurant's name and full address.
+  const claimed = [r.name, fullAddress].filter(Boolean).join(', ')  
   const [query, setQuery] = useState(claimed)
   const [results, setResults] = useState<PlaceResult[] | null>(null)
   const [placeId, setPlaceId] = useState('')
@@ -133,10 +137,17 @@ function PartnerCard({ partner, onChanged }: { partner: AdminPartner; onChanged:
         <span className={`admin-card__badge admin-card__badge--${partner.status}`}>{partner.status}</span>
       </header>
 
-      <dl className="admin-card__details">
-        <div><dt>Claimed restaurant</dt><dd>{partner.requestedRestaurant.name || '—'}</dd></div>
-        <div><dt>Address</dt><dd>{partner.requestedRestaurant.address || '—'}</dd></div>
+            <dl className="admin-card__details">
+        <div><dt>Claimed restaurant</dt><dd>{r.name || '—'}</dd></div>
+        <div><dt>Address</dt><dd>{fullAddress || '—'}</dd></div>
+        <div><dt>Applicant’s role</dt><dd>{r.applicantRole || '—'}</dd></div>
+        <div><dt>Restaurant phone</dt><dd>{r.phone ? <a href={`tel:${r.phone.replace(/[^\d+]/g, '')}`}>{r.phone}</a> : '—'}</dd></div>
+        <div><dt>Website</dt><dd>{r.website ? <a href={r.website} target="_blank" rel="noopener noreferrer nofollow">{r.website}</a> : '—'}</dd></div>
+        <div><dt>Business type</dt><dd>{r.businessType || '—'}</dd></div>
+        <div><dt>Cuisine · price</dt><dd>{[r.cuisine, r.priceLevel].filter(Boolean).join(' · ') || '—'}</dd></div>
+        <div><dt>Service</dt><dd>{r.serviceOptions.length ? r.serviceOptions.join(', ') : '—'}</dd></div>
         <div><dt>Linked restaurants</dt><dd>{partner.restaurantIds.length}</dd></div>
+        {r.notes && <div className="admin-card__notes"><dt>Notes from applicant</dt><dd>{r.notes}</dd></div>}
       </dl>
 
       {partner.status !== 'approved' && (

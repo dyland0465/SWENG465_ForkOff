@@ -73,6 +73,35 @@
   padding: var(--spacing-2);
   box-shadow: none;
 }
+/* Create-account form: titled groups of fields */
+.partner-access__section {
+  display: grid;
+  gap: var(--spacing-4);
+  min-inline-size: 0;
+  margin: 0;
+  padding: var(--spacing-6) 0 0;
+  border: 0;
+  border-block-start: 1px solid var(--color-border-default);
+}
+.partner-access__section-title {
+  float: left; /* lets the legend sit inside the grid like a heading */
+  inline-size: 100%;
+  padding: 0;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-body-large);
+}
+.partner-access__section-title + * { clear: both; }
+.partner-access__section-description { margin: calc(var(--spacing-2) * -1) 0 0; color: var(--color-text-secondary); font-size: var(--font-size-caption-default); }
+.partner-access__row { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1.25fr); gap: var(--spacing-4); align-items: start; }
+.partner-access__row--two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.partner-access__choices { display: flex; flex-wrap: wrap; gap: var(--spacing-2) var(--spacing-6); margin: 0; padding: 0; border: 0; }
+.partner-access__choices legend { inline-size: 100%; margin-block-end: var(--spacing-2); padding: 0; }
+.partner-access__choices .ui-field__error { flex-basis: 100%; margin: 0; }
+.partner-access__check { display: inline-flex; gap: var(--spacing-2); align-items: center; min-block-size: var(--target-size-min); cursor: pointer; }
+.partner-access__check input { inline-size: 1.125rem; block-size: 1.125rem; margin: 0; accent-color: var(--color-action-primary); flex-shrink: 0; }
+.partner-access__agree { align-items: start; }
+.partner-access__agree input { margin-block-start: 0.2em; }
+.partner-access__textarea { min-block-size: calc(var(--spacing-16) + var(--spacing-8)); resize: vertical; font: inherit; }
 .partner-access__feedback:empty { display: none; }
 .partner-access .partner-access__error { color: var(--color-status-error); }
 
@@ -91,6 +120,10 @@
 
   .partner-access__content { grid-template-columns: minmax(0, 1fr); gap: var(--spacing-6); }
   .partner-access__account { grid-row: 1; padding: var(--spacing-6) var(--spacing-4); }
+  .partner-access__row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .partner-access__row > :first-child:not(:only-child) { grid-column: 1 / -1; }
+  .partner-access__row--two { grid-template-columns: minmax(0, 1fr); }
+  .partner-access__row--two > :first-child { grid-column: auto; }
   .partner-access__benefits { padding-block: 0; }
 
   .partner-access__demo {

@@ -13,15 +13,17 @@
  *
  * Request and session logic lives in usePartnerSignIn.ts; this file is the UI.
  */
-import { useState } from 'react'
-import type { FormEvent } from 'react'
+import { useId, useState } from 'react'
+import type { ComponentProps, FormEvent, ReactNode } from 'react'
 import { Button } from '../../components/ui/Button'
-import { TextInput } from '../../components/ui/FormField'
+import { SelectField, TextInput } from '../../components/ui/FormField'
 import { useLobbyForm } from '../../components/lobby/useLobbyForm'
 import { useAuth } from '../auth/useAuth'
 import { partnerRegisterValidators, partnerSignInValidators } from './partnerAuthentication'
 import type { PartnerSession } from './partnerAuthentication'
 import { usePartnerSignIn } from './usePartnerSignIn'
+import { applicantRoleOptions, businessTypeOptions, partnerCuisineOptions, partnerPriceOptions, serviceOptions, stateOptions } from './partnerOptions'
+import type { ServiceOption } from './partnerOptions'
 
 type Mode = 'sign-in' | 'register'
 const tabs: { mode: Mode; label: string }[] = [
@@ -33,7 +35,17 @@ export function PartnerAccountAccess() {
   const [mode, setMode] = useState<Mode>('sign-in')
   const [showPassword, setShowPassword] = useState(false)
   const signInForm = useLobbyForm({ email: '', password: '' }, partnerSignInValidators)
-  const registerForm = useLobbyForm({ username: '', email: '', password: '', restaurantName: '', restaurantAddress: '' }, partnerRegisterValidators)
+  const registerForm = useLobbyForm({
+    username: '', applicantRole: '', email: '', password: '',
+    restaurantName: '', restaurantAddress: '', city: '', state: '', postalCode: '', restaurantPhone: '', website: '',
+    businessType: '', cuisine: '', priceLevel: '', notes: '',
+  }, partnerRegisterValidators)
+  // Checkboxes aren't plain text fields, so they keep their own state.
+  const [services, setServices] = useState<readonly ServiceOption[]>([])
+  const [agreed, setAgreed] = useState(false)
+  const [checkboxErrorsShown, setCheckboxErrorsShown] = useState(false)
+  const servicesError = checkboxErrorsShown && services.length === 0 ? 'Choose at least one.' : undefined
+  const agreedError = checkboxErrorsShown && !agreed ? 'Confirm you can represent this restaurant.' : undefined  
   const { account, signIn, register, clearError } = usePartnerSignIn()
   const pending = account.status === 'signing-in'
 
@@ -52,11 +64,39 @@ export function PartnerAccountAccess() {
 
   async function submitRegister(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    if (pending || !registerForm.validate(event.currentTarget)) return
+    if (pending) return
+    const form = event.currentTarget
+    setCheckboxErrorsShown(true)
+    // Text fields first (validate focuses the first bad one), then the checkboxes.
+    if (!registerForm.validate(form)) return
+    if (services.length === 0 || !agreed) {
+      const field = form.elements.namedItem(services.length === 0 ? 'serviceOptions' : 'agreedToTerms')
+      const target = field instanceof RadioNodeList ? field[0] : field
+      if (target instanceof HTMLElement) target.focus()
+      return
+    }
     setShowPassword(false)
     const v = registerForm.values
-    await register({ username: v.username.trim(), email: v.email.trim(), password: v.password, restaurantName: v.restaurantName.trim(), restaurantAddress: v.restaurantAddress.trim() })
+    await register({
+      username: v.username.trim(), email: v.email.trim(), password: v.password, applicantRole: v.applicantRole,
+      restaurantName: v.restaurantName.trim(), restaurantAddress: v.restaurantAddress.trim(), city: v.city.trim(), state: v.state,
+      postalCode: v.postalCode.trim(), restaurantPhone: v.restaurantPhone.trim(),
+      ...(v.website.trim() ? { website: v.website.trim() } : {}),
+      businessType: v.businessType, cuisine: v.cuisine, priceLevel: v.priceLevel, serviceOptions: services,
+      ...(v.notes.trim() ? { notes: v.notes.trim() } : {}),
+      agreedToTerms: agreed,
+    })
   }
+
+  type RegisterKey = keyof typeof registerForm.values
+  const field = (key: RegisterKey) => ({
+    name: key, disabled: pending, value: registerForm.values[key], error: registerForm.errors[key],
+    onBlur: () => registerForm.onBlur(key),
+  })
+  const onText = (key: RegisterKey) => (event: { target: { value: string } }) => registerForm.setValue(key, event.target.value)
+  const toggleService = (option: ServiceOption) =>
+    setServices(current => current.includes(option) ? current.filter(value => value !== option) : serviceOptions.filter(value => value === option || current.includes(value)))
+  
 
   return (
     <section className="partner-access__account" aria-labelledby="partner-account-title" aria-describedby="partner-account-description">
@@ -107,11 +147,68 @@ export function PartnerAccountAccess() {
           </form>
         ) : (
           <form id="partner-panel-register" role="tabpanel" aria-labelledby="partner-tab-register" noValidate aria-describedby="partner-auth-notice" aria-busy={pending} onSubmit={submitRegister}>
-            <TextInput id="partner-username" name="username" label="Your name" autoComplete="name" required disabled={pending} value={registerForm.values.username} error={registerForm.errors.username} onChange={event => registerForm.setValue('username', event.target.value)} onBlur={() => registerForm.onBlur('username')} />
-            <TextInput id="partner-register-email" name="email" label="Email address" type="email" autoComplete="email" autoCapitalize="none" spellCheck={false} required disabled={pending} value={registerForm.values.email} error={registerForm.errors.email} onChange={event => registerForm.setValue('email', event.target.value)} onBlur={() => registerForm.onBlur('email')} />
-            <PasswordField id="partner-register-password" autoComplete="new-password" hint="At least 8 characters." value={registerForm.values.password} error={registerForm.errors.password} disabled={pending} show={showPassword} onToggle={() => setShowPassword(value => !value)} onChange={value => registerForm.setValue('password', value)} onBlur={() => registerForm.onBlur('password')} />
-            <TextInput id="partner-restaurant-name" name="restaurantName" label="Restaurant name" autoComplete="organization" required disabled={pending} value={registerForm.values.restaurantName} error={registerForm.errors.restaurantName} onChange={event => registerForm.setValue('restaurantName', event.target.value)} onBlur={() => registerForm.onBlur('restaurantName')} />
-            <TextInput id="partner-restaurant-address" name="restaurantAddress" label="Restaurant address" autoComplete="street-address" required disabled={pending} value={registerForm.values.restaurantAddress} error={registerForm.errors.restaurantAddress} onChange={event => registerForm.setValue('restaurantAddress', event.target.value)} onBlur={() => registerForm.onBlur('restaurantAddress')} />
+            <FormSection title="About you">
+              <TextInput id="partner-username" label="Your name" autoComplete="name" required {...field('username')} onChange={onText('username')} />
+              <SelectField id="partner-applicant-role" label="Your role at the restaurant" required {...field('applicantRole')} onChange={onText('applicantRole')}>
+                <option value="">Choose…</option>
+                {applicantRoleOptions.map(option => <option key={option} value={option}>{option}</option>)}
+              </SelectField>
+              <TextInput id="partner-register-email" label="Email address" type="email" autoComplete="email" autoCapitalize="none" spellCheck={false} required hint="Use an email we can reach you at about this restaurant." {...field('email')} onChange={onText('email')} />
+              <PasswordField id="partner-register-password" autoComplete="new-password" hint="At least 8 characters." value={registerForm.values.password} error={registerForm.errors.password} disabled={pending} show={showPassword} onToggle={() => setShowPassword(value => !value)} onChange={value => registerForm.setValue('password', value)} onBlur={() => registerForm.onBlur('password')} />
+            </FormSection>
+
+            <FormSection title="Your restaurant" description="We use these to find your restaurant and confirm it’s yours.">
+              <TextInput id="partner-restaurant-name" label="Restaurant name" autoComplete="organization" required {...field('restaurantName')} onChange={onText('restaurantName')} />
+              <TextInput id="partner-restaurant-address" label="Street address" autoComplete="address-line1" required {...field('restaurantAddress')} onChange={onText('restaurantAddress')} />
+              <div className="partner-access__row">
+                <TextInput id="partner-city" label="City" autoComplete="address-level2" required {...field('city')} onChange={onText('city')} />
+                <SelectField id="partner-state" label="State" autoComplete="address-level1" required {...field('state')} onChange={onText('state')}>
+                  <option value="">—</option>
+                  {stateOptions.map(option => <option key={option} value={option}>{option}</option>)}
+                </SelectField>
+                <TextInput id="partner-postal-code" label="ZIP code" autoComplete="postal-code" inputMode="numeric" required {...field('postalCode')} onChange={onText('postalCode')} />
+              </div>
+              <TextInput id="partner-restaurant-phone" label="Restaurant phone" type="tel" autoComplete="tel" required hint="The public number customers call. We may call to verify." {...field('restaurantPhone')} onChange={onText('restaurantPhone')} />
+              <TextInput id="partner-website" label="Website (optional)" type="url" autoComplete="url" autoCapitalize="none" spellCheck={false} placeholder="https://" {...field('website')} onChange={onText('website')} />
+            </FormSection>
+
+            <FormSection title="What you serve" description="Groups filter by these when they pick where to eat.">
+              <SelectField id="partner-business-type" label="Business type" required {...field('businessType')} onChange={onText('businessType')}>
+                <option value="">Choose…</option>
+                {businessTypeOptions.map(option => <option key={option} value={option}>{option}</option>)}
+              </SelectField>
+              <div className="partner-access__row partner-access__row--two">
+                <SelectField id="partner-cuisine" label="Cuisine" required {...field('cuisine')} onChange={onText('cuisine')}>
+                  <option value="">Choose…</option>
+                  {partnerCuisineOptions.map(option => <option key={option} value={option}>{option}</option>)}
+                </SelectField>
+                <SelectField id="partner-price" label="Price level" required {...field('priceLevel')} onChange={onText('priceLevel')}>
+                  <option value="">Choose…</option>
+                  {partnerPriceOptions.map(option => <option key={option} value={option}>{option}</option>)}
+                </SelectField>
+              </div>
+              <fieldset className="partner-access__choices" aria-describedby={servicesError ? 'partner-services-error' : undefined} aria-invalid={!!servicesError}>
+                <legend className="text-label-default">How customers can order</legend>
+                {serviceOptions.map(option => (
+                  <label key={option} className="partner-access__check">
+                    <input type="checkbox" name="serviceOptions" value={option} disabled={pending} checked={services.includes(option)} onChange={() => toggleService(option)} />
+                    {option}
+                  </label>
+                ))}
+                {servicesError && <p id="partner-services-error" className="ui-field__error">{servicesError}</p>}
+              </fieldset>
+            </FormSection>
+
+            <TextArea id="partner-notes" label="Anything else we should know? (optional)" rows={3} maxLength={500} hint="For example, if you have more than one location." {...field('notes')} onChange={onText('notes')} />
+
+            <div>
+              <label className="partner-access__check partner-access__agree">
+                <input type="checkbox" name="agreedToTerms" disabled={pending} checked={agreed} aria-invalid={!!agreedError} aria-describedby={agreedError ? 'partner-agree-error' : undefined} onChange={event => setAgreed(event.target.checked)} />
+                I own or manage this restaurant and I’m authorized to represent it on Fork Off.
+              </label>
+              {agreedError && <p id="partner-agree-error" className="ui-field__error">{agreedError}</p>}
+            </div>
+
             <Button type="submit" disabled={pending}>{pending ? 'Creating account…' : 'Create partner account'}</Button>
             <Feedback pending={pending} pendingText="Creating your partner account…" error={account.status === 'error' ? account.message : undefined} />
           </form>
@@ -120,7 +217,31 @@ export function PartnerAccountAccess() {
     </section>
   )
 }
+// A titled group of fields in the create-account form.
+function FormSection({ title, description, children }: { title: string; description?: string; children: ReactNode }) {
+  return (
+    <fieldset className="partner-access__section">
+      <legend className="text-label-default partner-access__section-title">{title}</legend>
+      {description && <p className="partner-access__section-description">{description}</p>}
+      {children}
+    </fieldset>
+  )
+}
 
+// Multi-line text field, styled like TextInput.
+function TextArea({ label, error, hint, id: providedId, ...props }: { label: string; error?: string; hint?: string } & ComponentProps<'textarea'>) {
+  const generatedId = useId()
+  const id = providedId ?? generatedId
+  const description = [hint && `${id}-hint`, error && `${id}-error`].filter(Boolean).join(' ') || undefined
+  return (
+    <div className="ui-field">
+      <label className="text-label-default" htmlFor={id}>{label}</label>
+      <textarea {...props} id={id} className="ui-field__control partner-access__textarea" aria-invalid={!!error} aria-describedby={description} />
+      {hint && <p id={`${id}-hint`} className="ui-field__hint">{hint}</p>}
+      {error && <p id={`${id}-error`} className="ui-field__error">{error}</p>}
+    </div>
+  )
+}
 // Password input with the Show/Hide button (shared by both forms).
 function PasswordField({ id, autoComplete, hint, value, error, disabled, show, onToggle, onChange, onBlur }: {
   id: string; autoComplete: string; hint?: string; value: string; error?: string; disabled: boolean; show: boolean

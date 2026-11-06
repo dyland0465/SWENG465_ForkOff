@@ -11,6 +11,7 @@ import { hashPassword } from "../services/passwordHashing";
 import { establishSession } from "../services/session";
 import { registrationFields } from "../utils/registration";
 import { isDuplicateKeyError } from "../utils/errors";
+import { partnerRestaurantFields } from "../utils/partnerApplication";
 
 const router = Router();
 
@@ -30,18 +31,25 @@ const router = Router();
  *     summary: Create a restaurant partner account (pending approval).
  *     tags: [user]
  *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required: [username, email, password, restaurantName, restaurantAddress]
+ *        *required: [username, email, password, restaurantName, restaurantAddress, city, state, postalCode, restaurantPhone, cuisine, priceLevel, businessType, serviceOptions, applicantRole, agreedToTerms]
  *             properties:
  *               username: { type: string }
  *               email: { type: string, format: email }
  *               password: { type: string, minLength: 8 }
- *               restaurantName: { type: string }
- *               restaurantAddress: { type: string }
+ *               restaurantName: { type: string, maxLength: 120 }
+ *               restaurantAddress: { type: string, maxLength: 200, description: Street address }
+ *               city: { type: string, maxLength: 80 }
+ *               state: { type: string, pattern: "^[A-Za-z]{2}$", example: PA }
+ *               postalCode: { type: string, pattern: "^\\d{5}(-\\d{4})?$", example: "16801" }
+ *               restaurantPhone: { type: string, description: At least 10 digits }
+ *               website: { type: string, format: uri }
+ *               cuisine: { type: string, enum: [Italian, Ramen, Mexican, American, Asian, Fast food, Vegetarian, Other] }
+ *               priceLevel: { type: string, enum: [$, $$, $$$] }
+ *               businessType: { type: string, enum: [Independent restaurant, Franchise or chain location, Food truck, Ghost kitchen, Other] }
+ *               serviceOptions: { type: array, minItems: 1, items: { type: string, enum: [Dine-in, Takeout, Delivery] } }
+ *               applicantRole: { type: string, enum: [Owner, General manager, Marketing or staff, Other] }
+ *               notes: { type: string, maxLength: 500 }
+ *               agreedToTerms: { type: boolean, enum: [true] }
  *     responses:
  *       201: { description: Partner account created and waiting for approval. }
  *       400: { description: Invalid input. }
@@ -50,11 +58,13 @@ const router = Router();
 router.post("/api/partners/register", async (req, res) => {
   // Only accept plain strings, trimmed and length-capped.
   const text = (value: unknown, max: number) => typeof value === "string" && value.trim().length <= max ? value.trim() : "";
-  const user = registrationFields(req.body);
-  const restaurantName = text(req.body?.restaurantName, 120);
-  const restaurantAddress = text(req.body?.restaurantAddress, 200);
-  if (!user || !restaurantName || !restaurantAddress) {
+    const user = registrationFields(req.body);
+  const restaurant = partnerRestaurantFields(req.body);
+  if (!user || !restaurant) {
     return res.status(400).json({ message: "Provide valid account and restaurant details; password must be 8 to 128 characters." });
+  }
+  if (req.body?.agreedToTerms !== true) {
+    return res.status(400).json({ message: "Confirm that you are authorized to represent this restaurant." });
   }
   const { username, email, password } = user;
 
@@ -66,7 +76,8 @@ router.post("/api/partners/register", async (req, res) => {
       role: "partner",
       partnerStatus: "pending",
       restaurantIds: [],
-      requestedRestaurant: { name: restaurantName, address: restaurantAddress },
+            requestedRestaurant: restaurant,
+      partnerAgreedAt: new Date(),
     });
 
     await establishSession(req, res, { id: String(partner._id), username: partner.username, email: partner.email });
