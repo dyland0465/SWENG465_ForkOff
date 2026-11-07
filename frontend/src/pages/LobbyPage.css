@@ -310,5 +310,14 @@
 @media (prefers-reduced-motion: reduce) { .lobby-restaurant-preview__stack { scroll-behavior: auto; } }
 
 .lobby-restaurant-preview__discovery { align-self: flex-end; }
+.lobby-round-filters > .lobby-restaurant-preview {
+  margin-top: 24px;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+}
+
+
 
 .lobby-collection-source { margin-block-start: var(--spacing-4); padding: var(--spacing-3); border-radius: var(--radius-md); background: var(--color-bg-surface); color: var(--color-text-secondary); }
