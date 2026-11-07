@@ -31,7 +31,12 @@ const router = Router();
  *     summary: Create a restaurant partner account (pending approval).
  *     tags: [user]
  *     requestBody:
- *        *required: [username, email, password, restaurantName, restaurantAddress, city, state, postalCode, restaurantPhone, cuisine, priceLevel, businessType, serviceOptions, applicantRole, agreedToTerms]
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [username, email, password, restaurantName, restaurantAddress, city, state, postalCode, restaurantPhone, cuisine, priceLevel, businessType, serviceOptions, applicantRole, agreedToTerms]
  *             properties:
  *               username: { type: string }
  *               email: { type: string, format: email }
@@ -56,9 +61,7 @@ const router = Router();
  *       409: { description: A user with that email already exists. }
  */
 router.post("/api/partners/register", async (req, res) => {
-  // Only accept plain strings, trimmed and length-capped.
-  const text = (value: unknown, max: number) => typeof value === "string" && value.trim().length <= max ? value.trim() : "";
-    const user = registrationFields(req.body);
+  const user = registrationFields(req.body);
   const restaurant = partnerRestaurantFields(req.body);
   if (!user || !restaurant) {
     return res.status(400).json({ message: "Provide valid account and restaurant details; password must be 8 to 128 characters." });
@@ -76,7 +79,7 @@ router.post("/api/partners/register", async (req, res) => {
       role: "partner",
       partnerStatus: "pending",
       restaurantIds: [],
-            requestedRestaurant: restaurant,
+      requestedRestaurant: restaurant,
       partnerAgreedAt: new Date(),
     });
 
