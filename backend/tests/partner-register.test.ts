@@ -28,8 +28,13 @@ test("partner registration", async () => {
   const register = (body: object) => fetch(`http://127.0.0.1:${port}/api/partners/register`, {
     method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
   });
-  const valid = { username: "Harbor Owner", email: " Owner@Harbor.test ", password: "longenough", restaurantName: "Harbor & Hearth", restaurantAddress: "1 Pier St" };
-
+  const valid = {
+    username: "Harbor Owner", email: " Owner@Harbor.test ", password: "longenough",
+    restaurantName: "Harbor & Hearth", restaurantAddress: "1 Pier St", city: "Erie", state: "pa", postalCode: "16507",
+    restaurantPhone: "(814) 555-0100", website: "https://harborandhearth.test", cuisine: "American", priceLevel: "$$",
+    businessType: "Independent restaurant", serviceOptions: ["Takeout", "Dine-in", "Takeout", "Valet"], applicantRole: "Owner",
+    notes: " Family owned since 1998. ", agreedToTerms: true,
+  };
   let saved: any;
   try {
     Session.create = (async () => ({})) as any;
@@ -45,11 +50,28 @@ test("partner registration", async () => {
     assert.equal(saved.partnerStatus, "pending");
     assert.deepEqual(saved.restaurantIds, []);
     assert.equal(saved.email, "owner@harbor.test");
-    assert.deepEqual(saved.requestedRestaurant, { name: "Harbor & Hearth", address: "1 Pier St" });
-    assert.match(saved.password, /^\$argon2/);
+    assert.deepEqual(saved.requestedRestaurant, {
+      name: "Harbor & Hearth", address: "1 Pier St", city: "Erie", state: "PA", postalCode: "16507",
+      phone: "(814) 555-0100", website: "https://harborandhearth.test", cuisine: "American", priceLevel: "$$",
+      businessType: "Independent restaurant", serviceOptions: ["Dine-in", "Takeout"], applicantRole: "Owner",
+      notes: "Family owned since 1998.",
+    }, "values are cleaned up; duplicate and unknown service options are dropped");
+    assert.ok(saved.partnerAgreedAt instanceof Date);
 
-    for (const bad of [{ ...valid, restaurantName: "" }, { ...valid, restaurantAddress: "  " }, { ...valid, email: "nope" }, { ...valid, password: "short" }, { ...valid, username: { $ne: null } }, {}]) {
-      assert.equal((await register(bad)).status, 400, JSON.stringify(bad));
+    // Website and notes are optional
+    const { website: _website, notes: _notes, ...required } = valid;
+    assert.equal((await register(required)).status, 201);
+    assert.equal("website" in saved.requestedRestaurant, false);    assert.match(saved.password, /^\$argon2/);
+
+        for (const bad of [
+      { ...valid, restaurantName: "" }, { ...valid, restaurantAddress: "  " }, { ...valid, email: "nope" }, { ...valid, password: "short" },
+      { ...valid, username: { $ne: null } }, {}, { ...valid, city: "" }, { ...valid, state: "Penn" }, { ...valid, postalCode: "1650" },
+      { ...valid, restaurantPhone: "555-0100" }, { ...valid, restaurantPhone: "call me" }, { ...valid, website: "javascript:alert(1)" },
+      { ...valid, cuisine: "Martian" }, { ...valid, priceLevel: "$$$$" }, { ...valid, businessType: "" }, { ...valid, applicantRole: "Customer" },
+      { ...valid, serviceOptions: [] }, { ...valid, serviceOptions: ["Valet"] }, { ...valid, serviceOptions: "Dine-in" },
+      { ...valid, agreedToTerms: false }, { ...valid, agreedToTerms: "true" },
+    ]) {
+      assert.equal((await register(bad)).status, 400);
     }
 
     User.create = (async () => { throw { code: 11000 }; }) as any;

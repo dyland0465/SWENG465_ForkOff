@@ -30,16 +30,34 @@ const router = Router();
 router.use("/api/admin", requireRole("admin"));
 
 const statuses = ["pending", "approved", "rejected"] as const;
-const partnerFields = "username email partnerStatus requestedRestaurant restaurantIds createdAt";
+const partnerFields = "username email partnerStatus requestedRestaurant partnerAgreedAt restaurantIds createdAt";
 
-// Shape a partner document for the admin screen (never includes the password).
-function serializePartner(user: any) {
+// Everything the partner entered about their restaurant. Accounts made before
+// the longer sign-up form only have name and address, so the rest may be blank.
+function serializeRequestedRestaurant(restaurant: any = {}) {
+  return {
+    name: restaurant.name ?? "",
+    address: restaurant.address ?? "",
+    city: restaurant.city ?? "",
+    state: restaurant.state ?? "",
+    postalCode: restaurant.postalCode ?? "",
+    phone: restaurant.phone ?? "",
+    website: restaurant.website ?? "",
+    cuisine: restaurant.cuisine ?? "",
+    priceLevel: restaurant.priceLevel ?? "",
+    businessType: restaurant.businessType ?? "",
+    serviceOptions: restaurant.serviceOptions ?? [],
+    applicantRole: restaurant.applicantRole ?? "",
+    notes: restaurant.notes ?? "",
+  };
+}function serializePartner(user: any) {
   return {
     id: String(user._id),
     username: user.username,
     email: user.email,
     status: user.partnerStatus ?? "pending",
-    requestedRestaurant: { name: user.requestedRestaurant?.name ?? "", address: user.requestedRestaurant?.address ?? "" },
+    requestedRestaurant: serializeRequestedRestaurant(user.requestedRestaurant),
+    agreedAt: user.partnerAgreedAt,
     restaurantIds: (user.restaurantIds ?? []).map(String),
     createdAt: user.createdAt,
   };

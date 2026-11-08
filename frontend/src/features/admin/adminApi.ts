@@ -20,7 +20,23 @@ export interface AdminPartner {
   username: string
   email: string
   status: PartnerStatus
-  requestedRestaurant: { name: string; address: string }
+  /** What the partner entered at sign-up. Older accounts only have name and address. */
+  requestedRestaurant: {
+    name: string
+    address: string
+    city: string
+    state: string
+    postalCode: string
+    phone: string
+    website: string
+    cuisine: string
+    priceLevel: string
+    businessType: string
+    serviceOptions: string[]
+    applicantRole: string
+    notes: string
+  }
+  agreedAt?: string
   restaurantIds: string[]
   createdAt?: string
 }

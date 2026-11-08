@@ -279,7 +279,6 @@ function LobbyScreen({ lobbyId }: { lobbyId: string }) {
               )}
             </div>
             <GroupControls lobbyId={lobbyId} isHost={lobby.isHost} />
-            <LobbyRestaurantPreview lobbyId={lobbyId} filterKey={JSON.stringify(lobby.filters)} isHost={lobby.isHost} />
           </section>
 
           <section className="lobby-page__settings" aria-label="Round settings">
@@ -318,6 +317,11 @@ function LobbyScreen({ lobbyId }: { lobbyId: string }) {
                     </span>
                   ))}
                 </div>
+                <LobbyRestaurantPreview
+                  lobbyId={lobbyId}
+                  filterKey={JSON.stringify(lobby.filters)}
+                  isHost={lobby.isHost}
+                />
               </>}
               {lobby.isHost && (
                 <div className="lobby-round-filters__controls">

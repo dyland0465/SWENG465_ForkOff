@@ -50,6 +50,8 @@ test("admin partner review", async () => {
     const list = await (await call("/api/admin/partners?status=pending", "admin")).json();
     assert.deepEqual(lastFilter, { role: "partner", partnerStatus: "pending" });
     assert.equal(list.partners[0].requestedRestaurant.name, "Harbor & Hearth");
+    assert.equal(list.partners[0].requestedRestaurant.city, "", "older sign-ups without the new fields still work");
+    assert.deepEqual(list.partners[0].requestedRestaurant.serviceOptions, []);
     assert.equal(JSON.stringify(list).includes("argon2"), false, "no password in the response");
     await call("/api/admin/partners?status=all", "admin");
     assert.deepEqual(lastFilter, { role: "partner" });

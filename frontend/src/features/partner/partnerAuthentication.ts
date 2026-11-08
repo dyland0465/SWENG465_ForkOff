@@ -18,6 +18,7 @@
  * restaurantIds here are for display only; the server must check the role and
  * restaurant ownership on every private analytics request.
  */
+import type { ServiceOption } from './partnerOptions'
 export type PartnerStatus = 'pending' | 'approved' | 'rejected'
 
 export interface PartnerSession {
@@ -40,6 +41,18 @@ export interface PartnerRegistration {
   password: string
   restaurantName: string
   restaurantAddress: string
+    city: string
+  state: string
+  postalCode: string
+  restaurantPhone: string
+  website?: string
+  cuisine: string
+  priceLevel: string
+  businessType: string
+  serviceOptions: readonly ServiceOption[]
+  applicantRole: string
+  notes?: string
+  agreedToTerms: boolean
 }
 
 export interface PartnerAuthenticationService {
@@ -130,7 +143,31 @@ export const partnerRegisterValidators = {
   restaurantName: (value: string) => !value.trim()
     ? 'Enter your restaurant’s name.'
     : value.trim().length > 120 ? 'Keep the name to 120 characters or fewer.' : undefined,
-  restaurantAddress: (value: string) => !value.trim()
-    ? 'Enter your restaurant’s address.'
+    restaurantAddress: (value: string) => !value.trim()
+    ? 'Enter your restaurant’s street address.'
     : value.trim().length > 200 ? 'Keep the address to 200 characters or fewer.' : undefined,
+  city: (value: string) => !value.trim()
+    ? 'Enter the city.'
+    : value.trim().length > 80 ? 'Keep the city to 80 characters or fewer.' : undefined,
+  state: (value: string) => !/^[A-Z]{2}$/.test(value) ? 'Choose a state.' : undefined,
+  postalCode: (value: string) => !value.trim()
+    ? 'Enter the ZIP code.'
+    : !/^\d{5}(-\d{4})?$/.test(value.trim()) ? 'Enter a 5-digit ZIP code, like 16801.' : undefined,
+  restaurantPhone: (value: string) => !value.trim()
+    ? 'Enter the restaurant’s phone number.'
+    : !/^\+?[\d\s().-]+$/.test(value.trim()) || value.replace(/\D/g, '').length < 10 || value.trim().length > 30
+      ? 'Enter a phone number with area code, like (814) 555-0100.' : undefined,
+  website: (value: string) => {
+    if (!value.trim()) return undefined
+    try {
+      const url = new URL(value.trim())
+      if ((url.protocol === 'https:' || url.protocol === 'http:') && url.hostname.includes('.') && value.trim().length <= 300) return undefined
+    } catch { /* falls through to the message */ }
+    return 'Enter the full website address, starting with https://'
+  },
+  cuisine: (value: string) => !value ? 'Choose the cuisine that fits best.' : undefined,
+  priceLevel: (value: string) => !value ? 'Choose a price level.' : undefined,
+  businessType: (value: string) => !value ? 'Choose a business type.' : undefined,
+  applicantRole: (value: string) => !value ? 'Choose your role.' : undefined,
+  notes: (value: string) => value.trim().length > 500 ? 'Keep this to 500 characters or fewer.' : undefined,
 }
