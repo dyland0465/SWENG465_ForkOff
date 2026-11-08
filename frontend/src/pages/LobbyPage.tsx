@@ -1,4 +1,5 @@
 import { GroupControls } from '../features/saved/GroupControls'
+import { GuestGroupsReminder } from '../features/saved/GuestGroupsReminder'
 import { lobbyRequest, useLiveLobby } from '../features/lobby/liveLobby'
 import { useRef, useState } from 'react'
 import { generatePath, useLocation, useNavigate, useParams } from 'react-router'
@@ -23,7 +24,9 @@ function LobbyScreen({ lobbyId }: { lobbyId: string }) {
   } = useLiveLobby()
   const navigate = useNavigate()
   const location = useLocation()
-  const invitationError = (location.state as { invitationError?: string } | null)?.invitationError
+  const creationState = location.state as { invitationError?: string; lobbyNotice?: string; invitationGroupId?: string } | null
+  const [invitationError, setInvitationError] = useState(creationState?.invitationError ?? '')
+  const [groupNotice, setGroupNotice] = useState(creationState?.lobbyNotice ?? '')
   const [draft, setDraft] = useState('')
   const [sending, setSending] = useState(false)
   const pendingMessage = useRef<{ text: string; requestId: string } | null>(
@@ -130,6 +133,7 @@ function LobbyScreen({ lobbyId }: { lobbyId: string }) {
       {!lobby && <h1>Your dinner crew</h1>}
       {!lobby && !error && <p role="status">Loading lobby…</p>}
       {(error || actionError || invitationError) && <p role="alert">{actionError || error || invitationError}</p>}
+      {groupNotice && <p className="lobby-group-notice" role="status">{groupNotice}</p>}
       <p className="lobby-page__status" role="status">
         {connection !== 'Live' ? connection : ''}
       </p>
@@ -278,7 +282,21 @@ function LobbyScreen({ lobbyId }: { lobbyId: string }) {
                 </TextAction>
               )}
             </div>
-            <GroupControls lobbyId={lobbyId} isHost={lobby.isHost} />
+            <GroupControls
+              lobbyId={lobbyId}
+              lobbyName={lobby.name}
+              isHost={lobby.isHost}
+              canInvite={lobby.status === 'waiting'}
+              initialGroupId={creationState?.invitationGroupId}
+              onInvitationSent={() => {
+                setInvitationError('')
+                setGroupNotice('')
+                if (creationState?.invitationError) {
+                  navigate(location.pathname, { replace: true, state: null })
+                }
+              }}
+            />
+            {lobby.status === 'waiting' && lobby.members.length > 1 && <GuestGroupsReminder context="lobby" />}
           </section>
 
           <section className="lobby-page__settings" aria-label="Round settings">

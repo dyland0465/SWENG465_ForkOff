@@ -1,0 +1,30 @@
+.group-controls {
+  display: grid;
+  gap: var(--spacing-4);
+  min-inline-size: 0;
+  margin-block-start: var(--spacing-6);
+  padding: var(--spacing-4);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-lg);
+  background: var(--color-bg-surface);
+  overflow-wrap: anywhere;
+}
+.group-controls__heading h2 { font-size: 1.25rem; line-height: 1.4; }
+.group-controls__heading p, .group-controls__note { color: var(--color-text-secondary); font-size: var(--font-size-caption-default); line-height: 1.5; }
+.group-controls__heading p { margin-block-start: var(--spacing-1); }
+.group-controls__save, .group-controls__invite { display: flex; flex-wrap: wrap; align-items: end; gap: var(--spacing-3); min-inline-size: 0; }
+.group-controls :is(.ui-field, .group-controls__note) { flex: 1 1 100%; }
+.group-controls .ui-button { max-inline-size: 100%; white-space: normal; }
+.group-controls__success { padding: var(--spacing-3); border-inline-start: 3px solid var(--color-status-success); background: var(--color-bg-canvas); }
+.group-controls__success p { line-height: 1.5; }
+.group-controls__reuse { padding-block-start: var(--spacing-4); border-block-start: 1px solid var(--color-border-default); }
+.group-controls__reuse summary { min-block-size: var(--target-size-min); padding-block: var(--spacing-3); font-weight: var(--font-weight-bold); cursor: pointer; }
+.group-controls__reuse summary:focus-visible { outline: var(--focus-ring-width) solid var(--color-border-focus); outline-offset: var(--focus-ring-offset); border-radius: var(--radius-sm); }
+.group-controls__invite { margin-block-start: var(--spacing-2); }
+.group-controls__error { color: var(--color-status-error); }
+.group-controls__feedback { color: var(--color-text-secondary); line-height: 1.5; }
+.create-lobby__group { display: grid; gap: var(--spacing-2); margin-block-start: var(--spacing-4); padding: var(--spacing-4); border: 1px solid var(--color-border-default); border-radius: var(--radius-lg); background: var(--color-bg-surface); overflow-wrap: anywhere; }
+.create-lobby__group p { color: var(--color-text-secondary); }
+.create-lobby__group-actions { display: flex; flex-wrap: wrap; gap: var(--spacing-2); }
+.create-lobby__group .ui-text-action { justify-self: start; }
+.lobby-group-notice { margin-block-end: var(--spacing-4); padding: var(--spacing-3) var(--spacing-4); border: 1px solid var(--color-border-default); border-radius: var(--radius-md); background: var(--color-bg-surface); overflow-wrap: anywhere; }

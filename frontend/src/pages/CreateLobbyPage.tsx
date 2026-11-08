@@ -1,8 +1,10 @@
 import { useAuth } from '../features/auth/useAuth'
 import { generatePath, useNavigate, useSearchParams } from 'react-router'
-import { useEffect, useState } from 'react'
-import { savedRequest } from '../features/saved/savedApi'
-import type { Collection } from '../features/saved/savedApi'
+import { useEffect, useRef, useState } from 'react'
+import { inviteSavedGroup, listSavedGroups, savedRequest } from '../features/saved/savedApi'
+import type { Collection, SavedGroup } from '../features/saved/savedApi'
+import { GuestGroupsReminder } from '../features/saved/GuestGroupsReminder'
+import { lobbyRequest } from '../features/lobby/liveLobby'
 import type { FormEvent } from 'react'
 import { Button } from '../components/ui/Button'
 import { TextAction } from '../components/ui/TextAction'
@@ -15,16 +17,35 @@ import {
 } from '../components/lobby/lobbyForm'
 import { paths } from '../routes/paths'
 import './LobbyForms.css'
+import '../features/saved/group-controls.css'
 
 export function CreateLobbyPage() {
   const navigate = useNavigate()
-  const [searchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
   const groupId = searchParams.get('group')
   const requestedCollection = searchParams.get('collection') ?? ''
   const [collections, setCollections] = useState<Collection[]>([])
   const [collectionId, setCollectionId] = useState(requestedCollection)
   const [collectionError, setCollectionError] = useState('')
   const { user, loading } = useAuth()
+  const groupKey = `${user?.id ?? ''}:${groupId ?? ''}`
+  const [groupState, setGroupState] = useState<{ key: string; group?: SavedGroup; error?: string; loading: boolean }>({ key: '', loading: true })
+  const [groupRetry, setGroupRetry] = useState(0)
+  const groupLoading = !!user && !!groupId && (groupState.key !== groupKey || groupState.loading)
+  const selectedGroup = groupState.key === groupKey ? groupState.group : undefined
+  const groupError = groupState.key === groupKey ? groupState.error : undefined
+  useEffect(() => {
+    if (!user || !groupId) return
+    let active = true
+    listSavedGroups().then(result => {
+      if (!active) return
+      const group = result.groups.find(item => item._id === groupId)
+      setGroupState({ key: groupKey, loading: false, group, ...(!group ? { error: 'This saved group is unavailable. It may have been deleted, or belong to a different account.' } : {}) })
+    }).catch(error => {
+      if (active) setGroupState({ key: groupKey, loading: false, error: error instanceof Error ? error.message : 'Could not load this saved group.' })
+    })
+    return () => { active = false }
+  }, [user, groupId, groupKey, groupRetry])
   useEffect(() => {
     if (!user) return
     let active = true
@@ -46,6 +67,7 @@ export function CreateLobbyPage() {
   const [diningNeeds, setDiningNeeds] = useState<string[]>([])
   const [status, setStatus] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const submitPending = useRef(false)
   const diningTime = new Date(values.dateTime)
   const openLabel = Number.isFinite(diningTime.getTime())
     ? `Open at ${diningTime.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}`
@@ -62,6 +84,7 @@ export function CreateLobbyPage() {
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    if (submitPending.current) return
     if (!validate(event.currentTarget)) {
       setStatus('Check the highlighted fields before continuing.')
       return
@@ -71,13 +94,15 @@ export function CreateLobbyPage() {
       setStatus('Select one of your available collections before continuing.')
       return
     }
+    if (groupId && user && (groupLoading || !selectedGroup)) {
+      setStatus(groupLoading ? 'Wait for your saved group to load.' : 'Retry loading your group, or continue without a saved group.')
+      return
+    }
+    submitPending.current = true
     setIsSubmitting(true)
     setStatus('Saving lobby…')
     try {
-      const response = await fetch('/api/lobbies', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      const result = await lobbyRequest<{ lobby?: { id?: string; lobbyCode?: string; name?: string } }>('/api/lobbies', 'POST', {
           ...(!user ? { displayName: values.displayName.trim() } : {}),
           ...(collectionId ? { collectionId } : {}),
           location: values.location.trim(),
@@ -87,36 +112,34 @@ export function CreateLobbyPage() {
           categories: cuisines,
           priceLevels: prices,
           diningNeeds,
-        }),
       })
-      const result = await response.json() as {
-        message?: string
-        lobby?: { id?: string; lobbyCode?: string; name?: string }
-      }
-
-      if (!response.ok) {
-        throw new Error(result.message || 'Could not create the lobby.')
-      }
 
       if (!result.lobby?.id) throw new Error('The server did not return a lobby ID.')
-      if (groupId && user) {
+      let lobbyNotice = 'Lobby created successfully. Share the code to bring your crew together.'
+      if (groupId && user && selectedGroup?.members.length) {
         try {
-          const invite = await fetch(`/api/saved/groups/${encodeURIComponent(groupId)}/invitations`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ lobbyId: result.lobby.id }) })
-          if (!invite.ok) throw new Error('Could not send group invitations. Use “Invite to this lobby” to retry.')
+          const { invited } = await inviteSavedGroup(groupId, result.lobby.id)
+          lobbyNotice = invited
+            ? `Lobby created successfully. Invitations sent for ${invited} saved ${invited === 1 ? 'member' : 'members'} of ${selectedGroup.name}. They choose whether to join.`
+            : 'Lobby created successfully. No invitations were needed; the saved members are already here.'
         } catch {
-          navigate(generatePath(paths.lobby, { lobbyId: result.lobby.id }), { state: { invitationError: 'Lobby created, but invitations could not be sent. Use “Invite to this lobby” to retry.' } })
+          navigate(generatePath(paths.lobby, { lobbyId: result.lobby.id }), { state: { lobbyNotice: 'Lobby created successfully.', invitationGroupId: groupId, invitationError: `Lobby created, but invitations for ${selectedGroup.name} could not be sent. Use “Invite to this lobby” below to retry.` } })
           return
         }
+      } else if (selectedGroup && !selectedGroup.members.length) {
+        lobbyNotice = 'Lobby created successfully. Your saved group has no other saved members, so no invitations were sent. Share the lobby code instead.'
       }
-      navigate(generatePath(paths.lobby, { lobbyId: result.lobby.id }))
+      navigate(generatePath(paths.lobby, { lobbyId: result.lobby.id }), { state: { lobbyNotice } })
     } catch (error) {
       setStatus(error instanceof Error ? error.message : 'Could not create the lobby. Please try again.')
     } finally {
+      submitPending.current = false
       setIsSubmitting(false)
     }
   }
 
   const summary = [
+    ...(selectedGroup ? [`Group: ${selectedGroup.name} · ${selectedGroup.members.length} saved members`] : []),
     ...(collectionId ? [`Collection: ${collections.find(collection => collection._id === collectionId)?.name ?? 'Loading…'}`] : []),
     `Location: ${values.location.trim() || 'Choose a location'}`,
     formatDinnerTime(values.dateTime),
@@ -129,8 +152,18 @@ export function CreateLobbyPage() {
   return (
     <main id="main-content" className="lobby-form-page" tabIndex={-1}>
       <h1 className="text-heading-h1">Create a lobby</h1>
-      {groupId && <p>Your saved group will be invited when the lobby is created.</p>}
       <p className="lobby-form-page__intro text-body-large">Set the guardrails. Your group can still explore inside them.</p>
+      {groupId && <section className="create-lobby__group" aria-label="Selected saved group">
+        {loading || groupLoading ? <p role="status">Loading your saved group…</p> : !user ? <p>You can create this lobby as a guest. Saved group invitations require the account that saved the group.</p> : groupError ? <p role="alert">{groupError}</p> : selectedGroup && <>
+          <strong>Starting with {selectedGroup.name}</strong>
+          <p>{selectedGroup.members.length ? `${selectedGroup.members.length} saved ${selectedGroup.members.length === 1 ? 'member will' : 'members will'} receive an invitation after you create the lobby. Choose your dinner settings below.` : 'This group has no other saved members to invite. Create your lobby and share its code instead.'}</p>
+        </>}
+        <div className="create-lobby__group-actions">
+          {user && groupError && <TextAction onClick={() => { setGroupState({ key: groupKey, loading: true }); setGroupRetry(value => value + 1) }}>Retry loading group</TextAction>}
+          <TextAction disabled={isSubmitting} onClick={() => { const next = new URLSearchParams(searchParams); next.delete('group'); setSearchParams(next, { replace: true }); setStatus('') }}>Continue without a saved group</TextAction>
+          {!user && !loading && <TextAction to={paths.groups}>Explore Saved Groups</TextAction>}
+        </div>
+      </section>}
       <form className="create-lobby" noValidate onSubmit={submit} onChange={() => setStatus('')}>
         <div className="create-lobby__filters lobby-panel">
           {user && <div className="create-lobby__collection">
@@ -177,12 +210,13 @@ export function CreateLobbyPage() {
             <ul>{summary.map((line, index) => <li key={index}><span aria-hidden="true">✓</span><span>{line}</span></li>)}</ul>
           </aside>
           <div className="create-lobby__submit">
-            <Button type="submit" disabled={loading || isSubmitting}>
+            <Button type="submit" disabled={loading || isSubmitting || groupLoading}>
               {isSubmitting ? 'Creating lobby…' : 'Create lobby'}
             </Button>
             <p className="lobby-form-note">You can edit these filters before voting starts.</p>
             <p className="lobby-form-status" role="status">{status}</p>
           </div>
+          {!groupId && <GuestGroupsReminder context="create" />}
         </div>
       </form>
     </main>

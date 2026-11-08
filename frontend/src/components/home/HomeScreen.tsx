@@ -1,5 +1,6 @@
 import heroFoodCollage from '../../assets/figma/hero-food-collage.png'
 import { Button } from '../ui/Button'
+import { GuestGroupsReminder } from '../../features/saved/GuestGroupsReminder'
 import './HomeScreen.css'
 
 type HomeScreenProps = {
@@ -24,6 +25,7 @@ export function HomeScreen({ onCreateLobby, onJoinLobby }: HomeScreenProps) {
           <Button onClick={onCreateLobby}>Create a lobby</Button>
           <Button variant="secondary" onClick={onJoinLobby}>Join with a code</Button>
         </div>
+        <GuestGroupsReminder context="home" />
       </div>
       <img
         className="home-hero__illustration"

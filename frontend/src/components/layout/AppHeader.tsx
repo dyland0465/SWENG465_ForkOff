@@ -32,13 +32,13 @@ export function AppHeader({ onHowItWorks, onJoinLobby }: AppHeaderProps) {
           <TextAction to={paths.home} tone="nav" current={isHome}>Home</TextAction>
           <TextAction tone="nav" onClick={onHowItWorks}>How it works</TextAction>
           <TextAction tone="nav" current={isJoinLobby} onClick={onJoinLobby}>Enter lobby code</TextAction>
-                    {/* Admin screen: only admin accounts see this tab. */}
+          <TextAction to={paths.groups} tone="nav" current={pathname === paths.groups || pathname.startsWith(`${paths.groups}/`)}>Groups</TextAction>
           {user && <TextAction to={paths.saved} tone="nav" current={pathname === paths.saved}>Saved</TextAction>}
           {user?.role === 'admin' && <TextAction to={paths.admin} tone="nav" current={isAdmin}>Admin</TextAction>}
           {user?.role === 'partner' && <TextAction to={paths.partnerAccess} tone="nav" current={isPartnerAccess}>Partner</TextAction>}
           {user ? (
             <span className="app-header__account">
-              <span className="app-header__user">Hi, {user.username}</span>
+              <span className="app-header__user" title={user.username}>Hi, {user.username}</span>
               <TextAction tone="nav" onClick={() => { void signOut().then(() => navigate(paths.home)).catch(error => setLogoutError(error.message)) }}>Log out</TextAction>
             </span>
           ) : (

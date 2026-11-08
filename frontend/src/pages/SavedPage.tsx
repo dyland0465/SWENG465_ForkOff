@@ -1,10 +1,9 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Link, generatePath, useNavigate } from 'react-router'
+import { Link } from 'react-router'
 import { useAuth } from '../features/auth/useAuth'
 import { savedRequest } from '../features/saved/savedApi'
-import type { Collection, Invitation, SavedGroup } from '../features/saved/savedApi'
+import type { Collection } from '../features/saved/savedApi'
 import { RestaurantSearch } from '../features/saved/RestaurantSearch'
-import { lobbyRequest } from '../features/lobby/liveLobby'
 import { paths } from '../routes/paths'
 import '../features/saved/saved.css'
 
@@ -23,25 +22,24 @@ function PlaceList({ ids, remove }: { ids: string[]; remove: (id: string) => voi
   return <>{ids.length ? <><ul>{ids.slice(current * 10, current * 10 + 10).map(id => <PlaceRow key={id} id={id} remove={() => remove(id)} />)}</ul>{last > 0 && <div><button type="button" disabled={current === 0} onClick={() => setPage(current - 1)}>Previous</button> Page {current + 1} of {last + 1} <button type="button" disabled={current === last} onClick={() => setPage(current + 1)}>Next</button></div>}<small>Restaurant names and links from Google Maps.</small></> : <p>No restaurants saved yet.</p>}</>
 }
 export function SavedPage() {
-  const { user, loading } = useAuth(), navigate = useNavigate()
-  const [favorites, setFavorites] = useState<string[]>([]), [collections, setCollections] = useState<Collection[]>([]), [groups, setGroups] = useState<SavedGroup[]>([]), [invitations, setInvitations] = useState<Invitation[]>([])
-  const [view, setView] = useState<'favorites' | 'collections' | 'search' | 'groups' | 'invitations'>('favorites')
+  const { user, loading } = useAuth()
+  const [favorites, setFavorites] = useState<string[]>([]), [collections, setCollections] = useState<Collection[]>([])
+  const [view, setView] = useState<'favorites' | 'collections' | 'search'>('favorites')
   const [selectedCollectionId, setSelectedCollectionId] = useState('')
   const [shareUrl, setShareUrl] = useState(''), [collectionName, setCollectionName] = useState(''), [error, setError] = useState(''), [busy, setBusy] = useState(false)
   const refresh = useCallback(async () => {
-    const [f, c, g, i] = await Promise.all([savedRequest<{ placeIds: string[] }>('/favorites'), savedRequest<{ collections: Collection[] }>('/collections'), savedRequest<{ groups: SavedGroup[] }>('/groups'), savedRequest<{ invitations: Invitation[] }>('/invitations')])
-    setFavorites(f.placeIds); setCollections(c.collections); setGroups(g.groups); setInvitations(i.invitations)
+    const [f, c] = await Promise.all([savedRequest<{ placeIds: string[] }>('/favorites'), savedRequest<{ collections: Collection[] }>('/collections')])
+    setFavorites(f.placeIds); setCollections(c.collections)
   }, [])
   useEffect(() => { if (!user) return; void Promise.resolve().then(refresh).catch(e => setError(e.message)); const timer = window.setInterval(() => void refresh().catch(() => {}), 15000); return () => window.clearInterval(timer) }, [user, refresh])
   async function run(action: () => Promise<unknown>) { setBusy(true); setError(''); try { await action(); await refresh() } catch (e) { setError(e instanceof Error ? e.message : 'Request failed.') } finally { setBusy(false) } }
   const selectedCollection = collections.find(collection => collection._id === selectedCollectionId) ?? collections[0]
   if (loading) return <main id="main-content" className="saved-page">Loading…</main>
-  if (!user) return <main id="main-content" className="saved-page"><h1>Saved for later</h1><p>Sign in to save restaurants and groups.</p><Link to={paths.login} state={{ from: '/saved' }}>Log in</Link></main>
-  return <main id="main-content" className="saved-page"><h1>Your saved places and groups</h1>{error && <p role="alert">{error}</p>}
+  if (!user) return <main id="main-content" className="saved-page"><h1>Saved for later</h1><p>Sign in to save restaurants and collections.</p><Link to={paths.login} state={{ from: '/saved' }}>Log in</Link><p>Looking for your dinner crew? <Link to={paths.groups}>Explore Groups</Link></p></main>
+  return <main id="main-content" className="saved-page"><h1>Your saved restaurants</h1><p>Dinner crews and lobby invitations now have a home in <Link to={paths.groups}>Groups</Link>.</p>{error && <p role="alert">{error}</p>}
     <nav className="saved-page__tabs" aria-label="Saved sections">{([
-      ['favorites', 'Favorites', favorites.length], ['collections', 'Collections', collections.length], ['search', 'Find restaurants', null], ['groups', 'Groups', groups.length], ['invitations', 'Invitations', invitations.length],
+      ['favorites', 'Favorites', favorites.length], ['collections', 'Collections', collections.length], ['search', 'Find restaurants', null],
     ] as const).map(([key, label, count]) => <button key={key} type="button" className={view === key ? 'is-active' : ''} aria-pressed={view === key} onClick={() => setView(key)}>{label}{count !== null && <span>{count}</span>}</button>)}</nav>
-    {view === 'invitations' && <section><h2>Invitations</h2>{invitations.length ? <ul>{invitations.map(invite => <li key={invite.id}><span>{invite.lobbyName}</span><button disabled={busy} onClick={() => void run(async () => { await lobbyRequest(`/api/lobbies/${encodeURIComponent(invite.lobbyId)}/join`, 'POST', {}); navigate(generatePath(paths.lobby, { lobbyId: invite.lobbyId })) })}>Join lobby</button><button disabled={busy} onClick={() => void run(() => savedRequest(`/invitations/${invite.id}`, 'DELETE'))}>Decline</button></li>)}</ul> : <p>No pending invitations.</p>}</section>}
     {view === 'favorites' && <section><h2>Favorites</h2><PlaceList ids={favorites} remove={id => void run(() => savedRequest(`/favorites/${encodeURIComponent(id)}`, 'DELETE'))} /></section>}
     {view === 'collections' && <section className="saved-collection-section"><h2>Restaurant collections</h2>
       <div className="saved-collections">
@@ -62,6 +60,5 @@ export function SavedPage() {
       </div>
     </section>}
     {view === 'search' && <section><h2>Find restaurants</h2><p>Search restaurants already in the database and add them to your favorites.</p><RestaurantSearch favorites={favorites} collections={collections} onChanged={refresh} /></section>}
-    {view === 'groups' && <section><h2>Saved groups</h2><p>Save a group from a lobby you host. Guests can join by code but aren’t saved as members.</p>{groups.length ? <ul>{groups.map(g => <li key={g._id}><strong>{g.name}</strong><span>{g.members.length ? g.members.map(m => m.displayName).join(', ') : 'No other signed-in members'}</span><Link to={`${paths.createLobby}?group=${encodeURIComponent(g._id)}`}>Start a lobby</Link><button disabled={busy} onClick={() => { if (window.confirm(`Delete ${g.name}?`)) void run(() => savedRequest(`/groups/${g._id}`, 'DELETE')) }}>Delete group</button></li>)}</ul> : <p>No saved groups yet.</p>}</section>}
   </main>
 }

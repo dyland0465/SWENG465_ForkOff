@@ -2,6 +2,8 @@ import type { RouteObject } from 'react-router'
 import { AppLayout } from '../components/layout/AppLayout'
 import { ImportCollectionPage } from '../pages/ImportCollectionPage'
 import { SavedPage } from '../pages/SavedPage'
+import { GroupsPage } from '../pages/GroupsPage'
+import { GroupDetailsPage } from '../pages/GroupDetailsPage'
 import { HomePage } from '../pages/HomePage'
 import { LoginPage } from '../pages/LoginPage'
 import { CreateLobbyPage } from '../pages/CreateLobbyPage'
@@ -28,6 +30,8 @@ export const appRoutes: RouteObject[] = [
     children: [
       { path: paths.home, element: <HomePage /> },
       { path: paths.saved, element: <SavedPage /> },
+      { path: paths.groups, element: <GroupsPage /> },
+      { path: paths.groupDetails, element: <GroupDetailsPage /> },
       { path: "/saved/import/:token", element: <ImportCollectionPage /> },
       { path: paths.login, element: <LoginPage /> },
       { path: paths.createLobby, element: <CreateLobbyPage /> },
