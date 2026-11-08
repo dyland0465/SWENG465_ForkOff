@@ -99,8 +99,8 @@ export function LoginScreen({ initialMode = 'login', onLogin, onRegister }: Logi
         <h1 className="text-heading-h1">{mode === 'login' ? 'Welcome back' : 'Join Fork Off'}</h1>
         <p className="lobby-form-page__intro text-body-large">
           {mode === 'login'
-            ? 'Log in to host lobbies and keep track of your dinner crews.'
-            : 'Create an account to host lobbies. Joining a lobby never requires one.'}
+            ? 'Log in to save your dinner crews and bring them back next time.'
+            : 'Create an account to save your groups. Creating and joining lobbies never require one.'}
         </p>
       </div>
 
@@ -150,7 +150,7 @@ export function LoginScreen({ initialMode = 'login', onLogin, onRegister }: Logi
 
         <p className="lobby-form-status login-card__status" role="status">{status}</p>
         <p className="login-card__guest">
-          Just joining a friend’s lobby? <TextAction to={paths.joinLobby}>Continue as a guest</TextAction>
+          No account needed to get dinner started. <TextAction to={paths.createLobby}>Create a lobby</TextAction> or <TextAction to={paths.joinLobby}>Join as a guest</TextAction>
         </p>
         {/* Partner link: sends restaurant owners to the separate Partner access
             page (/partners), since partner accounts sign in there, not here. */}

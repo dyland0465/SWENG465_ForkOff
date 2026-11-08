@@ -2,6 +2,8 @@
 export const paths = {
   home: '/',
   saved: '/saved',
+  groups: '/groups',
+  groupDetails: '/groups/:groupId',
     login: '/login',
   createLobby: '/lobbies/create',
   joinLobby: '/lobbies/join',

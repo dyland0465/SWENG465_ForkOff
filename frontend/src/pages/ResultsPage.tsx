@@ -5,6 +5,7 @@ import { Button } from '../components/ui/Button'
 import { TextAction } from '../components/ui/TextAction'
 import { lobbyRequest, useLiveLobby } from '../features/lobby/liveLobby'
 import { useRound } from '../features/voting/useRound'
+import { GuestGroupsReminder } from '../features/saved/GuestGroupsReminder'
 import { paths } from '../routes/paths'
 import './ResultsPage.css'
 
@@ -27,6 +28,7 @@ function ResultsScreen({ lobbyId }: { lobbyId: string }) {
     {loading ? <p role="status">Loading results…</p> : !round ? <p>No voting round has started.</p> : !round.complete ? <section className="results-incomplete"><p>Waiting for the group: {round.completed} of {round.totalMembers} members finished. Votes remain private until everyone finishes.</p>{round.canVote && <TextAction to={generatePath(paths.voting, { lobbyId })}>Continue voting →</TextAction>}</section> : <ResultsList results={round.results ?? []} />}
 
     <footer className="results-footer"><TextAction className="results-lobby" to={generatePath(paths.lobby, { lobbyId })}>Return to lobby</TextAction>{lobby?.isHost && round && <Button disabled={busy} variant="secondary" onClick={() => void reset()}>End round</Button>}</footer>
+    {round?.complete && !loading && !error && <GuestGroupsReminder context="results" />}
   </main>
 }
 type Result = NonNullable<NonNullable<ReturnType<typeof useRound>['round']>['results']>[number]

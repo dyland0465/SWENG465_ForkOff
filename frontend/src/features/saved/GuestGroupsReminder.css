@@ -1,0 +1,88 @@
+.guest-groups-reminder {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-1);
+  min-inline-size: 0;
+  padding: var(--spacing-3) var(--spacing-2) var(--spacing-1) var(--spacing-4);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-canvas);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-caption-default);
+  line-height: var(--line-height-caption-default);
+  text-align: start;
+}
+
+.guest-groups-reminder__copy {
+  flex: 1;
+  min-inline-size: 0;
+}
+
+.guest-groups-reminder strong { color: var(--color-text-primary); }
+
+.guest-groups-reminder__session { margin-block-start: var(--spacing-2); }
+
+.guest-groups-reminder .ui-text-action {
+  justify-content: flex-start;
+  padding-inline: 0;
+  max-inline-size: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-align: start;
+}
+
+.guest-groups-reminder__dismiss {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  inline-size: max(var(--target-size-min), 1.5rem);
+  min-block-size: max(var(--target-size-min), 2rem);
+  padding: 0;
+  margin-block-start: calc(-1 * var(--spacing-2));
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.guest-groups-reminder__dismiss:hover { background: var(--neutral-gray-100); }
+
+.guest-groups-reminder--home {
+  position: relative;
+  display: block;
+  inline-size: 100%;
+  max-inline-size: 28rem;
+  margin-block-start: var(--spacing-4);
+  margin-inline: auto;
+  padding-inline: var(--target-size-min);
+  border: 0;
+  background: transparent;
+  text-align: center;
+}
+
+.guest-groups-reminder--home strong {
+  display: block;
+  margin-block-end: var(--spacing-1);
+}
+
+.guest-groups-reminder--home .ui-text-action {
+  justify-content: center;
+  margin-block-start: var(--spacing-1);
+  text-align: center;
+}
+
+.guest-groups-reminder--home .guest-groups-reminder__dismiss {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-end: 0;
+  margin-block-start: 0;
+  font-size: 1.125rem;
+}
+
+.guest-groups-reminder--create,
+.guest-groups-reminder--lobby,
+.guest-groups-reminder--results { margin-block-start: var(--spacing-6); }
