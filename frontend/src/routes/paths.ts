@@ -15,6 +15,5 @@ export const paths = {
   results: '/lobbies/:lobbyId/results',
   partnerAccess: '/partners',
   admin: '/admin',
-  // Development-only synthetic preview. Future private analytics need a verified-session guard.
   partnerRestaurant: '/partners/:restaurantId',
 } as const

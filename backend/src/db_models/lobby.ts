@@ -19,6 +19,8 @@ const lobbySchema = new Schema(
     nextJoinOrder: { type: Number, default: 1 },
     revision: { type: Number, default: 0 },
     round: { type: Schema.Types.Mixed, default: null },
+    telemetryOutbox: { type: [Schema.Types.Mixed], default: [] },
+    telemetryDeleted: { type: Boolean, default: false },
     collectionSource: { type: Schema.Types.Mixed, default: null },
     members: [{
       _id: false,

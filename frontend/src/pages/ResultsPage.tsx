@@ -6,6 +6,7 @@ import { TextAction } from '../components/ui/TextAction'
 import { lobbyRequest, useLiveLobby } from '../features/lobby/liveLobby'
 import { useRound } from '../features/voting/useRound'
 import { GuestGroupsReminder } from '../features/saved/GuestGroupsReminder'
+import { engagementId } from '../features/voting/engagement'
 import { paths } from '../routes/paths'
 import './ResultsPage.css'
 
@@ -25,7 +26,7 @@ function ResultsScreen({ lobbyId }: { lobbyId: string }) {
   return <main id="main-content" className="results-page" tabIndex={-1}>
     <header className="results-page__heading"><div><h1>Group results</h1><p className="results-page__intro">Restaurants are ranked by yes votes; vetoed restaurants are listed last.</p></div></header>
     {(error || actionError) && <p role="alert">{actionError || error}</p>}
-    {loading ? <p role="status">Loading results…</p> : !round ? <p>No voting round has started.</p> : !round.complete ? <section className="results-incomplete"><p>Waiting for the group: {round.completed} of {round.totalMembers} members finished. Votes remain private until everyone finishes.</p>{round.canVote && <TextAction to={generatePath(paths.voting, { lobbyId })}>Continue voting →</TextAction>}</section> : <ResultsList results={round.results ?? []} />}
+    {loading ? <p role="status">Loading results…</p> : !round ? <p>No voting round has started.</p> : !round.complete ? <section className="results-incomplete"><p>Waiting for the group: {round.completed} of {round.totalMembers} members finished. Votes remain private until everyone finishes.</p>{round.canVote && <TextAction to={generatePath(paths.voting, { lobbyId })}>Continue voting →</TextAction>}</section> : <ResultsList results={round.results ?? []} roundId={round.id} base={base} />}
 
     <footer className="results-footer"><TextAction className="results-lobby" to={generatePath(paths.lobby, { lobbyId })}>Return to lobby</TextAction>{lobby?.isHost && round && <Button disabled={busy} variant="secondary" onClick={() => void reset()}>End round</Button>}</footer>
     {round?.complete && !loading && !error && <GuestGroupsReminder context="results" />}
@@ -33,18 +34,18 @@ function ResultsScreen({ lobbyId }: { lobbyId: string }) {
 }
 type Result = NonNullable<NonNullable<ReturnType<typeof useRound>['round']>['results']>[number]
 
-function ResultDetails({ row }: { row: Result }) {
+function ResultDetails({ row, roundId, base }: { row: Result; roundId: string; base: string }) {
   const { restaurant, yes, no, veto, skip } = row
   return <>
     <h3>{restaurant.name}</h3>
     <p>{restaurant.category?.replace(/_/g, ' ') ?? 'Restaurant'} · {restaurant.address ?? 'Address unavailable'}</p>
     <p>{yes} yes · {no} no · {veto} veto · {skip} skipped {veto > 0 && '· Vetoed'}</p>
-    {restaurant.googleMapsUri && <GoogleMapsLink href={restaurant.googleMapsUri} />}
+    {restaurant.googleMapsUri && <GoogleMapsLink href={restaurant.googleMapsUri} onClick={() => { void lobbyRequest(`${base}/engagement`, 'POST', { roundId, restaurantId: restaurant.id, kind: 'maps_click', eventId: engagementId() }).catch(() => {}) }} />}
     {restaurant.photoAuthors.map((author, i) => <small key={i}> Photo: {author.uri ? <a href={author.uri} target="_blank" rel="noreferrer">{author.displayName}</a> : author.displayName}</small>)}
   </>
 }
 
-function ResultsList({ results }: { results: Result[] }) {
+function ResultsList({ results, roundId, base }: { results: Result[]; roundId: string; base: string }) {
   const eligible = results.filter(row => !row.veto)
   const top = eligible.slice(0, 3)
   const rest = [...eligible.slice(3), ...results.filter(row => row.veto)]
@@ -54,12 +55,12 @@ function ResultsList({ results }: { results: Result[] }) {
     {top.length ? <ol className="results-podium">{top.map((row, index) => <li key={row.restaurant.id} className={`results-podium__place results-podium__place--${index + 1}`}>
       <span className="results-podium__rank">#{index + 1}</span>
       {row.restaurant.photoUrl && <img src={row.restaurant.photoUrl} alt="" />}
-      <div><ResultDetails row={row} /></div>
+      <div><ResultDetails row={row} roundId={roundId} base={base} /></div>
     </li>)}</ol> : <p>No restaurants are eligible for the podium because every restaurant was vetoed.</p>}
     {rest.length > 0 && <><h2>More results</h2><ol className="results-list">{rest.map((row, index) => <li key={row.restaurant.id} className="results-row">
       <span className="results-row__rank">{row.veto ? '–' : index + 4}</span>
       {row.restaurant.photoUrl && <img className="results-row__photo" src={row.restaurant.photoUrl} alt="" />}
-      <div className="results-row__copy"><ResultDetails row={row} /></div>
+      <div className="results-row__copy"><ResultDetails row={row} roundId={roundId} base={base} /></div>
     </li>)}</ol></>}
     <p className="results-ranking__note">Restaurant information from Google Maps.</p>
   </section>

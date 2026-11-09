@@ -14,9 +14,8 @@ import { DiscoveryPreviewPage } from '../pages/DiscoveryPreviewPage'
 import { VotingPage } from '../pages/VotingPage'
 import { RestaurantDetailsPage } from '../pages/RestaurantDetailsPage'
 import { ResultsPage } from '../pages/ResultsPage'
-import { PartnerRestaurantPage } from '../pages/PartnerRestaurantPage'
+import { LivePartnerRestaurantPage } from '../pages/LivePartnerRestaurantPage'
 import { PartnerAccessPage } from '../pages/PartnerAccessPage'
-import { PartnerDemoPreviewProvider, RequirePartnerDemoPreview } from '../features/partner/PartnerDemoPreview'
 import { AdminPage } from '../pages/AdminPage'
 import {
   NotFoundPage,
@@ -43,16 +42,8 @@ export const appRoutes: RouteObject[] = [
       { path: `${paths.lobby}/restaurants`, element: <RestaurantDetailsPage /> },
       { path: paths.groupChat, element: <GroupChatPage /> },
       { path: paths.results, element: <ResultsPage /> },
-      {
-        element: <PartnerDemoPreviewProvider />,
-        children: [
-          { path: paths.partnerAccess, element: <PartnerAccessPage /> },
-          {
-            element: <RequirePartnerDemoPreview />,
-            children: [{ path: paths.partnerRestaurant, element: <PartnerRestaurantPage /> }],
-          },
-        ],
-      },
+      { path: paths.partnerAccess, element: <PartnerAccessPage /> },
+      { path: paths.partnerRestaurant, element: <LivePartnerRestaurantPage /> },
       { path: '*', element: <NotFoundPage /> },
       { path: paths.admin, element: <AdminPage /> },
     ],

@@ -8,6 +8,8 @@ import { establishSession, publicUser, revokeSession } from "../services/session
 import { HttpError } from "../utils/errors";
 import { changeLobby, findLobby, lobbyEvents, memberFor, nextOnline, requireHost, serializeLobby, type LobbyDocument, type Member } from "../services/lobbyState";
 import { findCollectionRestaurants, findLobbyRestaurants } from "../services/lobbyRestaurants";
+import { activeParticipants, roundResults } from "../services/analytics";
+import { AnalyticsEvent } from "../db_models/telemetry";
 
 
 /**
@@ -429,7 +431,7 @@ router.post("/api/lobbies/:id/round", run(async (req, res) => {
     requireHost(current, req.identity);
     if (current.round) throw new HttpError(409, "A voting round already exists.");
     if (JSON.stringify(current.filters) !== JSON.stringify(initial.filters)) throw new HttpError(409, "The filters changed. Please start again.");
-    current.round = { id: randomUUID(), restaurants, warnings, participants: current.members.map(member => member.memberId), decisions: {} };
+    current.round = { id: randomUUID(), startedAt: new Date().toISOString(), restaurants, warnings, participants: current.members.map(member => member.memberId), decisions: {} };
     current.status = "playing";
   });
   res.status(201).json({ lobby: serializeLobby(lobby!, req.identity) });
@@ -440,13 +442,9 @@ router.get("/api/lobbies/:id/round", run(async (req, res) => {
   const member = memberFor(lobby, req.identity);
   const round = lobby.round;
   if (!round) return res.json({ round: null });
-  const participants = round.participants.filter(id => lobby.members.some(m => m.memberId === id));
-  const complete = participants.every(id => round.restaurants.every(r => Boolean(round.decisions[id]?.[r.id])));
-  const results = complete ? round.restaurants.map(restaurant => {
-    const choices = participants.map(id => round.decisions[id]?.[restaurant.id]);
-    return { restaurant, yes: choices.filter(x => x === "yes").length, no: choices.filter(x => x === "no").length,
-      veto: choices.filter(x => x === "veto").length, skip: choices.filter(x => x === "skip").length };
-  }).sort((a, b) => Number(a.veto > 0) - Number(b.veto > 0) || b.yes - a.yes) : null;
+  const participants = activeParticipants(round, lobby.members);
+  const complete = Boolean(round.completedAt) || (participants.length > 0 && participants.every(id => round.restaurants.every(r => Boolean(round.decisions[id]?.[r.id]))));
+  const results = complete ? roundResults(round, lobby.members).map(({ index: _index, ...row }) => row) : null;
   res.json({ round: { id: round.id, restaurants: round.restaurants, warnings: round.warnings ?? [], decisions: round.decisions[member.memberId] ?? {},
     canVote: participants.includes(member.memberId), completed: participants.filter(id => round.restaurants.every(r => Boolean(round.decisions[id]?.[r.id]))).length,
     totalMembers: participants.length, complete, results } });
@@ -462,10 +460,23 @@ router.put("/api/lobbies/:id/round/vote", run(async (req, res) => {
     if (!round.participants.includes(member.memberId)) throw new HttpError(403, "You joined after this round started.");
     if (!round.restaurants.some(restaurant => restaurant.id === restaurantId)) throw new HttpError(400, "Restaurant is not in this round.");
     const active = round.participants.filter(id => current.members.some(m => m.memberId === id));
-    if (active.every(id => round.restaurants.every(r => Boolean(round.decisions[id]?.[r.id])))) throw new HttpError(409, "Voting is complete.");
+    if (round.completedAt || active.every(id => round.restaurants.every(r => Boolean(round.decisions[id]?.[r.id])))) throw new HttpError(409, "Voting is complete.");
     round.decisions = { ...round.decisions, [member.memberId]: { ...round.decisions[member.memberId], [restaurantId]: decision } };
   });
   res.json({ ok: true });
+}));
+
+router.post("/api/lobbies/:id/round/engagement", run(async (req, res) => {
+  const lobby = await findLobby(String(req.params.id));
+  const member = memberFor(lobby, req.identity);
+  const { roundId, restaurantId, kind, eventId } = req.body ?? {};
+  if (!lobby.round || lobby.round.id !== roundId || !lobby.round.participants.includes(member.memberId) ||
+      !lobby.round.restaurants.some(r => r.id === restaurantId) || !["card_view", "maps_click"].includes(kind) ||
+      (kind === "maps_click" && (typeof eventId !== "string" || !/^[a-zA-Z0-9-]{1,80}$/.test(eventId)))) throw new HttpError(400, "Invalid engagement event.");
+  const key = kind === "card_view" ? `${roundId}:${member.memberId}:${restaurantId}:view` : `${roundId}:${member.memberId}:${eventId}:maps`;
+  try { await AnalyticsEvent.updateOne({ key }, { $setOnInsert: { key, placeId: restaurantId, kind, occurredAt: new Date() } }, { upsert: true }); }
+  catch (error) { if ((error as { code?: number }).code !== 11000) throw error; }
+  res.status(200).json({ ok: true });
 }));
 
 router.delete("/api/lobbies/:id/round", run(async (req, res) => {

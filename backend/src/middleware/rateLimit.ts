@@ -13,6 +13,7 @@ export function policyFor(method: string, path: string): Policy | undefined {
   if (method === "POST" && p === "/api/lobbies") return { name: "lobby-create", max: 20, windowMs: 60 * minute };
   if (method === "POST" && /^\/api\/lobbies\/[^/]+\/join$/.test(p)) return { name: "lobby-join", max: 30, windowMs: 15 * minute };
   if (method === "POST" && /^\/api\/lobbies\/[^/]+\/messages$/.test(p)) return { name: "message", max: 60, windowMs: minute };
+  if (method === "POST" && /^\/api\/lobbies\/[^/]+\/round\/engagement$/.test(p)) return { name: "engagement", max: 120, windowMs: minute };
   if ((method === "GET" && (/^\/api\/places\/[^/]+(?:\/(?:photos|reviews))?$/.test(p) || /^\/api\/restaurants(?:\/[^/]+)?$/.test(p) || /^\/api\/lobbies\/[^/]+\/restaurants$/.test(p) || p === "/api/admin/places")) ||
       (method === "POST" && (p === "/api/restaurants/import" || /^\/api\/lobbies\/[^/]+\/round$/.test(p)))) return { name: "places", max: 30, windowMs: minute };
 }

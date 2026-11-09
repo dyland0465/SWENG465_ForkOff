@@ -13,8 +13,10 @@
  *
  * Request and session logic lives in usePartnerSignIn.ts; this file is the UI.
  */
-import { useId, useState } from 'react'
+import { useEffect, useId, useState } from 'react'
 import type { ComponentProps, FormEvent, ReactNode } from 'react'
+import { Link, generatePath } from 'react-router'
+import { paths } from '../../routes/paths'
 import { Button } from '../../components/ui/Button'
 import { SelectField, TextInput } from '../../components/ui/FormField'
 import { useLobbyForm } from '../../components/lobby/useLobbyForm'
@@ -103,7 +105,7 @@ export function PartnerAccountAccess() {
       <div className="partner-access__account-heading">
         <p className="text-label-default">Your restaurant, in focus</p>
         <h2 id="partner-account-title" className="text-heading-h2">{account.status === 'verified' ? 'Partner account' : mode === 'sign-in' ? 'Partner sign in' : 'Become a partner'}</h2>
-        <p id="partner-account-description">Access your restaurant’s discovery, voting, and promotion insights with your partner account.</p>
+        <p id="partner-account-description">Access your restaurant’s discovery, voting, and engagement insights with your partner account.</p>
       </div>
 
       {account.status === 'verified' ? <PartnerStatus session={account.session} /> : <>
@@ -268,8 +270,18 @@ function Feedback({ pending, pendingText, error }: { pending: boolean; pendingTe
 function PartnerStatus({ session }: { session: PartnerSession }) {
   const { signOut } = useAuth()
   const [error, setError] = useState('')
+  const [restaurants, setRestaurants] = useState<{ id: string; name: string }[]>([])
+  useEffect(() => {
+    if (session.status !== 'approved') return
+    const controller = new AbortController()
+    fetch('/api/partners/restaurants', { signal: controller.signal, cache: 'no-store' })
+      .then(async response => { if (!response.ok) throw new Error(); return response.json() })
+      .then(data => setRestaurants(data.restaurants))
+      .catch(() => { if (!controller.signal.aborted) setError('Could not load your restaurants. Refresh to try again.') })
+    return () => controller.abort()
+  }, [session.status, session.partnerId])
   const message = session.status === 'approved'
-    ? 'Your partner account is approved. Restaurant insights will appear here once analytics are connected.'
+    ? 'Your partner account is approved. Choose a restaurant to view its insights.'
     : session.status === 'rejected'
       ? 'We couldn’t verify this partner account. Contact the Fork Off team if you think this is a mistake.'
       : 'Thanks for signing up! Your partner account is waiting for approval. We’ll unlock your restaurant’s insights once we’ve verified you own it.'
@@ -278,6 +290,7 @@ function PartnerStatus({ session }: { session: PartnerSession }) {
     <div className={`partner-access__status partner-access__status--${session.status}`} role="status" aria-atomic="true">
       <p className="text-label-default">Signed in as {session.username}</p>
       <p>{message}</p>
+      {session.status === 'approved' && <ul>{restaurants.map(restaurant => <li key={restaurant.id}><Link to={generatePath(paths.partnerRestaurant, { restaurantId: restaurant.id })}>{restaurant.name}</Link></li>)}</ul>}
       <Button variant="secondary" onClick={() => signOut().catch(() => setError('Could not sign out. Please try again.'))}>Sign out</Button>
       {error && <p className="partner-access__error">{error}</p>}
     </div>

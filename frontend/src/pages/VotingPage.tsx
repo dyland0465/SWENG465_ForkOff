@@ -7,6 +7,7 @@ import { TextAction } from '../components/ui/TextAction'
 import { useLiveLobby, lobbyRequest } from '../features/lobby/liveLobby'
 import { useRound } from '../features/voting/useRound'
 import type { Decision } from '../features/voting/useRound'
+import { engagementId } from '../features/voting/engagement'
 import { paths } from '../routes/paths'
 import './VotingPage.css'
 
@@ -50,6 +51,12 @@ function VotingScreen({ lobbyId }: { lobbyId: string }) {
   }, [roundId])
   const current = round?.restaurants.find(item => !round.decisions[item.id])
   const processed = round ? Object.keys(round.decisions).length : 0
+  const currentId = current?.id
+  const canTrackView = Boolean(round?.canVote && !round.complete && images?.roundId === round.id)
+  useEffect(() => {
+    if (!roundId || !currentId || !canTrackView) return
+    void lobbyRequest(`${base}/engagement`, 'POST', { roundId, restaurantId: currentId, kind: 'card_view' }).catch(() => {})
+  }, [base, roundId, currentId, canTrackView])
   if (round?.complete) return <Navigate to={generatePath(paths.results, { lobbyId })} replace />
   async function start() {
     setBusy(true); setActionError('')
@@ -82,7 +89,7 @@ function VotingScreen({ lobbyId }: { lobbyId: string }) {
       <div className="voting-card__visit">
         <div><span>LOCATION</span><p>{current.address ?? 'Address unavailable'}</p></div>
         <div><span>TODAY’S HOURS</span><p>{hoursForToday(current.hours, current.timeZone) ?? 'Hours unavailable'}</p>{hoursForToday(current.hours, current.timeZone) && <small>Regular hours may vary.</small>}</div>
-        {current.googleMapsUri && <div className="voting-card__map"><GoogleMapsLink href={current.googleMapsUri} /></div>}
+        {current.googleMapsUri && <div className="voting-card__map"><GoogleMapsLink href={current.googleMapsUri} onClick={() => { if (round) void lobbyRequest(`${base}/engagement`, 'POST', { roundId: round.id, restaurantId: current.id, kind: 'maps_click', eventId: engagementId() }).catch(() => {}) }} /></div>}
       </div>
       <SaveRestaurant key={current.id} placeId={current.id} />
       <div className="voting-card__vote">

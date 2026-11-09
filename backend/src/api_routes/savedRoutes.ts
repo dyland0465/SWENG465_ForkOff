@@ -1,10 +1,11 @@
 import { Router, type Request, type Response, type NextFunction } from "express";
 import mongoose from "mongoose";
-import { randomBytes, createHash } from "node:crypto";
+import { randomBytes, createHash, randomUUID } from "node:crypto";
 import { Favorite, RestaurantCollection, SavedGroup, GroupInvitation, CollectionShare } from "../db_models/saved";
 import { Lobby } from "../db_models/lobby";
 import { findLobby, requireHost } from "../services/lobbyState";
 import { HttpError } from "../utils/errors";
+import { AnalyticsEvent } from "../db_models/telemetry";
 const router = Router();
 const run = (fn: (req: Request, res: Response) => Promise<unknown>) => (req: Request, res: Response, next: NextFunction) => { fn(req, res).catch(next); };
 function user(req: Request) { if (!req.identity?.userId) throw new HttpError(401, "Sign in to use saved items."); return req.identity.userId; }
@@ -13,6 +14,10 @@ function name(value: unknown) { if (typeof value !== "string" || !value.trim() |
 function place(value: unknown) { if (typeof value !== "string" || !/^[A-Za-z0-9_-]{1,300}$/.test(value)) throw new HttpError(400, "Invalid Google Place ID."); return value; }
 async function collection(req: Request) { const result = await RestaurantCollection.findOne({ _id: objectId(req.params.id), userId: user(req) }); if (!result) throw new HttpError(404, "Collection not found."); return result; }
 async function group(req: Request) { const result = await SavedGroup.findOne({ _id: objectId(req.params.id), ownerId: user(req) }); if (!result) throw new HttpError(404, "Group not found."); return result; }
+async function savedEvent(placeId: string, kind: string) {
+  try { await AnalyticsEvent.create({ key: randomUUID(), placeId, kind, occurredAt: new Date() }); }
+  catch (error) { console.error("Could not record saved-item analytics:", error); }
+}
 
 /** @swagger
  * /api/saved/favorites:
@@ -35,8 +40,8 @@ async function group(req: Request) { const result = await SavedGroup.findOne({ _
  *     responses: { 200: { description: Favorite removed. }, 401: { description: Login required. } }
  */
 router.get("/api/saved/favorites", run(async (req, res) => { const items = await Favorite.find({ userId: user(req) }).sort({ createdAt: -1 }).lean(); res.json({ placeIds: items.map(x => x.placeId) }); }));
-router.put("/api/saved/favorites/:placeId", run(async (req, res) => { const userId = user(req), placeId = place(req.params.placeId); await Favorite.updateOne({ userId, placeId }, { $setOnInsert: { userId, placeId } }, { upsert: true }); res.json({ placeId, favorite: true }); }));
-router.delete("/api/saved/favorites/:placeId", run(async (req, res) => { const placeId = place(req.params.placeId); await Favorite.deleteOne({ userId: user(req), placeId }); res.json({ placeId, favorite: false }); }));
+router.put("/api/saved/favorites/:placeId", run(async (req, res) => { const userId = user(req), placeId = place(req.params.placeId); const result = await Favorite.updateOne({ userId, placeId }, { $setOnInsert: { userId, placeId } }, { upsert: true }); if (result.upsertedCount) await savedEvent(placeId, "favorite_add"); res.json({ placeId, favorite: true }); }));
+router.delete("/api/saved/favorites/:placeId", run(async (req, res) => { const placeId = place(req.params.placeId); const result = await Favorite.deleteOne({ userId: user(req), placeId }); if (result.deletedCount) await savedEvent(placeId, "favorite_remove"); res.json({ placeId, favorite: false }); }));
 
 /** @swagger
  * /api/saved/collections:
@@ -73,9 +78,9 @@ router.delete("/api/saved/favorites/:placeId", run(async (req, res) => { const p
  */
 router.get("/api/saved/collections", run(async (req, res) => { res.json({ collections: await RestaurantCollection.find({ userId: user(req) }).sort({ createdAt: -1 }).lean() }); }));
 router.post("/api/saved/collections", run(async (req, res) => { const c = await RestaurantCollection.create({ userId: user(req), name: name(req.body?.name) }); res.status(201).json({ collection: c }); }));
-router.delete("/api/saved/collections/:id", run(async (req, res) => { const c = await collection(req); await c.deleteOne(); await CollectionShare.deleteMany({ collectionId: c._id }); res.json({ ok: true }); }));
-router.put("/api/saved/collections/:id/restaurants/:placeId", run(async (req, res) => { const userId = user(req), id = objectId(req.params.id), placeId = place(req.params.placeId); const c = await RestaurantCollection.findOneAndUpdate({ _id: id, userId, $or: [{ placeIds: placeId }, { "placeIds.199": { $exists: false } }] }, { $addToSet: { placeIds: placeId } }, { returnDocument: "after" }); if (!c) throw new HttpError(404, "Collection not found or full."); res.json({ collection: c }); }));
-router.delete("/api/saved/collections/:id/restaurants/:placeId", run(async (req, res) => { const c = await RestaurantCollection.findOneAndUpdate({ _id: objectId(req.params.id), userId: user(req) }, { $pull: { placeIds: place(req.params.placeId) } }, { returnDocument: "after" }); if (!c) throw new HttpError(404, "Collection not found."); res.json({ collection: c }); }));
+router.delete("/api/saved/collections/:id", run(async (req, res) => { const c = await collection(req); await c.deleteOne(); await Promise.all(c.placeIds.map(id => savedEvent(id, "collection_remove"))); await CollectionShare.deleteMany({ collectionId: c._id }); res.json({ ok: true }); }));
+router.put("/api/saved/collections/:id/restaurants/:placeId", run(async (req, res) => { const userId = user(req), id = objectId(req.params.id), placeId = place(req.params.placeId); let c = await RestaurantCollection.findOneAndUpdate({ _id: id, userId, placeIds: { $ne: placeId }, "placeIds.199": { $exists: false } }, { $addToSet: { placeIds: placeId } }, { returnDocument: "after" }); if (c) await savedEvent(placeId, "collection_add"); else { c = await RestaurantCollection.findOne({ _id: id, userId }); if (!c || !c.placeIds.includes(placeId)) throw new HttpError(404, "Collection not found or full."); } res.json({ collection: c }); }));
+router.delete("/api/saved/collections/:id/restaurants/:placeId", run(async (req, res) => { const id = objectId(req.params.id), userId = user(req), placeId = place(req.params.placeId); let c = await RestaurantCollection.findOneAndUpdate({ _id: id, userId, placeIds: placeId }, { $pull: { placeIds: placeId } }, { returnDocument: "after" }); if (c) await savedEvent(placeId, "collection_remove"); else c = await RestaurantCollection.findOne({ _id: id, userId }); if (!c) throw new HttpError(404, "Collection not found."); res.json({ collection: c }); }));
 
 /** @swagger
  * /api/saved/collections/{id}/share:
@@ -116,7 +121,7 @@ async function shared(req: Request) {
   return c;
 }
 router.get("/api/saved/shares/:token", run(async (req, res) => { const c = await shared(req); res.json({ name: c.name, placeIds: c.placeIds }); }));
-router.post("/api/saved/shares/:token", run(async (req, res) => { const userId = user(req), source = await shared(req); const imported = await RestaurantCollection.create({ userId, name: source.name, placeIds: source.placeIds }); res.status(201).json({ collection: imported }); }));
+router.post("/api/saved/shares/:token", run(async (req, res) => { const userId = user(req), source = await shared(req); const imported = await RestaurantCollection.create({ userId, name: source.name, placeIds: source.placeIds }); await Promise.all(imported.placeIds.map(id => savedEvent(id, "collection_add"))); res.status(201).json({ collection: imported }); }));
 
 /** @swagger
  * /api/saved/groups:

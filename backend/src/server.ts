@@ -5,6 +5,7 @@ import { connectDB } from "./config/db";
 import app from "./app";
 import { clearExpiredRestaurantCache } from "./services/googlePlaces";
 import { jwtSecret } from "./services/session";
+import { drainPendingTelemetry, initializeAnalytics } from "./services/analytics";
 
 dotenv.config();
 
@@ -15,6 +16,10 @@ async function startServer() {
   try {
     jwtSecret();
     await connectDB();
+    await initializeAnalytics();
+    void drainPendingTelemetry();
+    const telemetryTimer = setInterval(() => void drainPendingTelemetry(), 15_000);
+    telemetryTimer.unref();
     const cleanRestaurantCache = () => { void clearExpiredRestaurantCache().catch(error => console.error("Restaurant cache cleanup failed:", error)); };
     cleanRestaurantCache();
     const cacheTimer = setInterval(cleanRestaurantCache, 60 * 60 * 1000);

@@ -3,7 +3,7 @@ import { Server } from "socket.io";
 import { allowedOrigin, cookieToken, resolveIdentity, sessionEvents } from "./session";
 import { HttpError } from "../utils/errors";
 import { Lobby } from "../db_models/lobby";
-import { changeLobby, deleteRelated, findLobby, isOnline, lobbyEvents, memberFor, nextOnline, presence } from "./lobbyState";
+import { changeLobby, findLobby, isOnline, lobbyEvents, memberFor, nextOnline, presence } from "./lobbyState";
 
 export function attachRealtime(server: HttpServer, options: { graceMs?: number; tickMs?: number; emptyLobbyMs?: number } = {}) {
   const grace = options.graceMs ?? 60_000;
@@ -134,7 +134,7 @@ export function attachRealtime(server: HttpServer, options: { graceMs?: number; 
       for (const socket of io.sockets.sockets.values()) {
         if (!await resolveIdentity(socket.handshake.headers.cookie)) socket.disconnect(true);
       }
-      const lobbies = await Lobby.find({ revision: { $exists: true } }).select("_id revision").lean();
+      const lobbies = await Lobby.find({ revision: { $exists: true }, telemetryDeleted: { $ne: true } }).select("_id revision").lean();
       const existing = new Set(lobbies.map(lobby => String(lobby._id)));
       for (const id of emptySince.keys()) if (!existing.has(id)) emptySince.delete(id);
       await Promise.all(lobbies.map(async lobby => {
@@ -147,11 +147,12 @@ export function attachRealtime(server: HttpServer, options: { graceMs?: number; 
         deleting.add(id);
         try {
           if (presence.get(id)?.size) return;
-          const result = await Lobby.deleteOne({ _id: lobby._id, revision: lobby.revision });
-          if (result.deletedCount) {
-            await deleteRelated(id);
-            lobbyEvents.emit("deleted", id);
-          }
+          try {
+            await changeLobby(id, current => {
+              if (current.revision !== lobby.revision || presence.get(id)?.size) throw new HttpError(409, "Lobby changed.");
+              return "delete";
+            });
+          } catch (error) { if ((error as { status?: number }).status !== 409 && (error as { status?: number }).status !== 404) throw error; }
         } finally { deleting.delete(id); }
       }));
     } catch (error) { console.error("Live lobby maintenance failed:", error); }

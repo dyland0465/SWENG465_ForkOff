@@ -9,14 +9,16 @@ import { Session } from "../src/db_models/session";
 import { User } from "../src/db_models/user";
 import { Lobby } from "../src/db_models/lobby";
 import { Favorite, RestaurantCollection, SavedGroup, GroupInvitation, CollectionShare } from "../src/db_models/saved";
+import { AnalyticsEvent } from "../src/db_models/telemetry";
 
 test("saved data is private; shares copy collections and groups invite only saved accounts", async () => {
   const secret = "test-only-secret-at-least-32-bytes-long"; process.env.JWT_SECRET = secret;
   const owner = "507f1f77bcf86cd799439011", other = "507f1f77bcf86cd799439012", cid = "507f1f77bcf86cd799439013", gid = "507f1f77bcf86cd799439014", lid = "507f1f77bcf86cd799439015";
-  const models: any[] = [Session, User, Lobby, Favorite, RestaurantCollection, SavedGroup, GroupInvitation, CollectionShare];
+  const models: any[] = [Session, User, Lobby, Favorite, RestaurantCollection, SavedGroup, GroupInvitation, CollectionShare, AnalyticsEvent];
   const methods = ["findOne", "find", "findById", "create", "updateOne", "findOneAndUpdate", "bulkWrite", "deleteOne"];
   const originals = models.map(m => Object.fromEntries(methods.map(k => [k, m[k]])));
   const records: any[] = [], shares: any[] = [], invitations: any[] = []; let group: any, favorite: any;
+  AnalyticsEvent.create = (async () => ({})) as any;
   const cookie = (id: string) => `forkoff_session=${jwt.sign({}, secret, { algorithm: "HS256", issuer: "forkoff", audience: "forkoff-web", subject: `user:${id}`, jwtid: id, expiresIn: 60 })}`;
   const cookies = [owner, other].map(cookie); const hashes = new Map(cookies.map((c, i) => [createHash("sha256").update(c.split('=')[1]).digest("hex"), [owner, other][i]]));
   Session.findOne = ((q: any) => ({ lean: async () => { const id = hashes.get(q.tokenHash); return id ? { identityKey: `user:${id}`, userId: id } : null; } })) as any;

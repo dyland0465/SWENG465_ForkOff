@@ -51,7 +51,7 @@ export async function findLobbyRestaurants(filters: Filters, excludeIds: string[
   const unknown = needs.filter(n => !['mocktails', 'serves alcohol', 'open at dining time'].includes(n))
   if (unknown.length) warnings.push(`Could not verify dining needs: ${unknown.join(', ')}.`)
   if (needs.includes('open at dining time')) warnings.push('Dining-time availability uses regular hours; special hours may differ.')
-  const restaurants: { id: string; name: string; address: string | null; category: string | null; googleMapsUri: string | null; photoUrl: string | null; photoAuthors: GooglePlace['photoAuthors']; rating: number | null; ratingCount: number | null; priceLevel: string | null; distanceMiles: number; hours: string[]; timeZone?: string | null }[] = []
+  const restaurants: { id: string; name: string; address: string | null; category: string | null; googleMapsUri: string | null; photoUrl: string | null; photoAuthors: NonNullable<GooglePlace['photoAuthors']>; rating: number | null; ratingCount: number | null; priceLevel: string | null; distanceMiles: number; hours: string[]; timeZone?: string | null }[] = []
   const seen = new Set<string>()
   const excluded = new Set(excludeIds)
   const alternatives: typeof restaurants = []

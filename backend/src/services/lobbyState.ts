@@ -4,6 +4,7 @@ import { Lobby } from "../db_models/lobby";
 import { GroupchatMessage } from "../db_models/groupchat";
 import { Vote } from "../db_models/vote";
 import type { Identity } from "./session";
+import { freezeCompleted, roundProjection, scheduleTelemetryDrain } from "./analytics";
 
 // HttpError now lives in utils/errors.ts; re-exported here so existing imports keep working.
 import { HttpError } from "../utils/errors";
@@ -15,7 +16,7 @@ export type LobbyDocument = mongoose.HydratedDocument<{
   filters: { location?: string; dinnerAt?: Date; maxDistance?: number; minimumRating?: number; categories?: string[]; openNow?: boolean; priceLevels?: string[]; diningNeeds?: string[] };
   collectionSource?: { name: string; placeIds: string[] } | null;
   createdAt: Date; updatedAt: Date;
-  round?: { id: string; warnings?: string[]; restaurants: { id: string; name: string; address: string | null; category: string | null; googleMapsUri: string | null; photoUrl: string | null; photoAuthors: { displayName: string; uri?: string }[]; rating?: number | null; ratingCount?: number | null; priceLevel?: string | null; distanceMiles?: number | null; hours?: string[]; timeZone?: string | null }[]; participants: string[]; decisions: Record<string, Record<string, string>> } | null;
+  round?: { id: string; startedAt?: string; completedAt?: string; completedParticipants?: string[]; warnings?: string[]; restaurants: { id: string; name: string; address: string | null; category: string | null; googleMapsUri: string | null; photoUrl: string | null; photoAuthors: { displayName: string; uri?: string }[]; rating?: number | null; ratingCount?: number | null; priceLevel?: string | null; distanceMiles?: number | null; hours?: string[]; timeZone?: string | null }[]; participants: string[]; decisions: Record<string, Record<string, string>> } | null;
 }>;
 export const lobbyEvents = new EventEmitter();
 export const presence = new Map<string, Map<string, Set<string>>>();
@@ -28,9 +29,9 @@ export function lobbyFilter(key: string) {
 }
 export async function findLobby(key: string): Promise<LobbyDocument> {
   const filter = lobbyFilter(key);
-  const lobby = await Lobby.findOne({ ...filter, revision: { $exists: true } });
+  const lobby = await Lobby.findOne({ ...filter, revision: { $exists: true }, telemetryDeleted: { $ne: true } });
   if (!lobby) {
-    if (await Lobby.exists(filter)) throw new HttpError(409, "This old lobby must be removed using the lobby cleanup command.");
+    if (await Lobby.exists({ ...filter, telemetryDeleted: { $ne: true } })) throw new HttpError(409, "This old lobby must be removed using the lobby cleanup command.");
     throw new HttpError(404, "Lobby not found.");
   }
   return lobby as unknown as LobbyDocument;
@@ -65,19 +66,27 @@ export async function changeLobby(key: string, change: (lobby: LobbyDocument) =>
   for (let attempt = 0; attempt < 10; attempt++) {
     const lobby = await findLobby(key);
     const revision = lobby.revision;
+    const previousRound = lobby.round ? JSON.parse(JSON.stringify(lobby.round)) as NonNullable<LobbyDocument["round"]> : null;
+    const previousMembers = [...lobby.members];
     const action = change(lobby);
+    const now = new Date();
+    if (action !== "delete") freezeCompleted(lobby.round, lobby.members, now);
+    const ending = action === "delete" || (previousRound && previousRound.id !== lobby.round?.id);
+    const outgoing = ending && previousRound ? roundProjection(previousRound, previousMembers, revision + 1, lobby.collectionSource ? "collection" : "discovery", true, now) : null;
+    const current = action !== "delete" && lobby.round ? roundProjection(lobby.round, lobby.members, revision + 1, lobby.collectionSource ? "collection" : "discovery", false, now) : null;
+    const events = [outgoing, current].filter(Boolean);
+    const result = await Lobby.findOneAndUpdate({ _id: lobby._id, revision, telemetryDeleted: { $ne: true } }, { $set: {
+      members: lobby.members, hostMemberId: lobby.hostMemberId, nextJoinOrder: lobby.nextJoinOrder,
+      name: lobby.name, status: lobby.status, filters: lobby.filters, round: lobby.round,
+      ...(action === "delete" ? { telemetryDeleted: true } : {}),
+    }, $inc: { revision: 1 }, ...(events.length ? { $push: { telemetryOutbox: { $each: events } } } : {}) }, { returnDocument: "after", runValidators: true });
+    if (!result) continue;
+    if (events.length || action === "delete") scheduleTelemetryDrain(String(lobby._id));
     if (action === "delete") {
-      const deleted = await Lobby.deleteOne({ _id: lobby._id, revision });
-      if (!deleted.deletedCount) continue;
       await deleteRelated(String(lobby._id));
       lobbyEvents.emit("deleted", String(lobby._id));
       return null;
     }
-    const result = await Lobby.findOneAndUpdate({ _id: lobby._id, revision }, { $set: {
-      members: lobby.members, hostMemberId: lobby.hostMemberId, nextJoinOrder: lobby.nextJoinOrder,
-      name: lobby.name, status: lobby.status, filters: lobby.filters, round: lobby.round,
-    }, $inc: { revision: 1 } }, { returnDocument: "after", runValidators: true });
-    if (!result) continue;
     lobbyEvents.emit("changed", String(lobby._id));
     return result as unknown as LobbyDocument;
   }

@@ -28,11 +28,11 @@
   const swaggerSpec = swaggerJsdoc(swaggerOptions);
 
   // Apply security requirements consistently to every generated operation.
-  const paths = swaggerSpec.paths as Record<string, Record<string, any>>;
+  const paths = (swaggerSpec as { paths: Record<string, Record<string, any>> }).paths;
   for (const [path, operations] of Object.entries(paths)) {
     for (const [method, operation] of Object.entries(operations)) {
       if (!["get", "post", "put", "patch", "delete"].includes(method)) continue;
-      const protectedOperation = path.startsWith("/api/saved/") || path.startsWith("/api/admin/") ||
+      const protectedOperation = path.startsWith("/api/saved/") || path.startsWith("/api/admin/") || path === "/api/partners/restaurants" ||
         path === "/api/users/{id}" ||
         (path.startsWith("/api/lobbies/{id}") && !(path.endsWith("/join") && method === "post")) ||
         (path === "/api/restaurants/{id}" && ["patch", "delete"].includes(method)) ||

@@ -12,8 +12,18 @@ import { establishSession } from "../services/session";
 import { registrationFields } from "../utils/registration";
 import { isDuplicateKeyError } from "../utils/errors";
 import { partnerRestaurantFields } from "../utils/partnerApplication";
+import { Restaurant } from "../db_models/restaurant";
 
 const router = Router();
+
+router.get("/api/partners/restaurants", async (req, res, next) => {
+  try {
+    if (!req.identity?.userId) return res.status(401).json({ message: "Login is required." });
+    if (req.identity.role !== "partner" || req.identity.partnerStatus !== "approved") return res.status(403).json({ message: "Approved partner access is required." });
+    const restaurants = await Restaurant.find({ _id: { $in: req.identity.restaurantIds ?? [] } }).lean();
+    return res.json({ restaurants: restaurants.map(restaurant => ({ id: String(restaurant._id), name: (restaurant.partnerDetails as any)?.restaurantName ?? (restaurant.cachedPlace as any)?.displayName?.text ?? `Restaurant (${restaurant.placeId.slice(0, 8)}…)` })) });
+  } catch (error) { next(error); }
+});
 
 /**
  * Partner accounts: create a restaurant partner account.
