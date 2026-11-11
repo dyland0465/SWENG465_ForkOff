@@ -7,7 +7,7 @@ import { lobbyRequest, useLiveLobby } from '../features/lobby/liveLobby'
 import { useRound } from '../features/voting/useRound'
 import { GuestGroupsReminder } from '../features/saved/GuestGroupsReminder'
 import { engagementId } from '../features/voting/engagement'
-import { PartnerBadge } from '../features/voting/PartnerBadge'
+import { PartnerBadge } from '../features/voting/partnerBadge'
 import { paths } from '../routes/paths'
 import './ResultsPage.css'
 
