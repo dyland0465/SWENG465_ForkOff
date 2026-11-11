@@ -7,6 +7,7 @@ import { lobbyRequest, useLiveLobby } from '../features/lobby/liveLobby'
 import { useRound } from '../features/voting/useRound'
 import { GuestGroupsReminder } from '../features/saved/GuestGroupsReminder'
 import { engagementId } from '../features/voting/engagement'
+import { PartnerBadge } from '../features/voting/PartnerBadge'
 import { paths } from '../routes/paths'
 import './ResultsPage.css'
 
@@ -38,6 +39,7 @@ function ResultDetails({ row, roundId, base }: { row: Result; roundId: string; b
   const { restaurant, yes, no, veto, skip } = row
   return <>
     <h3>{restaurant.name}</h3>
+    {restaurant.partner && <PartnerBadge />}
     <p>{restaurant.category?.replace(/_/g, ' ') ?? 'Restaurant'} · {restaurant.address ?? 'Address unavailable'}</p>
     <p>{yes} yes · {no} no · {veto} veto · {skip} skipped {veto > 0 && '· Vetoed'}</p>
     {restaurant.googleMapsUri && <GoogleMapsLink href={restaurant.googleMapsUri} onClick={() => { void lobbyRequest(`${base}/engagement`, 'POST', { roundId, restaurantId: restaurant.id, kind: 'maps_click', eventId: engagementId() }).catch(() => {}) }} />}

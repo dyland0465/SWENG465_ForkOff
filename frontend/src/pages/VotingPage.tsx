@@ -6,10 +6,12 @@ import { Button } from '../components/ui/Button'
 import { TextAction } from '../components/ui/TextAction'
 import { useLiveLobby, lobbyRequest } from '../features/lobby/liveLobby'
 import { useRound } from '../features/voting/useRound'
+import { PartnerBadge } from '../features/voting/PartnerBadge'
 import type { Decision } from '../features/voting/useRound'
 import { engagementId } from '../features/voting/engagement'
 import { paths } from '../routes/paths'
 import './VotingPage.css'
+
 
 function hoursForToday(hours: string[] | undefined, timeZone?: string | null) {
   if (!hours?.length) return null
@@ -80,6 +82,7 @@ function VotingScreen({ lobbyId }: { lobbyId: string }) {
         <p className="voting-card__eyebrow">YOUR NEXT OPTION</p>
         <h2>{current.name}</h2>
         <p className="voting-card__category">{current.category?.replace(/_/g, ' ') ?? 'Restaurant'}</p>
+          {current.partner && <PartnerBadge />}
       </div>
       <div className="voting-card__facts" aria-label="Restaurant details">
         <div><span>RATING</span><strong>{current.rating != null ? `★ ${current.rating} / 5` : 'Not available'}</strong>{current.rating != null && current.ratingCount != null && <small>{current.ratingCount.toLocaleString()} reviews</small>}</div>
@@ -91,6 +94,15 @@ function VotingScreen({ lobbyId }: { lobbyId: string }) {
         <div><span>TODAY’S HOURS</span><p>{hoursForToday(current.hours, current.timeZone) ?? 'Hours unavailable'}</p>{hoursForToday(current.hours, current.timeZone) && <small>Regular hours may vary.</small>}</div>
         {current.googleMapsUri && <div className="voting-card__map"><GoogleMapsLink href={current.googleMapsUri} onClick={() => { if (round) void lobbyRequest(`${base}/engagement`, 'POST', { roundId: round.id, restaurantId: current.id, kind: 'maps_click', eventId: engagementId() }).catch(() => {}) }} /></div>}
       </div>
+            {current.partner && (current.partner.website || current.partner.phone || !!current.partner.serviceOptions?.length) && <div className="voting-card__partner">
+        <span>FROM THE RESTAURANT</span>
+        {!!current.partner.serviceOptions?.length && <p>{current.partner.serviceOptions.join(' · ')}</p>}
+        {(current.partner.website || current.partner.phone) && <p>
+          {current.partner.website && <a href={current.partner.website} target="_blank" rel="noopener noreferrer nofollow">Website</a>}
+          {current.partner.website && current.partner.phone && ' · '}
+          {current.partner.phone && <a href={`tel:${current.partner.phone.replace(/[^\d+]/g, '')}`}>{current.partner.phone}</a>}
+        </p>}
+      </div>}
       <SaveRestaurant key={current.id} placeId={current.id} />
       <div className="voting-card__vote">
         <h3>What do you think?</h3>

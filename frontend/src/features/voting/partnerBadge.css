@@ -1,0 +1,13 @@
+.partner-badge {
+  display: inline-flex; /* a span, so page styles for <p> don't recolor it */
+  gap: 6px;
+  align-items: center;
+  margin: 8px 0 0;
+  padding: 3px 10px;
+  border: 1px solid var(--color-status-success);
+  border-radius: 999px;
+  color: var(--color-status-success);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  line-height: 1.4;
+}

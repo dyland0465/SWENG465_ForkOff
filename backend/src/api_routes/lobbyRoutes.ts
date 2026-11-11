@@ -10,6 +10,7 @@ import { changeLobby, findLobby, lobbyEvents, memberFor, nextOnline, requireHost
 import { findCollectionRestaurants, findLobbyRestaurants } from "../services/lobbyRestaurants";
 import { activeParticipants, roundResults } from "../services/analytics";
 import { AnalyticsEvent } from "../db_models/telemetry";
+import { withPartnerListings } from "../services/partnerListings";
 
 
 /**
@@ -427,6 +428,7 @@ router.post("/api/lobbies/:id/round", run(async (req, res) => {
     ({ restaurants, warnings } = await (initial.collectionSource ? findCollectionRestaurants(initial.collectionSource) : findLobbyRestaurants(initial.filters)));
   } catch { throw new HttpError(502, "Could not load restaurants. Check the location and try again."); }
   if (!restaurants.length) throw new HttpError(400, "No restaurants matched these filters. Try changing the lobby settings.");
+  restaurants = await withPartnerListings(restaurants);
   const lobby = await changeLobby(String(req.params.id), current => {
     requireHost(current, req.identity);
     if (current.round) throw new HttpError(409, "A voting round already exists.");

@@ -5,6 +5,7 @@ import { GroupchatMessage } from "../db_models/groupchat";
 import { Vote } from "../db_models/vote";
 import type { Identity } from "./session";
 import { freezeCompleted, roundProjection, scheduleTelemetryDrain } from "./analytics";
+import type { PartnerListing } from "./partnerListings";
 
 // HttpError now lives in utils/errors.ts; re-exported here so existing imports keep working.
 import { HttpError } from "../utils/errors";
@@ -16,7 +17,9 @@ export type LobbyDocument = mongoose.HydratedDocument<{
   filters: { location?: string; dinnerAt?: Date; maxDistance?: number; minimumRating?: number; categories?: string[]; openNow?: boolean; priceLevels?: string[]; diningNeeds?: string[] };
   collectionSource?: { name: string; placeIds: string[] } | null;
   createdAt: Date; updatedAt: Date;
-  round?: { id: string; startedAt?: string; completedAt?: string; completedParticipants?: string[]; warnings?: string[]; restaurants: { id: string; name: string; address: string | null; category: string | null; googleMapsUri: string | null; photoUrl: string | null; photoAuthors: { displayName: string; uri?: string }[]; rating?: number | null; ratingCount?: number | null; priceLevel?: string | null; distanceMiles?: number | null; hours?: string[]; timeZone?: string | null }[]; participants: string[]; decisions: Record<string, Record<string, string>> } | null;
+  round?: { id: string; startedAt?: string; completedAt?: string; completedParticipants?: string[]; warnings?: string[]; restaurants: { id: string; name: string; address: string | null; category: string | null; 
+  googleMapsUri: string | null; photoUrl: string | null; photoAuthors: { displayName: string; uri?: string }[]; rating?: number | null; ratingCount?: number | null; priceLevel?: string | null; distanceMiles?: number | null; hours?: string[]; 
+  timeZone?: string | null; partner?: PartnerListing }[]; participants: string[]; decisions: Record<string, Record<string, string>> } | null;
 }>;
 export const lobbyEvents = new EventEmitter();
 export const presence = new Map<string, Map<string, Set<string>>>();

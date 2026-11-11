@@ -91,6 +91,9 @@
 .voting-card__facts small, .voting-card__visit small { color: var(--color-text-secondary); font-size: 0.75rem; }
 .voting-card__visit { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; gap: 16px; align-items: start; margin-block-start: 22px; }
 .voting-card__visit p { margin-block-start: 6px; font-size: 0.9375rem; line-height: 1.4; overflow-wrap: anywhere; }
+.voting-card__partner { margin-block: 18px 12px; }
+.voting-card__partner span { color: var(--color-text-secondary); font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.09em; }
+.voting-card__partner p { margin-block-start: 6px; font-size: 0.9375rem; overflow-wrap: anywhere; }
 .voting-card__map { align-self: center; }
 .voting-card__vote { margin-block-start: auto; padding-block-start: 28px; }
 .voting-card__vote h3 { font-size: 1.125rem; }
