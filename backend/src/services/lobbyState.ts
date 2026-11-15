@@ -9,7 +9,7 @@ import { freezeCompleted, roundProjection, scheduleTelemetryDrain } from "./anal
 // HttpError now lives in utils/errors.ts; re-exported here so existing imports keep working.
 import { HttpError } from "../utils/errors";
 export { HttpError };
-export type Member = { memberId: string; identityKey: string; userId?: mongoose.Types.ObjectId; type: "user" | "guest"; displayName: string; joinOrder: number; joinedAt: Date };
+export type Member = { memberId: string; identityKey: string; userId?: mongoose.Types.ObjectId; type: "user" | "guest"; displayName: string; joinOrder: number; joinedAt: Date; ready?: boolean; };
 export type LobbyDocument = mongoose.HydratedDocument<{
   lobbyCode: string; name: string; hostMemberId: string | null; nextJoinOrder: number; revision: number;
   members: Member[]; status: "waiting" | "playing" | "finished";
@@ -53,8 +53,8 @@ export function serializeLobby(lobby: LobbyDocument, identity?: Identity) {
     id: String(lobby._id), lobbyCode: lobby.lobbyCode, name: lobby.name, status: lobby.status,
     collectionSource: lobby.collectionSource ? { name: lobby.collectionSource.name, count: lobby.collectionSource.placeIds.length } : null,
     hostMemberId: lobby.hostMemberId, revision: lobby.revision, filters: lobby.filters, roundId: lobby.round?.id ?? null,
-    members: lobby.members.map(({ memberId, userId, type, displayName, joinOrder, joinedAt }) => ({
-      memberId, userId, type, displayName, joinOrder, joinedAt, online: isOnline(String(lobby._id), memberId),
+    members: lobby.members.map(({ memberId, userId, type, displayName, joinOrder, joinedAt, ready }) => ({
+      memberId, userId, type, displayName, joinOrder, joinedAt, ready: ready ?? false, online: isOnline(String(lobby._id), memberId),
     })),
     selfMemberId: own?.memberId ?? null, isHost: Boolean(own && own.memberId === lobby.hostMemberId),
   };
@@ -75,11 +75,13 @@ export async function changeLobby(key: string, change: (lobby: LobbyDocument) =>
     const outgoing = ending && previousRound ? roundProjection(previousRound, previousMembers, revision + 1, lobby.collectionSource ? "collection" : "discovery", true, now) : null;
     const current = action !== "delete" && lobby.round ? roundProjection(lobby.round, lobby.members, revision + 1, lobby.collectionSource ? "collection" : "discovery", false, now) : null;
     const events = [outgoing, current].filter(Boolean);
-    const result = await Lobby.findOneAndUpdate({ _id: lobby._id, revision, telemetryDeleted: { $ne: true } }, { $set: {
-      members: lobby.members, hostMemberId: lobby.hostMemberId, nextJoinOrder: lobby.nextJoinOrder,
-      name: lobby.name, status: lobby.status, filters: lobby.filters, round: lobby.round,
-      ...(action === "delete" ? { telemetryDeleted: true } : {}),
-    }, $inc: { revision: 1 }, ...(events.length ? { $push: { telemetryOutbox: { $each: events } } } : {}) }, { returnDocument: "after", runValidators: true });
+    const result = await Lobby.findOneAndUpdate({ _id: lobby._id, revision, telemetryDeleted: { $ne: true } }, {
+      $set: {
+        members: lobby.members, hostMemberId: lobby.hostMemberId, nextJoinOrder: lobby.nextJoinOrder,
+        name: lobby.name, status: lobby.status, filters: lobby.filters, round: lobby.round,
+        ...(action === "delete" ? { telemetryDeleted: true } : {}),
+      }, $inc: { revision: 1 }, ...(events.length ? { $push: { telemetryOutbox: { $each: events } } } : {})
+    }, { returnDocument: "after", runValidators: true });
     if (!result) continue;
     if (events.length || action === "delete") scheduleTelemetryDrain(String(lobby._id));
     if (action === "delete") {

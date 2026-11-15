@@ -126,6 +126,10 @@ function LobbyScreen({ lobbyId }: { lobbyId: string }) {
       },
     })
   }
+  const self = lobby?.members.find(
+    member => member.memberId === lobby.selfMemberId,
+  )
+  const readyCount = lobby?.members.filter(member => member.ready).length ?? 0
   const filters = lobby?.filters
   const params = { lobbyId }
   return (
@@ -160,6 +164,24 @@ function LobbyScreen({ lobbyId }: { lobbyId: string }) {
               Members · {lobby.members.length}
             </h2>
 
+            <div className="lobby-read-controls">
+              <p role="status">
+                {readyCount} of {lobby.members.length} members ready
+              </p>
+
+              {self && lobby.status === 'waiting' && !lobby.roundId && (
+                <Button
+                  type="button"
+                  disabled={busy}
+                  aria-pressed={Boolean(self.ready)}
+                  onClick={() => void mutate('/ready', { ready: !self.ready })}
+                >
+                  {self.ready ? 'Mark not ready' : "ready"}
+                </Button>
+              )}
+            </div>
+
+
             <ul className="lobby-members__list">
               {lobby.members.map((member) => (
                 <li key={member.memberId} className="lobby-member">
@@ -185,7 +207,7 @@ function LobbyScreen({ lobbyId }: { lobbyId: string }) {
                     </p>
                   </div>
                   <span className="lobby-member__badge">
-                    {member.online ? 'Online' : 'Offline'}
+                    {member.ready ? 'Ready' : 'Not Ready'}
                   </span>
                 </li>
               ))}

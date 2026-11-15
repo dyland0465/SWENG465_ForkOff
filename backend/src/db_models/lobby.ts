@@ -29,6 +29,7 @@ const lobbySchema = new Schema(
       userId: { type: Schema.Types.ObjectId, ref: "User" },
       type: { type: String, enum: ["user", "guest"], required: true },
       displayName: { type: String, required: true, maxlength: 40 },
+      ready: { type: Boolean, default: false },
       joinOrder: { type: Number, required: true },
       joinedAt: { type: Date, default: Date.now },
     }],

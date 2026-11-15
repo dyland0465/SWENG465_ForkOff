@@ -319,5 +319,14 @@
 }
 
 
-
 .lobby-collection-source { margin-block-start: var(--spacing-4); padding: var(--spacing-3); border-radius: var(--radius-md); background: var(--color-bg-surface); color: var(--color-text-secondary); }
+
+.lobby-ready-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--spacing-3);
+  margin-block: var(--spacing-3) var(--spacing-4)
+
+}
