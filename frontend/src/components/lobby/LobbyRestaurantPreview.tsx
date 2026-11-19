@@ -1,8 +1,5 @@
 import { SaveRestaurant } from '../../features/saved/SaveRestaurant'
 import { useEffect, useRef, useState } from 'react'
-import { generatePath } from 'react-router'
-import { TextAction } from '../ui/TextAction'
-import { paths } from '../../routes/paths'
 
 type PreviewRestaurant = {
   id: string
@@ -12,7 +9,7 @@ type PreviewRestaurant = {
   photoAuthors?: { displayName: string; uri?: string }[]
 }
 
-export function LobbyRestaurantPreview({ lobbyId, filterKey, isHost }: { lobbyId: string; filterKey: string; isHost: boolean }) {
+export function LobbyRestaurantPreview({ lobbyId, filterKey }: { lobbyId: string; filterKey: string }) {
   const [restaurants, setRestaurants] = useState<PreviewRestaurant[]>([])
   const [state, setState] = useState<'loading' | 'ready' | 'error'>('loading')
   const [attempt, setAttempt] = useState(0)
@@ -74,10 +71,12 @@ export function LobbyRestaurantPreview({ lobbyId, filterKey, isHost }: { lobbyId
       <div className="lobby-restaurant-preview__content">
         {state === 'loading' && <p role="status">Finding restaurant matches…</p>}
         {state === 'error' && <p role="alert">Could not load restaurant matches. <button type="button" onClick={() => setAttempt(value => value + 1)}>Try again</button></p>}
-        {state === 'ready' && <><strong>{restaurants.length} {restaurants.length === 1 ? 'restaurant' : 'restaurants'} matched</strong><p>{restaurants.length ? 'Ready for your group to vote on.' : 'Try changing your filters to find restaurants.'}</p></>}
-        {state === 'ready' && <small className="lobby-restaurant-preview__attribution" translate="no">Google Maps</small>}
+        {state === 'ready' && <>
+          <small className="lobby-restaurant-preview__attribution" translate="no">Google Maps</small>
+          <strong>{restaurants.length} {restaurants.length === 1 ? 'restaurant' : 'restaurants'} matched</strong>
+          {!restaurants.length && <p>Try changing your filters to find restaurants.</p>}
+        </>}
       </div>
-      {isHost && <TextAction className="lobby-restaurant-preview__discovery" to={generatePath(paths.discoveryPreview, { lobbyId })}>Explore restaurants</TextAction>}
       {selected && <dialog ref={dialog} className="lobby-restaurant-preview__dialog" onClose={() => setSelected(null)}>
         <button type="button" onClick={() => dialog.current?.close()}>Close</button>
         <h2>{selected.name}</h2>

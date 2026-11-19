@@ -77,7 +77,6 @@ function VotingScreen({ lobbyId }: { lobbyId: string }) {
     {round?.warnings?.map(warning => <p key={warning}>{warning}</p>)}
     {loading ? <p role="status">Loading voting round…</p> : !round ? <section className="voting-complete"><h2>No round started</h2><p>The host can start a round using restaurants near the lobby location.</p>{lobby?.isHost && <Button disabled={busy} onClick={start}>{busy ? 'Finding restaurants…' : 'Start voting'}</Button>}<TextAction to={generatePath(paths.lobby, { lobbyId })}>Back to lobby</TextAction></section> : !round.canVote ? <section className="voting-complete"><h2>Round already in progress</h2><p>You joined after this round started. Results will appear when everyone finishes.</p></section> : current && images?.roundId !== round.id ? <p role="status">Loading restaurant photos before voting…</p> : current ? <div className="voting-page__columns"><div className="voting-page__visual">{images?.urls[current.id] ? <img className="voting-photo" src={images.urls[current.id]} alt={`Photo of ${current.name}`} /> : <div className="discovery-restaurant__photo-placeholder">Photo unavailable</div>}<div className="voting-page__photo-credit">{current.photoAuthors.length > 0 && <p>Photo: {current.photoAuthors.map((author, index) => <span key={index}>{index > 0 && ', '}{author.uri ? <a href={author.uri} target="_blank" rel="noreferrer">{author.displayName}</a> : author.displayName}</span>)}</p>}<p>Restaurant information from Google Maps</p></div></div><section className="voting-card" aria-label={`Vote on ${current.name}`}>
       <div className="voting-card__heading">
-        <p className="voting-card__eyebrow">YOUR NEXT OPTION</p>
         <h2>{current.name}</h2>
       </div>
       <div className="voting-card__facts" aria-label="Restaurant details">
@@ -91,9 +90,11 @@ function VotingScreen({ lobbyId }: { lobbyId: string }) {
       <div className="voting-card__visit">
         <div><span>LOCATION</span><p>{current.address ?? 'Address unavailable'}</p></div>
         <div><span>TODAY’S HOURS</span><p>{hoursForToday(current.hours, current.timeZone) ?? 'Hours unavailable'}</p></div>
-        {current.googleMapsUri && <div className="voting-card__map"><GoogleMapsLink href={current.googleMapsUri} onClick={() => { if (round) void lobbyRequest(`${base}/engagement`, 'POST', { roundId: round.id, restaurantId: current.id, kind: 'maps_click', eventId: engagementId() }).catch(() => {}) }} /></div>}
+        <div className="voting-card__actions">
+          <SaveRestaurant key={current.id} placeId={current.id} compact />
+          {current.googleMapsUri && <GoogleMapsLink href={current.googleMapsUri} onClick={() => { if (round) void lobbyRequest(`${base}/engagement`, 'POST', { roundId: round.id, restaurantId: current.id, kind: 'maps_click', eventId: engagementId() }).catch(() => {}) }} />}
+        </div>
       </div>
-      <SaveRestaurant key={current.id} placeId={current.id} />
     </section></div> : <section className="voting-complete" role="status"><h2>Waiting for the group</h2><p>You've finished voting. {round.completed} of {round.totalMembers} members finished.</p><p>Results will appear automatically when everyone finishes.</p></section>}
   </main>
 }

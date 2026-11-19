@@ -17,16 +17,14 @@ function LobbyScreen({ lobbyId }: { lobbyId: string }) {
     lobby,
     error,
     notice,
-    connection,
     messages,
     sendMessage,
     mutate: requestMutation,
   } = useLiveLobby()
   const navigate = useNavigate()
   const location = useLocation()
-  const creationState = location.state as { invitationError?: string; lobbyNotice?: string; invitationGroupId?: string } | null
+  const creationState = location.state as { invitationError?: string; invitationGroupId?: string } | null
   const [invitationError, setInvitationError] = useState(creationState?.invitationError ?? '')
-  const [groupNotice, setGroupNotice] = useState(creationState?.lobbyNotice ?? '')
   const [draft, setDraft] = useState('')
   const [sending, setSending] = useState(false)
   const pendingMessage = useRef<{ text: string; requestId: string } | null>(
@@ -126,10 +124,7 @@ function LobbyScreen({ lobbyId }: { lobbyId: string }) {
       },
     })
   }
-  const self = lobby?.members.find(
-    member => member.memberId === lobby.selfMemberId,
-  )
-  const readyCount = lobby?.members.filter(member => member.ready).length ?? 0
+  const canChangeReady = lobby?.status === 'waiting' && !lobby.roundId
   const filters = lobby?.filters
   const params = { lobbyId }
   return (
@@ -137,10 +132,6 @@ function LobbyScreen({ lobbyId }: { lobbyId: string }) {
       {!lobby && <h1>Your dinner crew</h1>}
       {!lobby && !error && <p role="status">Loading lobby…</p>}
       {(error || actionError || invitationError) && <p role="alert">{actionError || error || invitationError}</p>}
-      {groupNotice && <p className="lobby-group-notice" role="status">{groupNotice}</p>}
-      <p className="lobby-page__status" role="status">
-        {connection !== 'Live' ? connection : ''}
-      </p>
       {!lobby && error && (
         <TextAction to={paths.joinLobby}>Join with invitation code</TextAction>
       )}
@@ -153,36 +144,12 @@ function LobbyScreen({ lobbyId }: { lobbyId: string }) {
             <div className="lobby-page__title">
               <h1>{lobby.name}</h1>
             </div>
-            <p className="lobby-page__intro">
-              {lobby.status === 'waiting'
-                ? 'Waiting for everyone to get ready.'
-                : lobby.status === 'playing'
-                  ? 'Your dinner round is in progress.'
-                  : 'Your dinner round has finished.'}
-            </p>
-            <h2 className="lobby-section-heading">
-              Members · {lobby.members.length}
-            </h2>
 
-            <div className="lobby-read-controls">
-              <p role="status">
-                {readyCount} of {lobby.members.length} members ready
-              </p>
-
-              {self && lobby.status === 'waiting' && !lobby.roundId && (
-                <Button
-                  type="button"
-                  disabled={busy}
-                  aria-pressed={Boolean(self.ready)}
-                  onClick={() => void mutate('/ready', { ready: !self.ready })}
-                >
-                  {self.ready ? 'Mark not ready' : "ready"}
-                </Button>
-              )}
-            </div>
-
-
-            <ul className="lobby-members__list">
+            <ul
+              className="lobby-members__list"
+              aria-label="Lobby members"
+              tabIndex={lobby.members.length > 4 ? 0 : undefined}
+            >
               {lobby.members.map((member) => (
                 <li key={member.memberId} className="lobby-member">
                   <span className="lobby-avatar" aria-hidden="true">
@@ -206,9 +173,21 @@ function LobbyScreen({ lobbyId }: { lobbyId: string }) {
                       {member.online ? 'Online' : 'Offline'}
                     </p>
                   </div>
-                  <span className="lobby-member__badge">
-                    {member.ready ? 'Ready' : 'Not Ready'}
-                  </span>
+                  {canChangeReady && member.memberId === lobby.selfMemberId ? (
+                    <Button
+                      className="lobby-member__ready-toggle"
+                      variant={member.ready ? 'primary' : 'secondary'}
+                      disabled={busy}
+                      aria-label={member.ready ? 'Ready. Mark yourself not ready' : 'Not ready. Mark yourself ready'}
+                      onClick={() => void mutate('/ready', { ready: !member.ready })}
+                    >
+                      {member.ready ? 'Ready' : 'Not ready'}
+                    </Button>
+                  ) : (
+                    <span className="lobby-member__badge">
+                      {member.ready ? 'Ready' : 'Not ready'}
+                    </span>
+                  )}
                 </li>
               ))}
             </ul>
@@ -312,7 +291,6 @@ function LobbyScreen({ lobbyId }: { lobbyId: string }) {
               initialGroupId={creationState?.invitationGroupId}
               onInvitationSent={() => {
                 setInvitationError('')
-                setGroupNotice('')
                 if (creationState?.invitationError) {
                   navigate(location.pathname, { replace: true, state: null })
                 }
@@ -360,7 +338,6 @@ function LobbyScreen({ lobbyId }: { lobbyId: string }) {
                 <LobbyRestaurantPreview
                   lobbyId={lobbyId}
                   filterKey={JSON.stringify(lobby.filters)}
-                  isHost={lobby.isHost}
                 />
               </>}
               {lobby.isHost && (
@@ -372,6 +349,14 @@ function LobbyScreen({ lobbyId }: { lobbyId: string }) {
                   >
                     {editingFilters ? 'Back to round filters' : 'Edit lobby settings & filters'}
                   </TextAction>
+                  {!editingFilters && (
+                    <TextAction
+                      className="lobby-round-filters__discovery"
+                      to={generatePath(paths.discoveryPreview, params)}
+                    >
+                      Explore restaurants
+                    </TextAction>
+                  )}
                 </div>
               )}
               {lobby.isHost && editingFilters && (
