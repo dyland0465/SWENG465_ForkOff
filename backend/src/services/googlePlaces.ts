@@ -1,6 +1,6 @@
 const PLACES_API_BASE = "https://places.googleapis.com/v1";
 const SEARCH_FIELD_MASK =
-  "places.id,places.displayName,places.formattedAddress,places.primaryType,places.types,places.location,places.googleMapsUri,places.photos,places.rating,places.userRatingCount,places.priceLevel,places.currentOpeningHours,places.regularOpeningHours,places.timeZone,places.servesBeer,places.servesWine,places.servesCocktails";
+  "places.id,places.displayName,places.formattedAddress,places.primaryType,places.types,places.location,places.googleMapsUri,places.websiteUri,places.photos,places.rating,places.userRatingCount,places.priceLevel,places.currentOpeningHours,places.regularOpeningHours,places.timeZone,places.servesBeer,places.servesWine,places.servesCocktails";
 const DETAILS_FIELD_MASK =
   "id,displayName,formattedAddress,location,primaryType,googleMapsUri,websiteUri,nationalPhoneNumber";
 
@@ -116,7 +116,7 @@ export async function searchRestaurantPage(query: string, limit: number, center?
   const field = `searchCache.${key}`;
   const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
   const cached = await Restaurant.find({ [`${field}.fetchedAt`]: { $gt: cutoff }, cachedPlace: { $exists: true } }).lean();
-  if (!refresh && cached.length && cached.every(item => typeof (item.cachedPlace as GooglePlace).cachedPhoto === 'boolean')) {
+  if (!refresh && cached.length && cached.every(item => typeof (item.cachedPlace as GooglePlace).cachedPhoto === 'boolean' && Object.hasOwn(item.cachedPlace as GooglePlace, 'websiteUri'))) {
     cached.sort((a, b) => a.searchCache[key].rank - b.searchCache[key].rank);
     return { places: cached.map(item => item.cachedPlace as GooglePlace), nextPageToken: cached[0].searchCache[key].nextPageToken };
   }
@@ -149,7 +149,7 @@ export async function searchRestaurantPage(query: string, limit: number, center?
     // Cache every result before retrieving photos or applying lobby filters.
     await Restaurant.bulkWrite(places.map((place, rank) => {
       const { photos: _photos, ...cachedPlace } = place;
-      return { updateOne: { filter: { placeId: place.id }, update: { $set: { cachedPlace: { ...cachedPlace, cachedPhoto: false }, cachedAt: fetchedAt, [field]: { fetchedAt, rank, nextPageToken: result.nextPageToken ?? null } }, $setOnInsert: { placeId: place.id } }, upsert: true } };
+      return { updateOne: { filter: { placeId: place.id }, update: { $set: { cachedPlace: { ...cachedPlace, websiteUri: place.websiteUri ?? null, cachedPhoto: false }, cachedAt: fetchedAt, [field]: { fetchedAt, rank, nextPageToken: result.nextPageToken ?? null } }, $setOnInsert: { placeId: place.id } }, upsert: true } };
     }), { ordered: false });
     const photos = await Promise.all(places.map(async place => {
       const uri = await getPhotoUrl(place.photos?.[0]);
@@ -165,7 +165,7 @@ export async function searchRestaurantPage(query: string, limit: number, center?
     await Restaurant.bulkWrite(places.map((place, rank) => {
       const { photos: _photos, ...cachedPlace } = place;
       const photo = photos[rank];
-      const storedPlace = { ...cachedPlace, cachedPhoto: Boolean(photo), photoAuthors: photo ? place.photos?.[0]?.authorAttributions ?? [] : [] };
+      const storedPlace = { ...cachedPlace, websiteUri: place.websiteUri ?? null, cachedPhoto: Boolean(photo), photoAuthors: photo ? place.photos?.[0]?.authorAttributions ?? [] : [] };
       return { updateOne: { filter: { placeId: place.id }, update: { $set: { cachedPlace: storedPlace, cachedAt: fetchedAt, [field]: { fetchedAt, rank, nextPageToken: result.nextPageToken ?? null }, ...(photo ? { cachedPhoto: photo.bytes, cachedPhotoType: photo.type } : {}) }, ...(!photo ? { $unset: { cachedPhoto: 1, cachedPhotoType: 1 } } : {}), $setOnInsert: { placeId: place.id } }, upsert: true } };
     }), { ordered: false });
     return { places: places.map((place, index) => ({ ...place, cachedPhoto: Boolean(photos[index]), photoAuthors: photos[index] ? place.photos?.[0]?.authorAttributions ?? [] : [] })), nextPageToken: result.nextPageToken };

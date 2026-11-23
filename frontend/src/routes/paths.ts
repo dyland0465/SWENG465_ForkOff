@@ -8,6 +8,7 @@ export const paths = {
   createLobby: '/lobbies/create',
   joinLobby: '/lobbies/join',
   lobby: '/lobbies/:lobbyId',
+  lobbyPreview: '/lobbies/:lobbyId/preview',
   discoveryPreview: '/lobbies/:lobbyId/discovery',
   voting: '/lobbies/:lobbyId/voting',
   restaurantDetails: '/lobbies/:lobbyId/restaurants/:restaurantId',

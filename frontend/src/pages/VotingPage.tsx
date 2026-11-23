@@ -8,6 +8,7 @@ import { useLiveLobby, lobbyRequest } from '../features/lobby/liveLobby'
 import { useRound } from '../features/voting/useRound'
 import { PartnerBadge } from '../features/voting/partnerBadge'
 import type { Decision } from '../features/voting/useRound'
+import { RestaurantMenuCarousel } from '../features/voting/RestaurantMenuCarousel'
 import { engagementId } from '../features/voting/engagement'
 import { paths } from '../routes/paths'
 import './VotingPage.css'
@@ -74,7 +75,7 @@ function VotingScreen({ lobbyId }: { lobbyId: string }) {
     finally { setBusy(false) }
   }
   return <main id="main-content" className="voting-page" tabIndex={-1}>
-    <div className="voting-page__heading"><div><h1>Vote</h1></div>{round && <p>{processed} of {round.restaurants.length} reviewed</p>}</div>
+    <div className="voting-page__heading"><div><h1>Vote for a restaurant</h1></div>{round && <p>{processed} of {round.restaurants.length} reviewed</p>}</div>
     {(error || actionError) && <p role="alert">{actionError || error}</p>}
     {round?.warnings?.map(warning => <p key={warning}>{warning}</p>)}
     {loading ? <p role="status">Loading voting round…</p> : !round ? <section className="voting-complete"><h2>No round started</h2><p>The host can start a round using restaurants near the lobby location.</p>{lobby?.isHost && <Button disabled={busy} onClick={start}>{busy ? 'Finding restaurants…' : 'Start voting'}</Button>}<TextAction to={generatePath(paths.lobby, { lobbyId })}>Back to lobby</TextAction></section> : !round.canVote ? <section className="voting-complete"><h2>Round already in progress</h2><p>You joined after this round started. Results will appear when everyone finishes.</p></section> : current && images?.roundId !== round.id ? <p role="status">Loading restaurant photos before voting…</p> : current ? <div className="voting-page__columns"><div className="voting-page__visual">{images?.urls[current.id] ? <img className="voting-photo" src={images.urls[current.id]} alt={`Photo of ${current.name}`} /> : <div className="discovery-restaurant__photo-placeholder">Photo unavailable</div>}<div className="voting-page__photo-credit">{current.photoAuthors.length > 0 && <p>Photo: {current.photoAuthors.map((author, index) => <span key={index}>{index > 0 && ', '}{author.uri ? <a href={author.uri} target="_blank" rel="noreferrer">{author.displayName}</a> : author.displayName}</span>)}</p>}<p>Restaurant information from Google Maps</p></div></div><section className="voting-card" aria-label={`Vote on ${current.name}`}>
@@ -90,6 +91,7 @@ function VotingScreen({ lobbyId }: { lobbyId: string }) {
       <div className="voting-card__vote">
         <div className="voting-controls" role="group" aria-label={`Vote on ${current.name}`}>{(['yes', 'no', 'veto', 'skip'] as const).map(choice => <Button key={choice} disabled={busy} className={`voting-choice voting-choice--${choice}`} onClick={() => void vote(choice)}>{choice.toUpperCase()}</Button>)}</div>
       </div>
+      <RestaurantMenuCarousel key={`${round.id}:${current.id}`} placeId={current.id} name={current.name} address={current.address} />
       <div className="voting-card__visit">
         <div><span>LOCATION</span><p>{current.address ?? 'Address unavailable'}</p></div>
         <div><span>TODAY’S HOURS</span><p>{hoursForToday(current.hours, current.timeZone) ?? 'Hours unavailable'}</p></div>

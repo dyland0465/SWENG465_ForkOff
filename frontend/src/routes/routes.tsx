@@ -36,6 +36,7 @@ export const appRoutes: RouteObject[] = [
       { path: paths.createLobby, element: <CreateLobbyPage /> },
       { path: paths.joinLobby, element: <JoinLobbyPage /> },
       { path: paths.lobby, element: <LobbyPage /> },
+      { path: paths.lobbyPreview, element: <LobbyPage preview /> },
       { path: paths.discoveryPreview, element: <DiscoveryPreviewPage /> },
       { path: paths.voting, element: <VotingPage /> },
       { path: paths.restaurantDetails, element: <RestaurantDetailsPage /> },

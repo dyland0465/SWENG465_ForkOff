@@ -51,7 +51,7 @@ export async function findLobbyRestaurants(filters: Filters, excludeIds: string[
   const unknown = needs.filter(n => !['mocktails', 'serves alcohol', 'open at dining time'].includes(n))
   if (unknown.length) warnings.push(`Could not verify dining needs: ${unknown.join(', ')}.`)
   if (needs.includes('open at dining time')) warnings.push('Dining-time availability uses regular hours; special hours may differ.')
-  const restaurants: { id: string; name: string; address: string | null; category: string | null; googleMapsUri: string | null; photoUrl: string | null; photoAuthors: NonNullable<GooglePlace['photoAuthors']>; rating: number | null; ratingCount: number | null; priceLevel: string | null; distanceMiles: number; hours: string[]; timeZone?: string | null }[] = []
+  const restaurants: { id: string; name: string; address: string | null; category: string | null; googleMapsUri: string | null; websiteUri?: string; photoUrl: string | null; photoAuthors: NonNullable<GooglePlace['photoAuthors']>; rating: number | null; ratingCount: number | null; priceLevel: string | null; distanceMiles: number; hours: string[]; timeZone?: string | null }[] = []
   const seen = new Set<string>()
   const excluded = new Set(excludeIds)
   const alternatives: typeof restaurants = []
@@ -88,7 +88,7 @@ export async function findLobbyRestaurants(filters: Filters, excludeIds: string[
     if (filters.openNow && openAt(place, new Date()) !== true) return []
     if (needs.includes('open at dining time') && (!dinner || openAt(place, dinner) !== true)) return []
     return [{ id: place.id, name: place.displayName?.text ?? 'Unnamed restaurant', address: place.formattedAddress ?? null,
-      category: place.primaryType ?? null, googleMapsUri: place.googleMapsUri ?? null,
+      category: place.primaryType ?? null, googleMapsUri: place.googleMapsUri ?? null, websiteUri: place.websiteUri ?? undefined,
       photoUrl: place.cachedPhoto ? `/api/restaurant-photos/${encodeURIComponent(place.id)}` : null,
       photoAuthors: place.cachedPhoto ? place.photoAuthors ?? [] : [], rating: place.rating ?? null,
       ratingCount: place.userRatingCount ?? null, priceLevel: place.priceLevel ?? null,
@@ -114,7 +114,7 @@ export async function findCollectionRestaurants(source: { placeIds: string[] }, 
   const restaurants = await Promise.all(selected.map(async ({ id }) => {
     const place = byId.get(id) ?? await getGooglePlace(id)
     return { id, name: place.displayName?.text ?? 'Unnamed restaurant', address: place.formattedAddress ?? null,
-      category: place.primaryType ?? null, googleMapsUri: place.googleMapsUri ?? null,
+      category: place.primaryType ?? null, googleMapsUri: place.googleMapsUri ?? null, websiteUri: place.websiteUri ?? undefined,
       photoUrl: place.cachedPhoto ? `/api/restaurant-photos/${encodeURIComponent(id)}` : null,
       photoAuthors: place.photoAuthors ?? [], rating: place.rating ?? null, ratingCount: place.userRatingCount ?? null,
       priceLevel: place.priceLevel ?? null, distanceMiles: null, hours: place.regularOpeningHours?.weekdayDescriptions ?? [], timeZone: place.timeZone?.id ?? null }

@@ -101,6 +101,35 @@
 .voting-card__vote > p:not(.voting-card__privacy) { margin-block-start: 4px; color: var(--color-text-secondary); font-size: 0.875rem; }
 .voting-card .voting-controls { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin: 16px 0 0; }
 .voting-page .voting-card .voting-choice { min-width: 0; width: 100%; padding-inline: 6px; }
+.voting-menu { margin-block-start: var(--spacing-4); }
+.voting-menu__header,
+.voting-menu__item-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--spacing-2) var(--spacing-4);
+}
+.voting-menu__header { flex-wrap: wrap; align-items: center; }
+.voting-menu__header h3 { font-size: var(--font-size-label-default); }
+.voting-menu__controls { display: flex; gap: var(--spacing-2); }
+.voting-menu__controls .ui-button {
+  padding-inline: var(--spacing-3);
+  font-size: var(--font-size-caption-default);
+}
+.voting-menu__item {
+  display: grid;
+  gap: var(--spacing-1);
+  margin-block-start: var(--spacing-2);
+  padding: var(--spacing-3) var(--spacing-4);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-canvas);
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+.voting-menu__item-heading span { flex-shrink: 0; font-weight: var(--font-weight-bold); }
+.voting-menu__item p, .voting-menu__item small { color: var(--color-text-secondary); }
+.voting-menu__item small { font-size: var(--font-size-caption-default); }
+.voting-menu__source { display: inline-flex; align-items: center; min-block-size: var(--target-size-min); font-size: var(--font-size-caption-default); }
 .voting-card .voting-card__privacy { min-height: 0; margin-block-start: 14px; padding: 0; border: 0; background: none; color: var(--color-text-secondary); font-weight: 400; }
 @media (max-width: 480px) { .voting-card { padding: 20px; } .voting-card__visit { grid-template-columns: 1fr auto; } .voting-card__visit > div:nth-child(2) { grid-row: 2; } .voting-card .voting-controls { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 
