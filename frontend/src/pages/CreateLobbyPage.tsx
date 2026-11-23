@@ -115,21 +115,16 @@ export function CreateLobbyPage() {
       })
 
       if (!result.lobby?.id) throw new Error('The server did not return a lobby ID.')
-      let lobbyNotice = 'Lobby created successfully. Share the code to bring your crew together.'
+      const lobbyPath = generatePath(paths.lobby, { lobbyId: result.lobby.id })
       if (groupId && user && selectedGroup?.members.length) {
         try {
-          const { invited } = await inviteSavedGroup(groupId, result.lobby.id)
-          lobbyNotice = invited
-            ? `Lobby created successfully. Invitations sent for ${invited} saved ${invited === 1 ? 'member' : 'members'} of ${selectedGroup.name}. They choose whether to join.`
-            : 'Lobby created successfully. No invitations were needed; the saved members are already here.'
+          await inviteSavedGroup(groupId, result.lobby.id)
         } catch {
-          navigate(generatePath(paths.lobby, { lobbyId: result.lobby.id }), { state: { lobbyNotice: 'Lobby created successfully.', invitationGroupId: groupId, invitationError: `Lobby created, but invitations for ${selectedGroup.name} could not be sent. Use “Invite to this lobby” below to retry.` } })
+          navigate(lobbyPath, { state: { invitationGroupId: groupId, invitationError: `Lobby created, but invitations for ${selectedGroup.name} could not be sent. Use “Invite to this lobby” below to retry.` } })
           return
         }
-      } else if (selectedGroup && !selectedGroup.members.length) {
-        lobbyNotice = 'Lobby created successfully. Your saved group has no other saved members, so no invitations were sent. Share the lobby code instead.'
       }
-      navigate(generatePath(paths.lobby, { lobbyId: result.lobby.id }), { state: { lobbyNotice } })
+      navigate(lobbyPath)
     } catch (error) {
       setStatus(error instanceof Error ? error.message : 'Could not create the lobby. Please try again.')
     } finally {

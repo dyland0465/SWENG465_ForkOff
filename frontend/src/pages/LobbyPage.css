@@ -60,11 +60,19 @@
 }
 .lobby-members { margin-block-start: var(--spacing-1); }
 .lobby-members__list {
+  --lobby-member-row-height: 4.625rem;
+
   display: grid;
   gap: var(--spacing-4);
   margin: 18px 0 0;
   padding: 0;
   list-style: none;
+}
+.lobby-members__list[tabindex] {
+  max-block-size: calc(4 * var(--lobby-member-row-height) + 3 * var(--spacing-4) + 8px);
+  padding: 4px;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
 }
 .lobby-member {
   display: flex;
@@ -99,6 +107,12 @@
   font-size: var(--font-size-caption-default);
   font-weight: var(--font-weight-bold);
   line-height: 1.285714;
+}
+.lobby-member__ready-toggle.ui-button {
+  flex: 0 0 auto;
+  padding-inline: var(--spacing-3);
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-caption-default);
 }
 .lobby-chat-preview {
   min-block-size: 325px;
@@ -176,6 +190,8 @@
 }
 .lobby-code__feedback:empty { display: none; }
 .lobby-round-filters {
+  display: flex;
+  flex-direction: column;
   min-block-size: 420px;
   margin-block-start: var(--spacing-8);
   padding: 23px;
@@ -191,7 +207,14 @@
 .lobby-settings-editor > summary { cursor: pointer; font-weight: var(--font-weight-bold);}
 
 .lobby-page .ui-filter-chip:disabled { cursor: not-allowed; }
-.lobby-round-filters__controls { display: flex; flex-wrap: wrap; gap: 0 39px; margin-block-start: 15px; margin-inline-start: -8px; }
+.lobby-round-filters__controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--spacing-4);
+  margin-block-start: auto;
+  padding-block-start: var(--spacing-4);
+}
+.lobby-round-filters__discovery { margin-inline-start: auto; }
 .lobby-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; }
 .lobby-page__navigation { margin-block-start: 36px; }
 .lobby-page__host-controls { margin-block-start: 41px; }
@@ -240,11 +263,11 @@
   .lobby-chat-preview__draft { padding-inline: min(var(--spacing-4), 16px); }
 }
 @media (max-width: 480px) {
+  .lobby-members__list { --lobby-member-row-height: 7.5rem; }
   .lobby-member { gap: var(--spacing-3); padding-inline: var(--spacing-3); }
-  .lobby-member__badge { padding-inline: var(--spacing-2); }
   .lobby-member__identity .text-caption-default { font-size: 0.8125rem; line-height: 18px; }
   .lobby-page .lobby-member { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--spacing-3); padding-inline: var(--spacing-3); }
-  .lobby-page .lobby-member__badge { grid-column: 1 / -1; justify-self: start; max-inline-size: 100%; padding-inline: var(--spacing-2); }
+  .lobby-page :is(.lobby-member__badge, .lobby-member__ready-toggle) { grid-column: 1 / -1; justify-self: start; max-inline-size: 100%; padding-inline: var(--spacing-2); }
   .lobby-page .lobby-avatar { inline-size: max(48px, 2em); block-size: max(48px, 2em); }
   .lobby-page .lobby-avatar--chat { inline-size: max(40px, 2em); block-size: max(40px, 2em); }
   .lobby-page .lobby-member__identity .text-caption-default { font-size: 0.8125rem; line-height: 1.384615; }
@@ -252,7 +275,7 @@
   .lobby-filter-editor__fields { grid-template-columns: 1fr; }
   .lobby-page__navigation { flex-direction: column; align-items: stretch; }
   .lobby-page .lobby-actions > .ui-button { inline-size: 100%; }
-  .lobby-round-filters__controls, .lobby-page__host-controls .ui-text-action { margin-inline-start: 0; }
+  .lobby-page__host-controls .ui-text-action { margin-inline-start: 0; }
   .lobby-chat-preview { padding-inline: min(var(--spacing-3), 12px); }
   .lobby-chat-preview__messages { padding: 0; }
   .lobby-chat-preview__bubble { padding-inline: min(var(--spacing-2), 8px); }
@@ -309,15 +332,14 @@
 .lobby-restaurant-preview__stack button { flex: 0 0 calc((100% - 3 * var(--spacing-2)) / 4); }
 @media (prefers-reduced-motion: reduce) { .lobby-restaurant-preview__stack { scroll-behavior: auto; } }
 
-.lobby-restaurant-preview__discovery { align-self: flex-end; }
 .lobby-round-filters > .lobby-restaurant-preview {
+  gap: var(--spacing-1);
   margin-top: 24px;
   padding: 0;
   border: none;
   border-radius: 0;
   background: transparent;
 }
-
 
 
 .lobby-collection-source { margin-block-start: var(--spacing-4); padding: var(--spacing-3); border-radius: var(--radius-md); background: var(--color-bg-surface); color: var(--color-text-secondary); }

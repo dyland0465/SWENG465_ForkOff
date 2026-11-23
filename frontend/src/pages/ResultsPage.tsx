@@ -25,7 +25,7 @@ function ResultsScreen({ lobbyId }: { lobbyId: string }) {
     finally { setBusy(false) }
   }
   return <main id="main-content" className="results-page" tabIndex={-1}>
-    <header className="results-page__heading"><div><h1>Group results</h1><p className="results-page__intro">Restaurants are ranked by yes votes; vetoed restaurants are listed last.</p></div></header>
+    <header className="results-page__heading"><div><h1>Group results</h1></div></header>
     {(error || actionError) && <p role="alert">{actionError || error}</p>}
     {loading ? <p role="status">Loading results…</p> : !round ? <p>No voting round has started.</p> : !round.complete ? <section className="results-incomplete"><p>Waiting for the group: {round.completed} of {round.totalMembers} members finished. Votes remain private until everyone finishes.</p>{round.canVote && <TextAction to={generatePath(paths.voting, { lobbyId })}>Continue voting →</TextAction>}</section> : <ResultsList results={round.results ?? []} roundId={round.id} base={base} />}
 
@@ -52,8 +52,6 @@ function ResultsList({ results, roundId, base }: { results: Result[]; roundId: s
   const top = eligible.slice(0, 3)
   const rest = [...eligible.slice(3), ...results.filter(row => row.veto)]
   return <section className="results-ranking">
-    <h2>Top restaurants</h2>
-    <p className="results-ranking__note">Ranked by yes votes. Ties follow the restaurant list order; vetoed restaurants are excluded from the podium.</p>
     {top.length ? <ol className="results-podium">{top.map((row, index) => <li key={row.restaurant.id} className={`results-podium__place results-podium__place--${index + 1}`}>
       <span className="results-podium__rank">#{index + 1}</span>
       {row.restaurant.photoUrl && <img src={row.restaurant.photoUrl} alt="" />}

@@ -293,6 +293,7 @@ router.post("/api/lobbies/:id/join", run(async (req, res) => {
     candidate.joinOrder = current.nextJoinOrder++;
     current.members.push(candidate);
   });
+
   if (req.identity?.userId) {
     await GroupInvitation.updateMany({ lobbyId: lobby!._id, recipientId: req.identity.userId, status: "pending" }, { $set: { status: "accepted" } }).catch(error => console.error("Could not mark invitation accepted:", error));
   }
@@ -447,9 +448,13 @@ router.get("/api/lobbies/:id/round", run(async (req, res) => {
   const participants = activeParticipants(round, lobby.members);
   const complete = Boolean(round.completedAt) || (participants.length > 0 && participants.every(id => round.restaurants.every(r => Boolean(round.decisions[id]?.[r.id]))));
   const results = complete ? roundResults(round, lobby.members).map(({ index: _index, ...row }) => row) : null;
-  res.json({ round: { id: round.id, restaurants: round.restaurants, warnings: round.warnings ?? [], decisions: round.decisions[member.memberId] ?? {},
-    canVote: participants.includes(member.memberId), completed: participants.filter(id => round.restaurants.every(r => Boolean(round.decisions[id]?.[r.id]))).length,
-    totalMembers: participants.length, complete, results } });
+  res.json({
+    round: {
+      id: round.id, restaurants: round.restaurants, warnings: round.warnings ?? [], decisions: round.decisions[member.memberId] ?? {},
+      canVote: participants.includes(member.memberId), completed: participants.filter(id => round.restaurants.every(r => Boolean(round.decisions[id]?.[r.id]))).length,
+      totalMembers: participants.length, complete, results
+    }
+  });
 }));
 
 router.put("/api/lobbies/:id/round/vote", run(async (req, res) => {
@@ -473,8 +478,8 @@ router.post("/api/lobbies/:id/round/engagement", run(async (req, res) => {
   const member = memberFor(lobby, req.identity);
   const { roundId, restaurantId, kind, eventId } = req.body ?? {};
   if (!lobby.round || lobby.round.id !== roundId || !lobby.round.participants.includes(member.memberId) ||
-      !lobby.round.restaurants.some(r => r.id === restaurantId) || !["card_view", "maps_click"].includes(kind) ||
-      (kind === "maps_click" && (typeof eventId !== "string" || !/^[a-zA-Z0-9-]{1,80}$/.test(eventId)))) throw new HttpError(400, "Invalid engagement event.");
+    !lobby.round.restaurants.some(r => r.id === restaurantId) || !["card_view", "maps_click"].includes(kind) ||
+    (kind === "maps_click" && (typeof eventId !== "string" || !/^[a-zA-Z0-9-]{1,80}$/.test(eventId)))) throw new HttpError(400, "Invalid engagement event.");
   const key = kind === "card_view" ? `${roundId}:${member.memberId}:${restaurantId}:view` : `${roundId}:${member.memberId}:${eventId}:maps`;
   try { await AnalyticsEvent.updateOne({ key }, { $setOnInsert: { key, placeId: restaurantId, kind, occurredAt: new Date() } }, { upsert: true }); }
   catch (error) { if ((error as { code?: number }).code !== 11000) throw error; }
@@ -482,7 +487,17 @@ router.post("/api/lobbies/:id/round/engagement", run(async (req, res) => {
 }));
 
 router.delete("/api/lobbies/:id/round", run(async (req, res) => {
-  await changeLobby(String(req.params.id), current => { requireHost(current, req.identity); current.round = null; current.status = "waiting"; });
+  await changeLobby(String(req.params.id), current => {
+    requireHost(current, req.identity);
+
+    current.round = null;
+    current.status = "waiting";
+
+    current.members.forEach(member => {
+      member.ready = false;
+    });
+  });
+
   res.json({ ok: true });
 }));
 
@@ -509,6 +524,25 @@ router.all(["/api/lobbies/:id/votes", "/api/lobbies/:id/results"], run(async (re
   memberFor(await findLobby(String(req.params.id)), req.identity);
   res.status(410).json({ message: "Use the lobby round endpoints for live voting and results." });
 }));
+
+router.patch("/api/lobbies/:id/ready", run(async (req, res) => {
+  const body = bodyObject(req);
+
+  if (typeof body.ready !== "boolean" || Object.keys(body).some(key => key !== "ready")) {
+    throw new HttpError(400, "provide a ready value of true or false");
+  }
+  const ready = body.ready;
+  const lobby = await changeLobby(String(req.params.id), current => {
+    const member = memberFor(current, req.identity);
+
+    if (current.status !== "waiting" || current.round) {
+      throw new HttpError(409, "Ready status can only change while waiting for a new round",);
+    }
+    member.ready = ready;
+  });
+  res.json({ lobby: serializeLobby(lobby!, req.identity) });
+}));
+
 
 // Remaining placeholder endpoints are private to lobby members.
 router.use("/api/lobbies/:id", (req, _res, next) => {

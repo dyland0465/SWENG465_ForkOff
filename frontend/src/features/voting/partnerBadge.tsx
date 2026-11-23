@@ -5,7 +5,7 @@
  * partner (see backend/src/services/partnerListings.ts). Used on the voting card
  * and the results page.
  */
-import './PartnerBadge.css'
+import './partnerBadge.css'
 
 export function PartnerBadge() {
   return (
