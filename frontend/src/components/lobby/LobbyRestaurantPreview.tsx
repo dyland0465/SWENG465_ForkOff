@@ -9,9 +9,9 @@ type PreviewRestaurant = {
   photoAuthors?: { displayName: string; uri?: string }[]
 }
 
-export function LobbyRestaurantPreview({ lobbyId, filterKey }: { lobbyId: string; filterKey: string }) {
-  const [restaurants, setRestaurants] = useState<PreviewRestaurant[]>([])
-  const [state, setState] = useState<'loading' | 'ready' | 'error'>('loading')
+export function LobbyRestaurantPreview({ lobbyId, filterKey, sampleRestaurants }: { lobbyId: string; filterKey: string; sampleRestaurants?: PreviewRestaurant[] }) {
+  const [restaurants, setRestaurants] = useState<PreviewRestaurant[]>(sampleRestaurants ?? [])
+  const [state, setState] = useState<'loading' | 'ready' | 'error'>(sampleRestaurants ? 'ready' : 'loading')
   const [attempt, setAttempt] = useState(0)
   const [paused, setPaused] = useState(false)
   const strip = useRef<HTMLDivElement>(null)
@@ -23,6 +23,7 @@ export function LobbyRestaurantPreview({ lobbyId, filterKey }: { lobbyId: string
   }, [selected])
 
   useEffect(() => {
+    if (sampleRestaurants) return
     const controller = new AbortController()
     setState('loading')
     setRestaurants([])
@@ -37,7 +38,7 @@ export function LobbyRestaurantPreview({ lobbyId, filterKey }: { lobbyId: string
       .then(places => { if (!controller.signal.aborted) { setRestaurants(places); setState('ready') } })
       .catch(() => { if (!controller.signal.aborted) setState('error') })
     return () => controller.abort()
-  }, [lobbyId, filterKey, attempt])
+  }, [lobbyId, filterKey, attempt, sampleRestaurants])
 
   useEffect(() => {
     if (paused || restaurants.length <= 4 || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
@@ -72,7 +73,7 @@ export function LobbyRestaurantPreview({ lobbyId, filterKey }: { lobbyId: string
         {state === 'loading' && <p role="status">Finding restaurant matches…</p>}
         {state === 'error' && <p role="alert">Could not load restaurant matches. <button type="button" onClick={() => setAttempt(value => value + 1)}>Try again</button></p>}
         {state === 'ready' && <>
-          <small className="lobby-restaurant-preview__attribution" translate="no">Google Maps</small>
+          {!sampleRestaurants && <small className="lobby-restaurant-preview__attribution" translate="no">Google Maps</small>}
           <strong>{restaurants.length} {restaurants.length === 1 ? 'restaurant' : 'restaurants'} matched</strong>
           {!restaurants.length && <p>Try changing your filters to find restaurants.</p>}
         </>}
@@ -80,7 +81,7 @@ export function LobbyRestaurantPreview({ lobbyId, filterKey }: { lobbyId: string
       {selected && <dialog ref={dialog} className="lobby-restaurant-preview__dialog" onClose={() => setSelected(null)}>
         <button type="button" onClick={() => dialog.current?.close()}>Close</button>
         <h2>{selected.name}</h2>
-        <SaveRestaurant key={selected.id} placeId={selected.id} />
+        {!sampleRestaurants && <SaveRestaurant key={selected.id} placeId={selected.id} />}
         {selected.photoUrl ? <img src={selected.photoUrl} alt={`Photo of ${selected.name}`} /> : <p>Photo unavailable</p>}
         {!!selected.photoAuthors?.length && <p>Photo: {selected.photoAuthors.map((author, index) => <span key={index}>{index > 0 && ', '}{author.uri ? <a href={author.uri} target="_blank" rel="noopener noreferrer">{author.displayName}</a> : author.displayName}</span>)}</p>}
         {selected.googleMapsUri && <a href={selected.googleMapsUri} target="_blank" rel="noopener noreferrer">View on Google Maps</a>}

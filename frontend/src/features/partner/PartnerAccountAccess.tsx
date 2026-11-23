@@ -101,12 +101,10 @@ export function PartnerAccountAccess() {
   
 
   return (
-    <section className="partner-access__account" aria-labelledby="partner-account-title" aria-describedby="partner-account-description">
-      <div className="partner-access__account-heading">
-        <p className="text-label-default">Your restaurant, in focus</p>
-        <h2 id="partner-account-title" className="text-heading-h2">{account.status === 'verified' ? 'Partner account' : mode === 'sign-in' ? 'Partner sign in' : 'Become a partner'}</h2>
-        <p id="partner-account-description">Access your restaurant’s discovery, voting, and engagement insights with your partner account.</p>
-      </div>
+    <section className="partner-access__account" aria-labelledby="partner-account-title">
+      <h2 id="partner-account-title" className="text-heading-h2">
+        {account.status === 'verified' ? 'Partner account' : mode === 'sign-in' ? 'Partner sign in' : 'Become a partner'}
+      </h2>
 
       {account.status === 'verified' ? <PartnerStatus session={account.session} /> : <>
         {/* Sign in / Create account tabs (same pattern as the regular login screen) */}
@@ -121,7 +119,7 @@ export function PartnerAccountAccess() {
               aria-controls={`partner-panel-${tab.mode}`}
               tabIndex={mode === tab.mode ? 0 : -1}
               disabled={pending}
-              className={`partner-access__tab${mode === tab.mode ? ' is-active' : ''}`}
+              className="partner-access__tab"
               onClick={() => switchMode(tab.mode)}
               onKeyDown={event => {
                 if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') {
@@ -134,17 +132,15 @@ export function PartnerAccountAccess() {
           ))}
         </div>
 
-        <p id="partner-auth-notice" className="partner-access__notice">
-          {mode === 'sign-in'
-            ? 'Use the email and password from your partner account.'
-            : 'New partner accounts are reviewed before restaurant insights are unlocked.'}
-        </p>
+        {mode === 'register' && <p id="partner-auth-notice" className="partner-access__notice">
+          We review new partner accounts before granting access to restaurant analytics.
+        </p>}
 
         {mode === 'sign-in' ? (
-          <form id="partner-panel-sign-in" role="tabpanel" aria-labelledby="partner-tab-sign-in" noValidate aria-describedby="partner-auth-notice" aria-busy={pending} onSubmit={submitSignIn}>
+          <form id="partner-panel-sign-in" role="tabpanel" aria-labelledby="partner-tab-sign-in" noValidate aria-busy={pending} onSubmit={submitSignIn}>
             <TextInput id="partner-email" name="email" label="Email address" type="email" autoComplete="username" autoCapitalize="none" spellCheck={false} required disabled={pending} value={signInForm.values.email} error={signInForm.errors.email} onChange={event => signInForm.setValue('email', event.target.value)} onBlur={() => signInForm.onBlur('email')} />
             <PasswordField id="partner-password" autoComplete="current-password" value={signInForm.values.password} error={signInForm.errors.password} disabled={pending} show={showPassword} onToggle={() => setShowPassword(value => !value)} onChange={value => signInForm.setValue('password', value)} onBlur={() => signInForm.onBlur('password')} />
-            <Button type="submit" disabled={pending}>{pending ? 'Signing in…' : 'Sign In'}</Button>
+            <Button type="submit" disabled={pending}>{pending ? 'Signing in…' : 'Sign in'}</Button>
             <Feedback pending={pending} pendingText="Signing you in…" error={account.status === 'error' ? account.message : undefined} />
           </form>
         ) : (

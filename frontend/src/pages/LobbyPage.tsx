@@ -1,6 +1,7 @@
 import { GroupControls } from '../features/saved/GroupControls'
 import { GuestGroupsReminder } from '../features/saved/GuestGroupsReminder'
 import { lobbyRequest, useLiveLobby } from '../features/lobby/liveLobby'
+import { LayoutTestLobby, layoutTestLobbyId, layoutTestRestaurants } from '../features/lobby/LayoutTestLobby'
 import { useRef, useState } from 'react'
 import { generatePath, useLocation, useNavigate, useParams } from 'react-router'
 import type { FormEvent } from 'react'
@@ -11,8 +12,10 @@ import { LobbyRestaurantPreview } from '../components/lobby/LobbyRestaurantPrevi
 import { TextAction } from '../components/ui/TextAction'
 import { paths } from '../routes/paths'
 import './LobbyPage.css'
+import './LobbyPreview.css'
 
-function LobbyScreen({ lobbyId }: { lobbyId: string }) {
+function LobbyScreen({ lobbyId, preview }: { lobbyId: string; preview: boolean }) {
+  const sample = preview && lobbyId === layoutTestLobbyId
   const {
     lobby,
     error,
@@ -91,6 +94,10 @@ function LobbyScreen({ lobbyId }: { lobbyId: string }) {
     }
   }
   async function startGame() {
+    if (sample) {
+      await requestMutation('', 'PATCH', { status: 'playing' })
+      return
+    }
     setBusy(true)
     setActionError('')
     try {
@@ -127,6 +134,340 @@ function LobbyScreen({ lobbyId }: { lobbyId: string }) {
   const canChangeReady = lobby?.status === 'waiting' && !lobby.roundId
   const filters = lobby?.filters
   const params = { lobbyId }
+  const members = lobby && (
+    <>
+    <ul
+      className="lobby-members__list"
+      aria-label="Lobby members"
+      tabIndex={lobby.members.length > 4 ? 0 : undefined}
+    >
+      {lobby.members.map((member) => (
+        <li key={member.memberId} className="lobby-member">
+          <span className="lobby-avatar" aria-hidden="true">
+            {member.displayName
+              .trim()
+              .split(/\s+/)
+              .map((part) => part[0])
+              .slice(0, 2)
+              .join('')
+              .toUpperCase()}
+          </span>
+
+          <div className="lobby-member__identity">
+            <strong>
+              {member.displayName}
+              {member.memberId === lobby.selfMemberId ? ' (you)' : ''}
+            </strong>
+            <p className="text-caption-default">
+              {member.memberId === lobby.hostMemberId ? 'Host · ' : ''}
+              {member.type === 'guest' ? 'Guest · ' : ''}
+              {member.online ? 'Online' : 'Offline'}
+            </p>
+          </div>
+          {canChangeReady && member.memberId === lobby.selfMemberId ? (
+            <Button
+              className="lobby-member__ready-toggle"
+              variant={member.ready ? 'primary' : 'secondary'}
+              disabled={busy}
+              aria-label={member.ready ? 'Ready. Mark yourself not ready' : 'Not ready. Mark yourself ready'}
+              onClick={() => void mutate('/ready', { ready: !member.ready })}
+            >
+              {member.ready ? 'Ready' : 'Not ready'}
+            </Button>
+          ) : (
+            <span className="lobby-member__badge">
+              {member.ready ? 'Ready' : 'Not ready'}
+            </span>
+          )}
+        </li>
+      ))}
+    </ul>
+    {!lobby.members.length && (
+      <p>Share your code to invite your crew.</p>
+    )}
+    </>
+  )
+  const chat = lobby && (
+    <section
+      className="lobby-chat-preview"
+      aria-label="Recent group messages"
+    >
+      {preview && <h2>Lobby chat</h2>}
+      <ol
+        className="lobby-chat-preview__messages"
+        aria-live="polite"
+        aria-relevant="additions"
+      >
+        {messages.slice(-3).map((message) => (
+          <li className="lobby-chat-preview__message" key={message.id}>
+            <span
+              className="lobby-avatar lobby-avatar--chat"
+              aria-hidden="true"
+            >
+              {message.senderName
+                .trim()
+                .split(/\s+/)
+                .map((part) => part[0])
+                .slice(0, 2)
+                .join('')
+                .toUpperCase()}
+            </span>
+            <div>
+              <p className="lobby-chat-preview__sender">
+                {message.senderName} ·{' '}
+                <time dateTime={message.createdAt}>
+                  {new Date(message.createdAt).toLocaleTimeString([], {
+                    hour: 'numeric',
+                    minute: '2-digit',
+                  })}
+                </time>
+              </p>
+              <p className="lobby-chat-preview__bubble">
+                {message.text}
+              </p>
+            </div>
+          </li>
+        ))}
+      </ol>
+      {!messages.length && (
+        <p className="lobby-chat-preview__empty">
+          No messages yet. Say hello to your dinner crew.
+        </p>
+      )}
+      <form
+        className="lobby-chat-preview__composer"
+        onSubmit={submitMessage}
+      >
+        <label
+          className="lobby-visually-hidden"
+          htmlFor="lobby-message"
+        >
+          Message your dinner crew
+        </label>
+        <input
+          id="lobby-message"
+          className="lobby-chat-preview__draft"
+          maxLength={2000}
+          placeholder="Write a message…"
+          value={draft}
+          disabled={sending}
+          onChange={(event) => setDraft(event.target.value)}
+        />
+        <Button type="submit" disabled={sending || !draft.trim()}>
+          {sending ? 'Sending…' : 'Send'}
+        </Button>
+      </form>
+    </section>
+  )
+  const controls = lobby && !sample && (
+    <div className="lobby-controls-cards">
+
+      <TextAction
+        className="lobby-page__leave"
+        disabled={busy}
+        tone="danger"
+        onClick={() => void mutate('/leave', {}, true)}
+      >
+        {busy ? 'Please wait…' : 'Leave lobby'}
+      </TextAction>
+      {lobby.isHost && (
+        <TextAction
+          tone="danger"
+          disabled={busy}
+          onClick={() => void deleteLobby()}
+        >
+          Delete lobby
+        </TextAction>
+      )}
+    </div>
+  )
+  const groups = lobby && !sample && (
+    <>
+    <GroupControls
+      lobbyId={lobbyId}
+      lobbyName={lobby.name}
+      isHost={lobby.isHost}
+      canInvite={lobby.status === 'waiting'}
+      initialGroupId={creationState?.invitationGroupId}
+      onInvitationSent={() => {
+        setInvitationError('')
+        if (creationState?.invitationError) {
+          navigate(location.pathname, { replace: true, state: null })
+        }
+      }}
+    />
+    {lobby.status === 'waiting' && lobby.members.length > 1 && <GuestGroupsReminder context="lobby" />}
+    </>
+  )
+  const roundSettings = lobby && (
+    <>
+    {lobby.collectionSource && <p className="lobby-collection-source">Voting from collection: <strong>{lobby.collectionSource.name}</strong> · {lobby.collectionSource.count} restaurants. Discovery filters do not apply to this collection.</p>}
+    <section
+      className="lobby-round-filters"
+      aria-labelledby="round-filters-heading"
+    >
+      <h2 id="round-filters-heading" className="lobby-section-heading">
+        {editingFilters ? 'Edit lobby settings' : preview ? 'Round settings' : 'Round filters'}
+      </h2>
+      {!editingFilters && <>
+        <p className="lobby-round-filters__summary">
+          {filters?.location || 'Any location'}
+          {filters?.dinnerAt &&
+            ` · ${new Date(filters.dinnerAt).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}`}{' '}
+          · within {filters?.maxDistance ?? 10} miles
+        </p>
+        <div className="lobby-filter-chips">
+          {[
+            ...(filters?.categories?.length
+              ? filters.categories
+              : ['Any cuisine']),
+            ...(filters?.priceLevels?.length
+              ? filters.priceLevels
+              : ['Any price']),
+            ...(filters?.minimumRating
+              ? [`${filters.minimumRating.toFixed(1)}+`]
+              : []),
+            ...(filters?.openNow ? ['Open now'] : []),
+            ...(filters?.diningNeeds ?? []),
+          ].map((label, index) => (
+            <span className="lobby-filter-tag" key={`${label}-${index}`}>
+              {label}
+            </span>
+          ))}
+        </div>
+        <LobbyRestaurantPreview
+          lobbyId={lobbyId}
+          filterKey={JSON.stringify(lobby.filters)}
+          sampleRestaurants={sample ? layoutTestRestaurants : undefined}
+        />
+      </>}
+      {lobby.isHost && (
+        <div className="lobby-round-filters__controls">
+          <TextAction
+            aria-expanded={editingFilters}
+            aria-controls="lobby-filter-editor"
+            onClick={() => setEditingFilters((current) => !current)}
+          >
+            {editingFilters ? 'Back to round filters' : 'Edit lobby settings & filters'}
+          </TextAction>
+          {!editingFilters && !sample && (
+            <TextAction
+              className="lobby-round-filters__discovery"
+              to={generatePath(paths.discoveryPreview, params)}
+            >
+              Explore restaurants
+            </TextAction>
+          )}
+        </div>
+      )}
+      {lobby.isHost && editingFilters && (
+        <div id="lobby-filter-editor" className="lobby-edit-panel">
+          <form key={`settings-${editorVersion}`} onSubmit={saveSettings} className="lobby-filter-editor">
+            <fieldset disabled={busy} className="lobby-filter-editor__group">
+              <TextInput label="Lobby name" name="name" required maxLength={120} defaultValue={lobby.name} />
+              <SelectField label="Status" name="status" defaultValue={lobby.status}>
+                <option value="waiting">Waiting</option>
+                <option value="playing">Playing</option>
+                <option value="finished">Finished</option>
+              </SelectField>
+            </fieldset>
+            <fieldset
+              disabled={busy}
+              className="lobby-filter-editor__group"
+            >
+              <div className="lobby-filter-editor__fields">
+                <TextInput
+                  label="Location"
+                  name="location"
+                  required
+                  maxLength={120}
+                  defaultValue={filters?.location ?? ''}
+                />
+                <TextInput
+                  label="New dinner date and time (optional)"
+                  name="dinnerAt"
+                  type="datetime-local"
+                  hint="Leave blank to keep the current dinner time."
+                />
+                <TextInput
+                  label="Maximum distance (miles)"
+                  name="maxDistance"
+                  type="number"
+                  required
+                  min={1}
+                  max={100}
+                  step="any"
+                  defaultValue={filters?.maxDistance ?? 10}
+                />
+                <TextInput
+                  label="Minimum rating"
+                  name="minimumRating"
+                  type="number"
+                  required
+                  min={0}
+                  max={5}
+                  step="0.1"
+                  defaultValue={filters?.minimumRating ?? 0}
+                />
+                <TextInput
+                  label="Cuisines (comma separated)"
+                  name="categories"
+                  defaultValue={filters?.categories?.join(', ') ?? ''}
+                />
+                <TextInput
+                  label="Dining needs (comma separated)"
+                  name="diningNeeds"
+                  defaultValue={filters?.diningNeeds?.join(', ') ?? ''}
+                />
+              </div>
+              <fieldset className="lobby-filter-editor__group">
+                <legend>Price levels (none means any price)</legend>
+                {['$', '$$', '$$$'].map((price) => (
+                  <label key={price}>
+                    <input
+                      type="checkbox"
+                      name="priceLevels"
+                      value={price}
+                      defaultChecked={filters?.priceLevels?.includes(
+                        price,
+                      )}
+                    />
+                    {price}{' '}
+                  </label>
+                ))}
+              </fieldset>
+              <label>
+                <input
+                  type="checkbox"
+                  name="openNow"
+                  defaultChecked={filters?.openNow ?? false}
+                />{' '}
+                Open now
+              </label>
+              <Button type="submit">Save settings</Button>
+            </fieldset>
+          </form>
+        </div>
+      )}
+    </section>
+    </>
+  )
+  const navigation = lobby && (
+    <div className="lobby-actions lobby-page__navigation">
+      <Button
+        disabled={busy || (!lobby.isHost && !lobby.roundId) || (sample && lobby.status === 'playing')}
+        onClick={() => lobby.roundId ? navigate(generatePath(paths.voting, params)) : void startGame()}
+      >
+        {lobby.roundId ? 'Return to game' : sample && lobby.status === 'playing' ? 'Sample round started' : 'Start Game'}
+      </Button>
+      {!sample && <Button
+        variant="secondary"
+        onClick={() => navigate(generatePath(paths.groupChat, params))}
+      >
+        Open group chat
+      </Button>}
+    </div>
+  )
   return (
     <main id="main-content" className="lobby-page" tabIndex={-1}>
       {!lobby && <h1>Your dinner crew</h1>}
@@ -139,339 +480,64 @@ function LobbyScreen({ lobbyId }: { lobbyId: string }) {
         {notice}
       </p>
       {lobby && (
+        preview ? (
+        <div className="lobby-preview">
+          <header className="lobby-preview__header">
+            <div><h1>{lobby.name}</h1><p>{sample ? 'Layout preview · Sample data' : 'Lobby'} · {lobby.status === 'waiting' ? 'Waiting for players' : lobby.status}</p></div>
+            <LobbyCode code={lobby.lobbyCode} />
+          </header>
+          <div className="lobby-preview__columns">
+            <div className="lobby-preview__column">
+              {roundSettings}
+              <section className="lobby-preview__panel lobby-preview__start" aria-labelledby="lobby-preview-start">
+                <h2 id="lobby-preview-start">Ready to eat?</h2>
+                {navigation}
+              </section>
+            </div>
+            <div className="lobby-preview__column">
+              <section className="lobby-preview__panel" aria-labelledby="lobby-preview-crew">
+                <div className="lobby-preview__crew-header">
+                  <h2 id="lobby-preview-crew">Your crew</h2>
+                  <p>{lobby.members.length} {lobby.members.length === 1 ? 'player' : 'players'}</p>
+                </div>
+                {members}
+                {groups}
+              </section>
+              {chat}
+            </div>
+          </div>
+          <footer className="lobby-preview__footer">{controls}</footer>
+        </div>
+        ) : (
         <div className="lobby-page__columns">
           <section className="lobby-page__people" aria-label="Your dinner crew">
             <div className="lobby-page__title">
               <h1>{lobby.name}</h1>
             </div>
 
-            <ul
-              className="lobby-members__list"
-              aria-label="Lobby members"
-              tabIndex={lobby.members.length > 4 ? 0 : undefined}
-            >
-              {lobby.members.map((member) => (
-                <li key={member.memberId} className="lobby-member">
-                  <span className="lobby-avatar" aria-hidden="true">
-                    {member.displayName
-                      .trim()
-                      .split(/\s+/)
-                      .map((part) => part[0])
-                      .slice(0, 2)
-                      .join('')
-                      .toUpperCase()}
-                  </span>
-
-                  <div className="lobby-member__identity">
-                    <strong>
-                      {member.displayName}
-                      {member.memberId === lobby.selfMemberId ? ' (you)' : ''}
-                    </strong>
-                    <p className="text-caption-default">
-                      {member.memberId === lobby.hostMemberId ? 'Host · ' : ''}
-                      {member.type === 'guest' ? 'Guest · ' : ''}
-                      {member.online ? 'Online' : 'Offline'}
-                    </p>
-                  </div>
-                  {canChangeReady && member.memberId === lobby.selfMemberId ? (
-                    <Button
-                      className="lobby-member__ready-toggle"
-                      variant={member.ready ? 'primary' : 'secondary'}
-                      disabled={busy}
-                      aria-label={member.ready ? 'Ready. Mark yourself not ready' : 'Not ready. Mark yourself ready'}
-                      onClick={() => void mutate('/ready', { ready: !member.ready })}
-                    >
-                      {member.ready ? 'Ready' : 'Not ready'}
-                    </Button>
-                  ) : (
-                    <span className="lobby-member__badge">
-                      {member.ready ? 'Ready' : 'Not ready'}
-                    </span>
-                  )}
-                </li>
-              ))}
-            </ul>
-            {!lobby.members.length && (
-              <p>Share your code to invite your crew.</p>
-            )}
-            <section
-              className="lobby-chat-preview"
-              aria-label="Recent group messages"
-            >
-              <ol
-                className="lobby-chat-preview__messages"
-                aria-live="polite"
-                aria-relevant="additions"
-              >
-                {messages.slice(-3).map((message) => (
-                  <li className="lobby-chat-preview__message" key={message.id}>
-                    <span
-                      className="lobby-avatar lobby-avatar--chat"
-                      aria-hidden="true"
-                    >
-                      {message.senderName
-                        .trim()
-                        .split(/\s+/)
-                        .map((part) => part[0])
-                        .slice(0, 2)
-                        .join('')
-                        .toUpperCase()}
-                    </span>
-                    <div>
-                      <p className="lobby-chat-preview__sender">
-                        {message.senderName} ·{' '}
-                        <time dateTime={message.createdAt}>
-                          {new Date(message.createdAt).toLocaleTimeString([], {
-                            hour: 'numeric',
-                            minute: '2-digit',
-                          })}
-                        </time>
-                      </p>
-                      <p className="lobby-chat-preview__bubble">
-                        {message.text}
-                      </p>
-                    </div>
-                  </li>
-                ))}
-              </ol>
-              {!messages.length && (
-                <p className="lobby-chat-preview__empty">
-                  No messages yet. Say hello to your dinner crew.
-                </p>
-              )}
-              <form
-                className="lobby-chat-preview__composer"
-                onSubmit={submitMessage}
-              >
-                <label
-                  className="lobby-visually-hidden"
-                  htmlFor="lobby-message"
-                >
-                  Message your dinner crew
-                </label>
-                <input
-                  id="lobby-message"
-                  className="lobby-chat-preview__draft"
-                  maxLength={2000}
-                  placeholder="Write a message…"
-                  value={draft}
-                  disabled={sending}
-                  onChange={(event) => setDraft(event.target.value)}
-                />
-                <Button type="submit" disabled={sending || !draft.trim()}>
-                  {sending ? 'Sending…' : 'Send'}
-                </Button>
-              </form>
-            </section>
-            <div className="lobby-controls-cards">
-
-              <TextAction
-                className="lobby-page__leave"
-                disabled={busy}
-                tone="danger"
-                onClick={() => void mutate('/leave', {}, true)}
-              >
-                {busy ? 'Please wait…' : 'Leave lobby'}
-              </TextAction>
-              {lobby.isHost && (
-                <TextAction
-                  tone="danger"
-                  disabled={busy}
-                  onClick={() => void deleteLobby()}
-                >
-                  Delete lobby
-                </TextAction>
-              )}
-            </div>
-            <GroupControls
-              lobbyId={lobbyId}
-              lobbyName={lobby.name}
-              isHost={lobby.isHost}
-              canInvite={lobby.status === 'waiting'}
-              initialGroupId={creationState?.invitationGroupId}
-              onInvitationSent={() => {
-                setInvitationError('')
-                if (creationState?.invitationError) {
-                  navigate(location.pathname, { replace: true, state: null })
-                }
-              }}
-            />
-            {lobby.status === 'waiting' && lobby.members.length > 1 && <GuestGroupsReminder context="lobby" />}
+            {members}
+            {chat}
+            {controls}
+            {groups}
           </section>
 
           <section className="lobby-page__settings" aria-label="Round settings">
             <LobbyCode code={lobby.lobbyCode} />
-            {lobby.collectionSource && <p className="lobby-collection-source">Voting from collection: <strong>{lobby.collectionSource.name}</strong> · {lobby.collectionSource.count} restaurants. Discovery filters do not apply to this collection.</p>}
-            <section
-              className="lobby-round-filters"
-              aria-labelledby="round-filters-heading"
-            >
-              <h2 id="round-filters-heading" className="lobby-section-heading">
-                {editingFilters ? 'Edit lobby settings' : 'Round filters'}
-              </h2>
-              {!editingFilters && <>
-                <p className="lobby-round-filters__summary">
-                  {filters?.location || 'Any location'}
-                  {filters?.dinnerAt &&
-                    ` · ${new Date(filters.dinnerAt).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}`}{' '}
-                  · within {filters?.maxDistance ?? 10} miles
-                </p>
-                <div className="lobby-filter-chips">
-                  {[
-                    ...(filters?.categories?.length
-                      ? filters.categories
-                      : ['Any cuisine']),
-                    ...(filters?.priceLevels?.length
-                      ? filters.priceLevels
-                      : ['Any price']),
-                    ...(filters?.minimumRating
-                      ? [`${filters.minimumRating.toFixed(1)}+`]
-                      : []),
-                    ...(filters?.openNow ? ['Open now'] : []),
-                    ...(filters?.diningNeeds ?? []),
-                  ].map((label, index) => (
-                    <span className="lobby-filter-tag" key={`${label}-${index}`}>
-                      {label}
-                    </span>
-                  ))}
-                </div>
-                <LobbyRestaurantPreview
-                  lobbyId={lobbyId}
-                  filterKey={JSON.stringify(lobby.filters)}
-                />
-              </>}
-              {lobby.isHost && (
-                <div className="lobby-round-filters__controls">
-                  <TextAction
-                    aria-expanded={editingFilters}
-                    aria-controls="lobby-filter-editor"
-                    onClick={() => setEditingFilters((current) => !current)}
-                  >
-                    {editingFilters ? 'Back to round filters' : 'Edit lobby settings & filters'}
-                  </TextAction>
-                  {!editingFilters && (
-                    <TextAction
-                      className="lobby-round-filters__discovery"
-                      to={generatePath(paths.discoveryPreview, params)}
-                    >
-                      Explore restaurants
-                    </TextAction>
-                  )}
-                </div>
-              )}
-              {lobby.isHost && editingFilters && (
-                <div id="lobby-filter-editor" className="lobby-edit-panel">
-                  <form key={`settings-${editorVersion}`} onSubmit={saveSettings} className="lobby-filter-editor">
-                    <fieldset disabled={busy} className="lobby-filter-editor__group">
-                      <TextInput label="Lobby name" name="name" required maxLength={120} defaultValue={lobby.name} />
-                      <SelectField label="Status" name="status" defaultValue={lobby.status}>
-                        <option value="waiting">Waiting</option>
-                        <option value="playing">Playing</option>
-                        <option value="finished">Finished</option>
-                      </SelectField>
-                    </fieldset>
-                    <fieldset
-                      disabled={busy}
-                      className="lobby-filter-editor__group"
-                    >
-                      <div className="lobby-filter-editor__fields">
-                        <TextInput
-                          label="Location"
-                          name="location"
-                          required
-                          maxLength={120}
-                          defaultValue={filters?.location ?? ''}
-                        />
-                        <TextInput
-                          label="New dinner date and time (optional)"
-                          name="dinnerAt"
-                          type="datetime-local"
-                          hint="Leave blank to keep the current dinner time."
-                        />
-                        <TextInput
-                          label="Maximum distance (miles)"
-                          name="maxDistance"
-                          type="number"
-                          required
-                          min={1}
-                          max={100}
-                          step="any"
-                          defaultValue={filters?.maxDistance ?? 10}
-                        />
-                        <TextInput
-                          label="Minimum rating"
-                          name="minimumRating"
-                          type="number"
-                          required
-                          min={0}
-                          max={5}
-                          step="0.1"
-                          defaultValue={filters?.minimumRating ?? 0}
-                        />
-                        <TextInput
-                          label="Cuisines (comma separated)"
-                          name="categories"
-                          defaultValue={filters?.categories?.join(', ') ?? ''}
-                        />
-                        <TextInput
-                          label="Dining needs (comma separated)"
-                          name="diningNeeds"
-                          defaultValue={filters?.diningNeeds?.join(', ') ?? ''}
-                        />
-                      </div>
-                      <fieldset className="lobby-filter-editor__group">
-                        <legend>Price levels (none means any price)</legend>
-                        {['$', '$$', '$$$'].map((price) => (
-                          <label key={price}>
-                            <input
-                              type="checkbox"
-                              name="priceLevels"
-                              value={price}
-                              defaultChecked={filters?.priceLevels?.includes(
-                                price,
-                              )}
-                            />
-                            {price}{' '}
-                          </label>
-                        ))}
-                      </fieldset>
-                      <label>
-                        <input
-                          type="checkbox"
-                          name="openNow"
-                          defaultChecked={filters?.openNow ?? false}
-                        />{' '}
-                        Open now
-                      </label>
-                      <Button type="submit">Save settings</Button>
-                    </fieldset>
-                  </form>
-                </div>
-              )}
-            </section>
-            <div className="lobby-actions lobby-page__navigation">
-              <Button
-                disabled={busy || (!lobby.isHost && !lobby.roundId)}
-                onClick={() => lobby.roundId ? navigate(generatePath(paths.voting, params)) : void startGame()}
-              >
-                {lobby.roundId ? 'Return to game' : 'Start Game'}
-              </Button>
-              <Button
-                variant="secondary"
-                onClick={() => navigate(generatePath(paths.groupChat, params))}
-              >
-                Open group chat
-              </Button>
-            </div>
+            {roundSettings}
+            {navigation}
 
           </section>
         </div>
+        )
       )}
     </main>
   )
 }
 
-export function LobbyPage() {
+export function LobbyPage({ preview = false }: { preview?: boolean }) {
   const { lobbyId = '' } = useParams()
-  return <LobbyScreen key={lobbyId} lobbyId={lobbyId} />
+  if (preview && lobbyId === layoutTestLobbyId) {
+    return <LayoutTestLobby><LobbyScreen lobbyId={lobbyId} preview /></LayoutTestLobby>
+  }
+  return <LobbyScreen key={lobbyId} lobbyId={lobbyId} preview={preview} />
 }

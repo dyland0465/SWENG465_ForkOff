@@ -17,13 +17,15 @@ export function AppLayout() {
   const isCreateLobby = useMatch(paths.createLobby) !== null
   const isJoinLobby = useMatch(paths.joinLobby) !== null
   const isLogin = useMatch(paths.login) !== null
-  const isLobby = useMatch({ path: paths.lobby, end: true }) !== null
+  const lobbyMatch = useMatch({ path: paths.lobby, end: true })
+  const lobbyPreviewMatch = useMatch(paths.lobbyPreview)
+  const isLobby = Boolean(lobbyMatch || lobbyPreviewMatch)
   const isGroupChat = useMatch(paths.groupChat) !== null
   const isDiscovery = useMatch(paths.discoveryPreview) !== null
   const isVoting = useMatch(paths.voting) !== null
   const isRestaurantDetails = useMatch(`${paths.lobby}/restaurants/*`) !== null
   const isResults = useMatch(paths.results) !== null
-  const isPartner = useMatch({ path: paths.partnerAccess, end: false }) !== null
+  const isPartnerDashboard = useMatch(paths.partnerRestaurant) !== null
 
   return (
     <>
@@ -33,7 +35,7 @@ export function AppLayout() {
       <div
         className={`home-screen${isCreateLobby || isJoinLobby || isLogin ? ' lobby-screen' : ''}${isLobby || isGroupChat ? ' lobby-detail-screen' : ''}${isLobby ? ' lobby-page-screen' : ''}${isDiscovery || isVoting || isRestaurantDetails || isResults ? ' discovery-screen' : ''}${isVoting ? ' voting-screen' : ''}${isLogin ? ' login-screen' : ''}`}
       >
-        {!isPartner && (
+        {!isPartnerDashboard && (
           <AppHeader
             onHowItWorks={() => setShowHowItWorks(true)}
             onJoinLobby={() => navigate(paths.joinLobby)}

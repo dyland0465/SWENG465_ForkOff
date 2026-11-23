@@ -64,6 +64,12 @@
   gap: 10px;
 }
 
+.create-lobby__filters .ui-filter-chip[aria-pressed='true'] {
+  border-color: var(--color-bg-inverse);
+  color: var(--color-text-inverse);
+  background: var(--color-bg-inverse);
+}
+
 .create-lobby__cuisines { margin-block-start: 38px; }
 .create-lobby__preferences {
   display: grid;

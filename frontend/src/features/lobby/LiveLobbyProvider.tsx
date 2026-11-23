@@ -10,7 +10,7 @@ import type { ChatMessage, LiveLobby } from './liveLobby'
 export function LiveLobbyProvider({ children }: { children: ReactNode }) {
   const match = useMatch('/lobbies/:lobbyId/*')
   const id = match?.params.lobbyId
-  const lobbyId = id && !['create', 'join'].includes(id) ? id : null
+  const lobbyId = id && !['create', 'join', 'layout-test'].includes(id) ? id : null
   return <LobbyConnection key={lobbyId ?? 'none'} lobbyId={lobbyId}>{children}</LobbyConnection>
 }
 function LobbyConnection({ lobbyId, children }: { lobbyId: string | null; children: ReactNode }) {
