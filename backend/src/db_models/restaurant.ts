@@ -9,6 +9,7 @@ const restaurantSchema = new Schema(
     cachedPhotoType: { type: String },
     partnerDetails: { type: Schema.Types.Mixed, default: {} },
     menu: { type: Schema.Types.Mixed, default: null },
+    menuImportAttemptedAt: { type: Date },
     searchCache: { type: Schema.Types.Mixed, default: {} },
   },
   {

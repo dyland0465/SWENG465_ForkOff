@@ -7,6 +7,7 @@ import { TextAction } from '../components/ui/TextAction'
 import { useLiveLobby, lobbyRequest } from '../features/lobby/liveLobby'
 import { useRound } from '../features/voting/useRound'
 import type { Decision } from '../features/voting/useRound'
+import { RestaurantMenuCarousel } from '../features/voting/RestaurantMenuCarousel'
 import { engagementId } from '../features/voting/engagement'
 import { paths } from '../routes/paths'
 import './VotingPage.css'
@@ -87,6 +88,7 @@ function VotingScreen({ lobbyId }: { lobbyId: string }) {
       <div className="voting-card__vote">
         <div className="voting-controls" role="group" aria-label={`Vote on ${current.name}`}>{(['yes', 'no', 'veto', 'skip'] as const).map(choice => <Button key={choice} disabled={busy} className={`voting-choice voting-choice--${choice}`} onClick={() => void vote(choice)}>{choice.toUpperCase()}</Button>)}</div>
       </div>
+      <RestaurantMenuCarousel key={`${round.id}:${current.id}`} placeId={current.id} name={current.name} address={current.address} />
       <div className="voting-card__visit">
         <div><span>LOCATION</span><p>{current.address ?? 'Address unavailable'}</p></div>
         <div><span>TODAY’S HOURS</span><p>{hoursForToday(current.hours, current.timeZone) ?? 'Hours unavailable'}</p></div>

@@ -8,6 +8,7 @@ import { establishSession, publicUser, revokeSession } from "../services/session
 import { HttpError } from "../utils/errors";
 import { changeLobby, findLobby, lobbyEvents, memberFor, nextOnline, requireHost, serializeLobby, type LobbyDocument, type Member } from "../services/lobbyState";
 import { findCollectionRestaurants, findLobbyRestaurants } from "../services/lobbyRestaurants";
+import { queueRestaurantMenuImports } from "../services/restaurantMenus";
 import { activeParticipants, roundResults } from "../services/analytics";
 import { AnalyticsEvent } from "../db_models/telemetry";
 
@@ -435,6 +436,7 @@ router.post("/api/lobbies/:id/round", run(async (req, res) => {
     current.round = { id: randomUUID(), startedAt: new Date().toISOString(), restaurants, warnings, participants: current.members.map(member => member.memberId), decisions: {} };
     current.status = "playing";
   });
+  queueRestaurantMenuImports(restaurants);
   res.status(201).json({ lobby: serializeLobby(lobby!, req.identity) });
 }));
 

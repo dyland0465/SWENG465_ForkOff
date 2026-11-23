@@ -16,7 +16,7 @@ export type LobbyDocument = mongoose.HydratedDocument<{
   filters: { location?: string; dinnerAt?: Date; maxDistance?: number; minimumRating?: number; categories?: string[]; openNow?: boolean; priceLevels?: string[]; diningNeeds?: string[] };
   collectionSource?: { name: string; placeIds: string[] } | null;
   createdAt: Date; updatedAt: Date;
-  round?: { id: string; startedAt?: string; completedAt?: string; completedParticipants?: string[]; warnings?: string[]; restaurants: { id: string; name: string; address: string | null; category: string | null; googleMapsUri: string | null; photoUrl: string | null; photoAuthors: { displayName: string; uri?: string }[]; rating?: number | null; ratingCount?: number | null; priceLevel?: string | null; distanceMiles?: number | null; hours?: string[]; timeZone?: string | null }[]; participants: string[]; decisions: Record<string, Record<string, string>> } | null;
+  round?: { id: string; startedAt?: string; completedAt?: string; completedParticipants?: string[]; warnings?: string[]; restaurants: { id: string; name: string; address: string | null; category: string | null; googleMapsUri: string | null; websiteUri?: string; photoUrl: string | null; photoAuthors: { displayName: string; uri?: string }[]; rating?: number | null; ratingCount?: number | null; priceLevel?: string | null; distanceMiles?: number | null; hours?: string[]; timeZone?: string | null }[]; participants: string[]; decisions: Record<string, Record<string, string>> } | null;
 }>;
 export const lobbyEvents = new EventEmitter();
 export const presence = new Map<string, Map<string, Set<string>>>();
